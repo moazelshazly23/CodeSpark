@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 512" width="1600" height="512">
+  
+    <defs>
+      <linearGradient id="c3_dark_blue_cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#2563EB" />
+        <stop offset="100%" stop-color="#06B6D4" />
+      </linearGradient>
+      <linearGradient id="c3_dark_spark_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#38BDF8" />
+        <stop offset="60%" stop-color="#06B6D4" />
+        <stop offset="100%" stop-color="#0284C7" />
+      </linearGradient>
+      <linearGradient id="c3_dark_text_spark" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#2563EB" />
+        <stop offset="100%" stop-color="#06B6D4" />
+      </linearGradient>
+      <filter id="c3_dark_glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="8" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    
+  <rect width="100%" height="100%" fill="#0B1120" />
+  <g transform="translate(48, 0)">
+    <g class="icon-c3">
+      <path d="M 256,64 L 90,160 C 76,168 68,183 68,200 L 68,312 C 68,329 76,344 90,352 L 256,448 L 256,376 L 148,314 L 148,198 L 256,136 Z" fill="url(#c3_dark_blue_cyan)" />
+      <path d="M 284,64 L 424,145 C 438,153 446,168 446,184 L 446,212 L 374,170 L 284,118 Z" fill="url(#c3_dark_blue_cyan)" />
+      <path d="M 284,448 L 424,367 C 438,359 446,344 446,328 L 446,300 L 374,342 L 284,394 Z" fill="url(#c3_dark_blue_cyan)" />
+      <path d="M 324,180 Q 324,256 400,256 Q 324,256 324,332 Q 324,256 248,256 Q 324,256 324,180 Z" fill="url(#c3_dark_spark_grad)" />
+    </g>
+    </g>
+  
+    <g class="wordmark-group" transform="translate(540, 310)">
+      <text font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" 
+            font-size="158" 
+            font-weight="800" 
+            letter-spacing="-3.5">
+        <tspan fill="#FFFFFF">Code</tspan><tspan fill="url(#c3_dark_text_spark)" dx="2">Spark</tspan>
+      </text>
+      <!-- Subtitle descriptor -->
+      <text font-family="'Plus Jakarta Sans', 'Inter', sans-serif"
+            font-size="24"
+            font-weight="600"
+            letter-spacing="6"
+            fill="#94A3B8"
+            x="8"
+            y="54">
+        PROGRAMMING EDUCATION
+      </text>
+      <!-- Subtle spark terminal on the 'k' -->
+      <circle cx="826.34" cy="-97.96" r="5" fill="#06B6D4" />
+    </g>
+    
+</svg>

@@ -1,0 +1,849 @@
+{
+  "users": [
+    {
+      "id": "student_1",
+      "name": "أحمد محمد الشناوي",
+      "email": "ahmed@codespark.edu.eg",
+      "phone": "01012345678",
+      "parentPhone": "01098765432",
+      "role": "STUDENT",
+      "grade": "الصف الأول الثانوي",
+      "section": "عام - لغات / عربي",
+      "subscriptionCode": "SPARK-2026-HIGH",
+      "password": "password123",
+      "avatar": "أح",
+      "streak": 5,
+      "xp": 840,
+      "completedLessonsCount": 18,
+      "examsCount": 7,
+      "avgScore": 86,
+      "learningHours": 14.5,
+      "lastActivity": "2026-08-27T18:30:00Z",
+      "createdAt": "2026-08-01T10:00:00Z",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "student_2",
+      "name": "سلمى طارق العوضي",
+      "email": "salma@codespark.edu.eg",
+      "phone": "01122334455",
+      "parentPhone": "01199887766",
+      "role": "STUDENT",
+      "grade": "الصف الثاني الثانوي",
+      "section": "علمي",
+      "subscriptionCode": "SPARK-2026-SEC2",
+      "password": "password123",
+      "avatar": "سل",
+      "streak": 12,
+      "xp": 1250,
+      "completedLessonsCount": 24,
+      "examsCount": 9,
+      "avgScore": 94,
+      "learningHours": 21,
+      "lastActivity": "2026-08-27T16:15:00Z",
+      "createdAt": "2026-07-20T09:00:00Z",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "student_3",
+      "name": "يوسف محمود حسن",
+      "email": "youssef@codespark.edu.eg",
+      "phone": "01234567890",
+      "parentPhone": "01298765432",
+      "role": "STUDENT",
+      "grade": "الصف الأول الثانوي",
+      "section": "عام",
+      "subscriptionCode": "SPARK-2026-SEC1",
+      "password": "password123",
+      "avatar": "يو",
+      "streak": 2,
+      "xp": 420,
+      "completedLessonsCount": 8,
+      "examsCount": 3,
+      "avgScore": 68,
+      "learningHours": 6.2,
+      "lastActivity": "2026-08-26T20:00:00Z",
+      "createdAt": "2026-08-10T12:00:00Z",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "admin_1",
+      "name": "المهندس معاذ الشاذلي",
+      "email": "admin@codespark.edu.eg",
+      "phone": "01099998888",
+      "parentPhone": "",
+      "role": "SUPER_ADMIN",
+      "grade": "مشرف المنهج",
+      "section": "إدارة التعليم الثانوي",
+      "avatar": "مع",
+      "createdAt": "2026-06-01T00:00:00Z",
+      "status": "ACTIVE"
+    }
+  ],
+  "units": [
+    {
+      "id": "unit_1",
+      "number": 1,
+      "title": "الوحدة الأولى: أساسيات التفكير البرمجي ولغة بايثون",
+      "description": "فهم مفهوم الخوارزميات، المتغيرات، أنواع البيانات، وجمل الإدخال والإخراج في بايثون للمرحلة الثانوية.",
+      "icon": "code",
+      "totalLessons": 5,
+      "totalExams": 1,
+      "status": "completed",
+      "isPublished": true,
+      "order": 1
+    },
+    {
+      "id": "unit_2",
+      "number": 2,
+      "title": "الوحدة الثانية: هياكل التحكم واتخاذ القرار (Conditionals)",
+      "description": "دراسة الشروط المنطقية، معاملات المقارنة، واستخدام if و elif و else في حل مسائل المنهج.",
+      "icon": "terminal",
+      "totalLessons": 4,
+      "totalExams": 1,
+      "status": "completed",
+      "isPublished": true,
+      "order": 2
+    },
+    {
+      "id": "unit_3",
+      "number": 3,
+      "title": "الوحدة الثالثة: التكرار وحلقات الدوران (Loops & Iteration)",
+      "description": "إتقان حلقة for وحلقة while، التحكم في الحلقات باستخدام break و continue، وتتبع قيم المتغيرات.",
+      "icon": "refresh",
+      "totalLessons": 4,
+      "totalExams": 1,
+      "status": "in_progress",
+      "isPublished": true,
+      "order": 3
+    },
+    {
+      "id": "unit_4",
+      "number": 4,
+      "title": "الوحدة الرابعة: هياكل البيانات والدوال (Lists & Functions)",
+      "description": "القوائم في بايثون، النصوص والتقطيع، بناء الدوال المعرفة من المستخدم، ونماذج امتحانات شاملة.",
+      "icon": "book",
+      "totalLessons": 5,
+      "totalExams": 2,
+      "status": "locked",
+      "isPublished": true,
+      "order": 4
+    }
+  ],
+  "lessons": [
+    {
+      "id": "lesson_1_1",
+      "unitId": "unit_1",
+      "title": "مقدمة إلى البرمجة وبيئة العمل في بايثون",
+      "description": "ما هي لغة بايثون؟ كيف يفكر المبرمج؟ كتابة أول سطر برمجي باستخدام دالة print.",
+      "duration": "20 دقيقة",
+      "type": "explanation",
+      "order": 1,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>مفهوم البرمجة وطبيعة الحاسب</h3>\n          <p>الحاسب الآلي جهاز ينفذ التعليمات بدقة وسرعة فائقة، ولكنه لا يفكر بمفرده. لكي نوجه الحاسب لأداء مهمة معينة، نحتاج إلى كتابة <strong>برنامج (Program)</strong> يتكون من سلسلة من الأوامر المكتوبة بلغة يفهمها الحاسب أو تتم ترجمتها إليه.</p>\n          \n          <div class=\"callout-box callout-note\">\n            <span class=\"callout-icon\">💡</span>\n            <div><strong>معلومة منهجية هامة:</strong> لغة بايثون هي لغة برمجة عالية المستوى (High-Level Language)، تمتاز بسهولة قراءتها ومطابقتها للتفكير المنطقي البسيط.</div>\n          </div>\n\n          <h3>دالة الطباعة <code>print()</code></h3>\n          <p>تستخدم دالة <code>print()</code> لعرض النتائج والنصوص والأرقام على شاشة المخرجات (Console). النصوص توضع دائمًا داخل علامات تنصيص مفردة <code>'...'</code> أو مزدوجة <code>\"...\"</code>، بينما الأرقام والمتغيرات لا تحتاج علامات تنصيص.</p>\n        ",
+      "codeExample": "# أول برنامج في مادة البرمجة\nprint(\"أهلاً بك في منصة Code Spark\")\nprint(\"البرمجة للمرحلة الثانوية خطوة بخطوة\")\nprint(2026)",
+      "exercise": {
+        "title": "تدريب 1: طباعة رسالة ترحيبية",
+        "instruction": "اكتب كود بايثون يقوم بطباعة اسمك متبوعًا بسطر آخر يطبع عبارتك المفضلة عن البرمجة.",
+        "starterCode": "# اكتب الكود هنا\nprint(\"...\")",
+        "solutionCode": "print(\"أحمد\")\nprint(\"أحب البرمجة مع Code Spark\")",
+        "testExpected": [
+          "أحمد"
+        ]
+      }
+    },
+    {
+      "id": "lesson_1_2",
+      "unitId": "unit_1",
+      "title": "المتغيرات وأنواع البيانات الأساسية (Data Types)",
+      "description": "التعرف على أنواع البيانات: الأعداد الصحيحة (int)، العشرية (float)، النصوص (str)، والمنطقية (bool).",
+      "duration": "25 دقيقة",
+      "type": "explanation",
+      "order": 2,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>ما هو المتغير (Variable)؟</h3>\n          <p>المتغير هو مكان محجوز في ذاكرة الحاسب (RAM) لتخزين قيمة معينة أثناء تشغيل البرنامج، وله اسم ونوع وقيمة يمكن أن تتغير أثناء التنفيذ.</p>\n\n          <h3>قواعد تسمية المتغيرات في بايثون:</h3>\n          <ul>\n            <li>يجب أن يبدأ بحرف (a-z, A-Z) أو شرطة سفلية <code>_</code>.</li>\n            <li>لا يجوز أن يبدأ برقم.</li>\n            <li>يحتوي فقط على أحرف وأرقام وشرطة سفلية.</li>\n            <li>لغة بايثون حساسة لحالة الأحرف (Case Sensitive)، فالمتغير <code>Age</code> يختلف تمامًا عن <code>age</code>.</li>\n            <li>لا يمكن استخدام الكلمات المحجوزة مثل: <code>if, for, while, print</code>.</li>\n          </ul>\n\n          <div class=\"callout-box callout-tip\">\n            <span class=\"callout-icon\">✨</span>\n            <div><strong>أنواع البيانات الأساسية في امتحان الثانوية:</strong><br>\n            - <code>int</code>: أعداد صحيحة مثل <code>15, -4</code><br>\n            - <code>float</code>: أعداد عشرية مثل <code>3.14, 99.5</code><br>\n            - <code>str</code>: نصوص وسلاسل حرفية مثل <code>\"Code Spark\"</code><br>\n            - <code>bool</code>: قيم منطقية وتأخذ إما <code>True</code> أو <code>False</code>.</div>\n          </div>\n        ",
+      "codeExample": "student_name = \"أحمد\"\nstudent_grade = 98.5\ntotal_lessons = 18\nis_passed = True\n\nprint(\"اسم الطالب:\", student_name)\nprint(\"الدرجة:\", student_grade)\nprint(\"نوع متغير الدرجة:\", type(student_grade))",
+      "exercise": {
+        "title": "تدريب 2: تعريف المتغيرات الحسابية",
+        "instruction": "عرّف متغير باسم price بقيمة 150، ومتغير باسم tax_rate بقيمة 0.14، ثم احسب القيمة الإجمالية واطبعها.",
+        "starterCode": "price = 150\ntax_rate = 0.14\n# احسب السعر الكلي بعد الضريبة\ntotal = price + (price * tax_rate)\nprint(total)",
+        "solutionCode": "price = 150\ntax_rate = 0.14\ntotal = price + (price * tax_rate)\nprint(total)",
+        "testExpected": [
+          "171.0"
+        ]
+      }
+    },
+    {
+      "id": "lesson_1_3",
+      "unitId": "unit_1",
+      "title": "المدخلات ودالة الإدخال input() والتحويل بين الأنواع",
+      "description": "كيفية استقبال مدخلات من المستخدم وتحويل النصوص إلى أرقام عبر int() و float().",
+      "duration": "30 دقيقة",
+      "type": "practice",
+      "order": 3,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>دالة الإدخال <code>input()</code></h3>\n          <p>تسمح دالة <code>input()</code> للبرنامج باستقبال قيمة يكتبها المستخدم من لوحة المفاتيح أثناء تشغيل الكود.</p>\n\n          <div class=\"callout-box callout-important\">\n            <span class=\"callout-icon\">⚠️</span>\n            <div><strong>سؤال امتحان متكرر:</strong> دالة <code>input()</code> ترجع القيمة دائمًا كنوع نصي <code>str</code> مهما كان المدخل! لذلك إذا كنت بحاجة لعمليات حسابية، يجب تحويلها باستخدام <code>int()</code> أو <code>float()</code>.</div>\n          </div>\n        ",
+      "codeExample": "name = \"أحمد\"\nyear_of_birth = 2008\ncurrent_year = 2026\nage = current_year - year_of_birth\n\nprint(\"مرحبًا يا \" + name)\nprint(\"عمرك التقريبي هو:\", age, \"سنة\")",
+      "exercise": {
+        "title": "تدريب 3: حساب مساحة المستطيل",
+        "instruction": "اكتب كود يحسب مساحة مستطيل طوله 12 وعرضه 5 باستخدام الضرب (*).",
+        "starterCode": "length = 12\nwidth = 5\narea = length * width\nprint(\"المساحة هي:\", area)",
+        "solutionCode": "length = 12\nwidth = 5\narea = length * width\nprint(\"المساحة هي:\", area)",
+        "testExpected": [
+          "60"
+        ]
+      }
+    },
+    {
+      "id": "lesson_1_4",
+      "unitId": "unit_1",
+      "title": "المعاملات الحسابية والمنطقية وأولويات العمليات",
+      "description": "ترتيب تنفيذ العمليات الحسابية: الأقواس، الأسس، الضرب والقسمة، والجمع والطرح.",
+      "duration": "25 دقيقة",
+      "type": "explanation",
+      "order": 4,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>جدول أولويات العمليات الحسابية في بايثون:</h3>\n          <ol>\n            <li><strong>الأقواس <code>()</code>:</strong> أعلى أولوية دائمًا.</li>\n            <li><strong>الأسس <code>**</code>:</strong> مثل <code>2 ** 3 = 8</code>.</li>\n            <li><strong>الضرب <code>*</code>، القسمة <code>/</code>، باقي القسمة <code>%</code>، والقسمة الصحيحة <code>//</code>.</strong></li>\n            <li><strong>الجمع <code>+</code> والطرح <code>-</code>.</strong></li>\n          </ol>\n        ",
+      "codeExample": "x = 10 + 5 * 2 ** 2\nprint(\"النتيجة بدون أقواس:\", x) # 10 + 5*4 = 30\n\ny = (10 + 5) * 2 ** 2\nprint(\"النتيجة مع الأقواس:\", y) # 15 * 4 = 60",
+      "exercise": {
+        "title": "تدريب 4: تتبع العمليات الحسابية",
+        "instruction": "احسب قيمة باقي قسمة 17 على 5 واطبع الناتج.",
+        "starterCode": "remainder = 17 % 5\nprint(remainder)",
+        "solutionCode": "remainder = 17 % 5\nprint(remainder)",
+        "testExpected": [
+          "2"
+        ]
+      }
+    },
+    {
+      "id": "lesson_1_5",
+      "unitId": "unit_1",
+      "title": "مراجعة وتدريبات شاملة على الوحدة الأولى",
+      "description": "حل مسائل وأفكار امتحانات المدارس على مفاهيم المتغيرات والعمليات وطباعة النتائج.",
+      "duration": "35 دقيقة",
+      "type": "quiz",
+      "order": 5,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>مراجعة شاملة لأساسيات الوحدة الأولى</h3>\n          <p>قبل الدخول في اختبار الوحدة، تأكد من إتقانك لكل من: تعريف المتغيرات، الدوال الأساسية <code>print(), input(), type()</code>، والمعاملات الحسابية.</p>\n        ",
+      "codeExample": "# كود مراجعة شامل\nbase_salary = 5000\nbonus = 1200\ndeduction = 400\nnet = base_salary + bonus - deduction\nprint(f\"الراتب الصافي: {net} جنيه\")",
+      "exercise": {
+        "title": "تدريب تطبيقي: تبديل قيمتين",
+        "instruction": "عرّف متغيرين a = 5 و b = 10 ثم بدّل قيمتيهما واطبع a و b.",
+        "starterCode": "a = 5\nb = 10\na, b = b, a\nprint(\"a =\", a, \"b =\", b)",
+        "solutionCode": "a = 5\nb = 10\na, b = b, a\nprint(\"a =\", a, \"b =\", b)",
+        "testExpected": [
+          "a = 10 b = 5"
+        ]
+      }
+    },
+    {
+      "id": "lesson_2_1",
+      "unitId": "unit_2",
+      "title": "الجملة الشرطية البسيطة if ومعاملات المقارنة",
+      "description": "معاملات المقارنة (==, !=, >, <, >=, <=) والمسافة البادئة Indentation في بايثون.",
+      "duration": "25 دقيقة",
+      "type": "explanation",
+      "order": 1,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>كيف تعمل الجملة الشرطية <code>if</code>؟</h3>\n          <p>تُستخدم الجملة الشرطية لتنفيذ كتلة برمجية معينة فقط إذا تحقق شرط منطقي (كانت قيمته <code>True</code>).</p>\n          \n          <div class=\"callout-box callout-important\">\n            <span class=\"callout-icon\">⚡</span>\n            <div><strong>المسافة البادئة (Indentation):</strong> في بايثون، لا نستخدم الأقواس المتعرجة <code>{}</code> لتحديد الكتل، بل نعتمد على 4 مسافات بادئة في بداية السطور التابعة للشرط.</div>\n          </div>\n        ",
+      "codeExample": "score = 85\n\nif score >= 50:\n    print(\"مبروك، لقد نجحت في المادة!\")\n    print(\"واصل تفوقك\")\n\nprint(\"نهاية البرنامج\")",
+      "exercise": {
+        "title": "تدريب: فحص العدد الموجب",
+        "instruction": "اكتب كود يفحص ما إذا كان المتغير num أكبر من صفر، ويطبع \"عدد موجب\".",
+        "starterCode": "num = 15\nif num > 0:\n    print(\"عدد موجب\")",
+        "solutionCode": "num = 15\nif num > 0:\n    print(\"عدد موجب\")",
+        "testExpected": [
+          "عدد موجب"
+        ]
+      }
+    },
+    {
+      "id": "lesson_2_2",
+      "unitId": "unit_2",
+      "title": "اتخاذ القرارات المزدوجة if - else",
+      "description": "تنفيذ مسار بديل في حال عدم تحقق الشرط الأساسي.",
+      "duration": "25 دقيقة",
+      "type": "explanation",
+      "order": 2,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>هيكل <code>if - else</code></h3>\n          <p>عندما يكون لدينا خياران فقط لا ثالث لهما (مثل: ناجح/راسب، عدد زوجي/فردي)، نستخدم <code>if - else</code>.</p>\n        ",
+      "codeExample": "number = 7\n\nif number % 2 == 0:\n    print(number, \"هو عدد زوجي (Even)\")\nelse:\n    print(number, \"هو عدد فردي (Odd)\")",
+      "exercise": {
+        "title": "تدريب: التحقق من السن القانوني",
+        "instruction": "إذا كان age >= 18 اطبع \"مؤهل لاستخراج بطاقة\"، وإلا اطبع \"غير مؤهل بعد\".",
+        "starterCode": "age = 16\nif age >= 18:\n    print(\"مؤهل لاستخراج بطاقة\")\nelse:\n    print(\"غير مؤهل بعد\")",
+        "solutionCode": "age = 16\nif age >= 18:\n    print(\"مؤهل لاستخراج بطاقة\")\nelse:\n    print(\"غير مؤهل بعد\")",
+        "testExpected": [
+          "غير مؤهل بعد"
+        ]
+      }
+    },
+    {
+      "id": "lesson_2_3",
+      "unitId": "unit_2",
+      "title": "الشروط المتعددة if - elif - else والمعاملات المنطقية (and, or, not)",
+      "description": "بناء شروط مركبة وحساب تقديرات درجات الطلاب في مادة البرمجة.",
+      "duration": "35 دقيقة",
+      "type": "practice",
+      "order": 3,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>المعاملات المنطقية (Logical Operators):</h3>\n          <ul>\n            <li><code>and</code>: يعطي <code>True</code> فقط إذا تحقق كلا الشرطين معًا.</li>\n            <li><code>or</code>: يعطي <code>True</code> إذا تحقق أحد الشرطين على الأقل.</li>\n            <li><code>not</code>: يعكس القيمة المنطقية (يحول <code>True</code> إلى <code>False</code> والعكس).</li>\n          </ul>\n        ",
+      "codeExample": "grade = 87\n\nif grade >= 90:\n    print(\"التقدير: ممتاز (A)\")\nelif grade >= 80:\n    print(\"التقدير: جيد جدًا (B)\")\nelif grade >= 65:\n    print(\"التقدير: جيد (C)\")\nelif grade >= 50:\n    print(\"التقدير: مقبول (D)\")\nelse:\n    print(\"التقدير: راسب (F)\")",
+      "exercise": {
+        "title": "تدريب: فحص حالة التخفيض",
+        "instruction": "إذا كان is_student = True أو purchase_amount > 500 اطبع \"يستحق الخصم الخاص\".",
+        "starterCode": "is_student = True\npurchase_amount = 300\n\nif is_student or purchase_amount > 500:\n    print(\"يستحق الخصم الخاص\")",
+        "solutionCode": "is_student = True\npurchase_amount = 300\nif is_student or purchase_amount > 500:\n    print(\"يستحق الخصم الخاص\")",
+        "testExpected": [
+          "يستحق الخصم الخاص"
+        ]
+      }
+    },
+    {
+      "id": "lesson_2_4",
+      "unitId": "unit_2",
+      "title": "تطبيقات عملية وأسئلة تتبع الكود في الجمل الشرطية",
+      "description": "تدريب على أسئلة الامتحان الشهيرة: \"ما هي مخرجات الكود التالي؟\"",
+      "duration": "30 دقيقة",
+      "type": "quiz",
+      "order": 4,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>تتبع مسار التنفيذ (Trace Tables)</h3>\n          <p>في أسئلة امتحانات الثانوية، يتم اختبار قدرتك على تتبع المتغيرات خطوة بخطوة عند الدخول في الشروط المختلفة.</p>\n        ",
+      "codeExample": "x = 5\ny = 12\n\nif x > 3 and y < 15:\n    x = x + 2\n    y = y - 3\n\nprint(\"x =\", x)\nprint(\"y =\", y)",
+      "exercise": {
+        "title": "تدريب التتبع",
+        "instruction": "اكتب كود يعرّف a=10, b=20، وإذا كان a < b يطبع ناتج a + b.",
+        "starterCode": "a = 10\nb = 20\nif a < b:\n    print(a + b)",
+        "solutionCode": "a = 10\nb = 20\nif a < b:\n    print(a + b)",
+        "testExpected": [
+          "30"
+        ]
+      }
+    },
+    {
+      "id": "lesson_3_1",
+      "unitId": "unit_3",
+      "title": "حلقة التكرار المحددة for loop ودالة range()",
+      "description": "كيفية تكرار الأوامر عددًا محددًا من المرات، ومعاملات دالة range(start, stop, step).",
+      "duration": "30 دقيقة",
+      "type": "explanation",
+      "order": 1,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>أهمية حلقات التكرار (Loops)</h3>\n          <p>الحلقات التكرارية تسمح بتنفيذ نفس الأمر البرمجي عدة مرات دون الحاجة لإعادة كتابته، مما يوفر الوقت ويقلل الأخطاء.</p>\n\n          <h3>دالة <code>range()</code> وصيغها الثلاث:</h3>\n          <ul>\n            <li><code>range(n)</code>: يبدأ من 0 حتى n-1. مثال: <code>range(5) -> 0, 1, 2, 3, 4</code></li>\n            <li><code>range(start, stop)</code>: يبدأ من start حتى stop-1. مثال: <code>range(2, 6) -> 2, 3, 4, 5</code></li>\n            <li><code>range(start, stop, step)</code>: مع مقدار الزيادة step. مثال: <code>range(1, 10, 2) -> 1, 3, 5, 7, 9</code></li>\n          </ul>\n        ",
+      "codeExample": "# طباعة جدول ضرب الرقم 5\nfor i in range(1, 6):\n    result = 5 * i\n    print(f\"5 × {i} = {result}\")",
+      "exercise": {
+        "title": "تدريب: طباعة الأعداد الفردية",
+        "instruction": "استخدم حلقة for ودالة range لطباعة الأعداد من 1 إلى 9 بمقدار زيادة 2.",
+        "starterCode": "for n in range(1, 10, 2):\n    print(n)",
+        "solutionCode": "for n in range(1, 10, 2):\n    print(n)",
+        "testExpected": [
+          "1",
+          "3",
+          "5",
+          "7",
+          "9"
+        ]
+      }
+    },
+    {
+      "id": "lesson_3_2",
+      "unitId": "unit_3",
+      "title": "حلقة التكرار المشروطة while loop وتجنب الحلقات اللانهائية",
+      "description": "التكرار بناءً على استمرار تحقق شرط معين، وأهمية عداد التكرار.",
+      "duration": "30 دقيقة",
+      "type": "explanation",
+      "order": 2,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>كيف تعمل حلقة <code>while</code>؟</h3>\n          <p>تستمر حلقة <code>while</code> في التكرار طالما أن الشرط الخاص بها يساوي <code>True</code>، وتتوقف فور أن يصبح الشرط <code>False</code>.</p>\n          <div class=\"callout-box callout-important\">\n            <span class=\"callout-icon\">🚨</span>\n            <div><strong>تنبيه:</strong> إذا نسيت تعديل قيمة العداد داخل الحلقة، سيحدث ما يُعرف بالحلقة اللانهائية (Infinite Loop) التي تستهلك ذاكرة الجهاز وتجمد البرنامج!</div>\n          </div>\n        ",
+      "codeExample": "count = 1\ntotal = 0\n\nwhile count <= 5:\n    total += count\n    print(f\"العداد: {count} | المجموع حتى الآن: {total}\")\n    count += 1\n\nprint(\"المجموع النهائي للأعداد من 1 إلى 5 هو:\", total)",
+      "exercise": {
+        "title": "تدريب: العد التنازلي",
+        "instruction": "اكتب حلقة while تعد تنازليًا من 5 إلى 1 ثم تطبع \"انطلاق!\".",
+        "starterCode": "i = 5\nwhile i >= 1:\n    print(i)\n    i -= 1\nprint(\"انطلاق!\")",
+        "solutionCode": "i = 5\nwhile i >= 1:\n    print(i)\n    i -= 1\nprint(\"انطلاق!\")",
+        "testExpected": [
+          "5",
+          "4",
+          "3",
+          "2",
+          "1",
+          "انطلاق!"
+        ]
+      }
+    },
+    {
+      "id": "lesson_3_3",
+      "unitId": "unit_3",
+      "title": "التحكم في الحلقات باستخدام break و continue",
+      "description": "كيفية إيقاف الحلقة فجأة عند الوصول لقيمة معينة، أو تخطي تكرار معين.",
+      "duration": "25 دقيقة",
+      "type": "practice",
+      "order": 3,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>الفرق الجوهري بين <code>break</code> و <code>continue</code>:</h3>\n          <ul>\n            <li><code>break</code>: تنهي الحلقة التكرارية فورًا ويخرج البرنامج من جسم الـ Loop بالكامل.</li>\n            <li><code>continue</code>: تتخطى فقط الدورة الحالية وتنتقل للدورة التالية فورًا دون إنهاء الـ Loop.</li>\n          </ul>\n        ",
+      "codeExample": "print(\"تجربة continue لتخطي الرقم 3:\")\nfor i in range(1, 6):\n    if i == 3:\n        continue\n    print(i)\n\nprint(\"---\")\nprint(\"تجربة break للتوقف عند الرقم 4:\")\nfor i in range(1, 6):\n    if i == 4:\n        break\n    print(i)",
+      "exercise": {
+        "title": "تدريب: البحث والتوقف",
+        "instruction": "اكتب حلقة for تمر على الأرقام من 1 إلى 10، وتتوقف بـ break عندما تصل للرقم 4.",
+        "starterCode": "for num in range(1, 11):\n    if num == 4:\n        break\n    print(num)",
+        "solutionCode": "for num in range(1, 11):\n    if num == 4:\n        break\n    print(num)",
+        "testExpected": [
+          "1",
+          "2",
+          "3"
+        ]
+      }
+    },
+    {
+      "id": "lesson_3_4",
+      "unitId": "unit_3",
+      "title": "الحلقات المتداخلة وتتبع كود المجموع والتكرار",
+      "description": "دمج الشروط مع الحلقات وحل أسئلة كتاب الوزارة للمرحلة الثانوية.",
+      "duration": "35 دقيقة",
+      "type": "quiz",
+      "order": 4,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>دمج الحلقات مع الشروط</h3>\n          <p>أكثر المسائل في امتحانات نصف ونهاية العام تجمع بين حلقة تكرار وشرط داخلها (مثل حساب مجموع الأعداد الزوجية فقط أو فحص الأعداد الأولية).</p>\n        ",
+      "codeExample": "# حساب مجموع الأعداد الزوجية من 1 إلى 10\neven_sum = 0\nfor n in range(1, 11):\n    if n % 2 == 0:\n        even_sum += n\n\nprint(\"مجموع الأعداد الزوجية حتى 10 هو:\", even_sum)",
+      "exercise": {
+        "title": "تدريب: عد مرات التكرار",
+        "instruction": "احسب عدد الأعداد التي تقبل القسمة على 3 بين 1 و 15.",
+        "starterCode": "count = 0\nfor n in range(1, 16):\n    if n % 3 == 0:\n        count += 1\nprint(count)",
+        "solutionCode": "count = 0\nfor n in range(1, 16):\n    if n % 3 == 0:\n        count += 1\nprint(count)",
+        "testExpected": [
+          "5"
+        ]
+      }
+    },
+    {
+      "id": "lesson_4_1",
+      "unitId": "unit_4",
+      "title": "القوائم في بايثون (Lists) والتعامل مع عناصرها",
+      "description": "تعريف القوائم، الفهرسة المباشرة والسالبة (Indexing)، ودوال append, remove, len.",
+      "duration": "30 دقيقة",
+      "type": "explanation",
+      "order": 1,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>ما هي القائمة (List)؟</h3>\n          <p>القائمة هي بنية بيانات تسمح بتخزين مجموعة من العناصر في متغير واحد، وتتميز بأنها مرتبة وقابلة للتعديل وتسمح بتكرار العناصر.</p>\n        ",
+      "codeExample": "grades = [85, 92, 78, 95, 88]\nprint(\"الدرجة الأولى:\", grades[0])\nprint(\"الدرجة الأخيرة:\", grades[-1])\nprint(\"عدد الدرجات المسجلة:\", len(grades))\n\ngrades.append(100)\nprint(\"القائمة بعد الإضافة:\", grades)",
+      "exercise": {
+        "title": "تدريب القوائم",
+        "instruction": "عرّف قائمة بالأرقام [10, 20, 30] ثم أضف الرقم 40 واطبع طول القائمة.",
+        "starterCode": "nums = [10, 20, 30]\nnums.append(40)\nprint(len(nums))",
+        "solutionCode": "nums = [10, 20, 30]\nnums.append(40)\nprint(len(nums))",
+        "testExpected": [
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "lesson_4_2",
+      "unitId": "unit_4",
+      "title": "النصوص والتقطيع (String Slicing & Methods)",
+      "description": "التعامل مع السلاسل النصية واستخراج أجزاء منها باستخدام [start:stop:step].",
+      "duration": "25 دقيقة",
+      "type": "explanation",
+      "order": 2,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>تقطيع النصوص في بايثون</h3>\n          <p>النصوص في بايثون تُعامل كمتتالية من الحروف المرقمة من 0.</p>\n        ",
+      "codeExample": "word = \"CodeSpark\"\nprint(\"أول 4 أحرف:\", word[0:4])\nprint(\"آخر 5 أحرف:\", word[4:])\nprint(\"النص معكوسًا:\", word[::-1])",
+      "exercise": {
+        "title": "تدريب تقطيع النصوص",
+        "instruction": "استخرج أول 3 أحرف من المتغير subject = \"Python\".",
+        "starterCode": "subject = \"Python\"\nprint(subject[0:3])",
+        "solutionCode": "subject = \"Python\"\nprint(subject[0:3])",
+        "testExpected": [
+          "Pyt"
+        ]
+      }
+    },
+    {
+      "id": "lesson_4_3",
+      "unitId": "unit_4",
+      "title": "الدوال المعرفة من قبل المستخدم Functions ودوال return",
+      "description": "بناء دوال مخصصة باستخدام def وتمرير المعاملات وإرجاع القيم.",
+      "duration": "35 دقيقة",
+      "type": "practice",
+      "order": 3,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>ما هي الدالة (Function)؟</h3>\n          <p>كتلة كود برمجية قابلة لإعادة الاستخدام تؤدي مهمة محددة، لا يتم تنفيذها إلا عند استدعائها.</p>\n        ",
+      "codeExample": "def calculate_average(grades_list):\n    total = sum(grades_list)\n    avg = total / len(grades_list)\n    return avg\n\nmy_scores = [90, 85, 95]\nres = calculate_average(my_scores)\nprint(\"المتوسط الحسابي للدرجات:\", res)",
+      "exercise": {
+        "title": "تدريب: دالة حساب المربع",
+        "instruction": "اكتب دالة باسم square(n) ترجع مربع العدد n، ثم استدعها بالرقم 6 واطبع النتيجة.",
+        "starterCode": "def square(n):\n    return n * n\n\nprint(square(6))",
+        "solutionCode": "def square(n):\n    return n * n\n\nprint(square(6))",
+        "testExpected": [
+          "36"
+        ]
+      }
+    },
+    {
+      "id": "lesson_4_4",
+      "unitId": "unit_4",
+      "title": "المراجعة النهائية ونماذج امتحانات الثانوية العامة في البرمجة",
+      "description": "تجميع لأهم المسائل والأسئلة الشائعة في اختبارات المدارس والمرحلة الثانوية.",
+      "duration": "45 دقيقة",
+      "type": "quiz",
+      "order": 4,
+      "isPublished": true,
+      "videoUrl": "https://www.youtube-nocookie.com/embed/kqtD5dpn9C8",
+      "content": "\n          <h3>نصائح مهمة قبل دخول امتحان البرمجة:</h3>\n          <ol>\n            <li>اقرأ رأس السؤال بدقة، وتأكد إن كان يطلب كتابة كود كامل أو فقط مخرجات (Output).</li>\n            <li>انتبه للمسافات البادئة (Indentation) في الشروط والحلقات والدوال.</li>\n            <li>تأكد من نوع المخرجات وهل الناتج نصي أم عددي عشري.</li>\n          </ol>\n        ",
+      "codeExample": "# نموذج امتحان تجريبي\ndef check_pass(grade):\n    if grade >= 50:\n        return \"ناجح\"\n    return \"راسب\"\n\nprint(check_pass(75))",
+      "exercise": {
+        "title": "تدريب المراجعة النهائية",
+        "instruction": "اكتب كود يطبع مجموع الأعداد من 1 إلى 5 باستخدام حلقة for.",
+        "starterCode": "s = 0\nfor i in range(1, 6):\n    s += i\nprint(s)",
+        "solutionCode": "s = 0\nfor i in range(1, 6):\n    s += i\nprint(s)",
+        "testExpected": [
+          "15"
+        ]
+      }
+    }
+  ],
+  "questions": [
+    {
+      "id": "q_1",
+      "unitId": "unit_1",
+      "lessonId": "lesson_1_2",
+      "type": "mcq",
+      "question": "أي من الأسماء التالية يعتبر اسم متغير صحيح وغير مخالف لقواعد لغة بايثون؟",
+      "options": [
+        "2nd_student",
+        "student_score",
+        "student-score",
+        "class"
+      ],
+      "correctAnswer": 1,
+      "difficulty": "easy",
+      "score": 2,
+      "explanation": "الاسم student_score صحيح لأنه يبدأ بحرف ويحتوي فقط على أحرف وشرطة سفلية. بينما 2nd_student يبدأ برقم، student-score يحتوي على علامة طرح، و class كلمة محجوزة."
+    },
+    {
+      "id": "q_2",
+      "unitId": "unit_1",
+      "lessonId": "lesson_1_3",
+      "type": "mcq",
+      "question": "ما هو نوع البيانات الناتج دائمًا من استدعاء دالة input() في بايثون قبل تحويله؟",
+      "options": [
+        "int (عدد صحيح)",
+        "float (عدد عشري)",
+        "str (سلسلة نصية)",
+        "bool (قيمة منطقية)"
+      ],
+      "correctAnswer": 2,
+      "difficulty": "easy",
+      "score": 2,
+      "explanation": "دالة input() في بايثون ترجع القيمة دائمًا كسلسلة نصية (str) مهما كان ما كتبه المستخدم."
+    },
+    {
+      "id": "q_3",
+      "unitId": "unit_1",
+      "lessonId": "lesson_1_4",
+      "type": "code_output",
+      "question": "ما هي نتيجة تنفيذ السطر البرمجي التالي: print(12 + 4 * 2 ** 2) ؟",
+      "options": [
+        "64",
+        "28",
+        "144",
+        "32"
+      ],
+      "correctAnswer": 1,
+      "difficulty": "medium",
+      "score": 3,
+      "explanation": "حسب أولويات العمليات: الأس أولاً 2**2 = 4، ثم الضرب 4 * 4 = 16، ثم الجمع 12 + 16 = 28."
+    },
+    {
+      "id": "q_4",
+      "unitId": "unit_2",
+      "lessonId": "lesson_2_1",
+      "type": "tf",
+      "question": "في لغة بايثون، نستخدم الأقواس المعقوفة { } لتحديد بداية ونهاية الكتل البرمجية التابعة للشروط بدلاً من المسافات البادئة.",
+      "options": [
+        "صح",
+        "خطأ"
+      ],
+      "correctAnswer": 1,
+      "difficulty": "easy",
+      "score": 2,
+      "explanation": "خطأ؛ تعتمد لغة بايثون حصريًا على المسافة البادئة (Indentation) وليس الأقواس المعقوفة."
+    },
+    {
+      "id": "q_5",
+      "unitId": "unit_2",
+      "lessonId": "lesson_2_3",
+      "type": "code_output",
+      "question": "ما هي مخرجات الكود التالي؟\n\nx = 15\nif x > 10 and x < 20:\n    print(\"A\")\nelif x == 15:\n    print(\"B\")\nelse:\n    print(\"C\")",
+      "options": [
+        "A",
+        "B",
+        "A متبوعة بـ B",
+        "C"
+      ],
+      "correctAnswer": 0,
+      "difficulty": "medium",
+      "score": 3,
+      "explanation": "الشرط الأول يتحقق (15 أكبر من 10 وأصغر من 20)، فيتم طباعة A والخروج من هيكل if-elif-else دون فحص الشروط التالية."
+    },
+    {
+      "id": "q_6",
+      "unitId": "unit_3",
+      "lessonId": "lesson_3_1",
+      "type": "code_output",
+      "question": "كم عدد المرات التي سيتم فيها تنفيذ جسم حلقة التكرار التالية؟\n\nfor i in range(2, 10, 3):\n    print(i)",
+      "options": [
+        "8 مرات",
+        "3 مرات (للقيم 2, 5, 8)",
+        "4 مرات (للقيم 2, 5, 8, 11)",
+        "10 مرات"
+      ],
+      "correctAnswer": 1,
+      "difficulty": "medium",
+      "score": 3,
+      "explanation": "القيم التي تمر عليها الحلقة هي: 2 ثم 5 ثم 8 (حيث القيمة التالية 11 تتجاوز النهاية 10)، إذن تتكرر 3 مرات فقط."
+    },
+    {
+      "id": "q_7",
+      "unitId": "unit_3",
+      "lessonId": "lesson_3_3",
+      "type": "mcq",
+      "question": "ما هي العبارة البرمجية التي تستخدم لتخطي الدورة الحالية فقط في الحلقة والانتقال للدورة التالية دون إنهاء الحلقة؟",
+      "options": [
+        "break",
+        "exit",
+        "continue",
+        "pass"
+      ],
+      "correctAnswer": 2,
+      "difficulty": "easy",
+      "score": 2,
+      "explanation": "العبارة continue تتخطى ما تبقى من الدورة الحالية وتنتقل للدورة التالية فورًا."
+    },
+    {
+      "id": "q_8",
+      "unitId": "unit_4",
+      "lessonId": "lesson_4_1",
+      "type": "code_output",
+      "question": "ما هي نتيجة الكود التالي؟\n\nitems = [10, 20, 30, 40]\nitems.append(50)\nprint(items[-2])",
+      "options": [
+        "50",
+        "40",
+        "30",
+        "20"
+      ],
+      "correctAnswer": 1,
+      "difficulty": "hard",
+      "score": 3,
+      "explanation": "بعد الإضافة تصبح القائمة [10, 20, 30, 40, 50]. العنصر الأخير [-1] هو 50، والذي قبله [-2] هو 40."
+    }
+  ],
+  "exams": [
+    {
+      "id": "exam_unit_1",
+      "unitId": "unit_1",
+      "title": "اختبار الوحدة الأولى: أساسيات البرمجة وبايثون",
+      "description": "اختبار تقييمي لقياس فهم المفاهيم الأساسية، المتغيرات، ودوال الطباعة والإدخال.",
+      "durationMinutes": 20,
+      "passingScore": 60,
+      "questionsCount": 4,
+      "questionIds": [
+        "q_1",
+        "q_2",
+        "q_3",
+        "q_4"
+      ],
+      "maxAttempts": 3,
+      "isPublished": true
+    },
+    {
+      "id": "exam_unit_2",
+      "unitId": "unit_2",
+      "title": "اختبار الوحدة الثانية: الجمل الشرطية واتخاذ القرار",
+      "description": "اختبار شامل على الشروط البسيطة والمتعددة والمعاملات المنطقية وحل مسائل التتبع.",
+      "durationMinutes": 25,
+      "passingScore": 60,
+      "questionsCount": 3,
+      "questionIds": [
+        "q_4",
+        "q_5",
+        "q_1"
+      ],
+      "maxAttempts": 3,
+      "isPublished": true
+    },
+    {
+      "id": "exam_unit_3",
+      "unitId": "unit_3",
+      "title": "اختبار الوحدة الثالثة: حلقات التكرار والدوران",
+      "description": "تقييم شامل لحلقات for و while وأوامر break و continue وتتبع قيم المتغيرات.",
+      "durationMinutes": 30,
+      "passingScore": 65,
+      "questionsCount": 4,
+      "questionIds": [
+        "q_6",
+        "q_7",
+        "q_3",
+        "q_5"
+      ],
+      "maxAttempts": 3,
+      "isPublished": true
+    },
+    {
+      "id": "exam_final",
+      "unitId": "unit_4",
+      "title": "الامتحان التجريبي الشامل لمادة البرمجة (نهاية الفصل)",
+      "description": "نموذج محاكاة لامتحان نهاية العام لطلاب المرحلة الثانوية على كامل المنهج المقرر.",
+      "durationMinutes": 45,
+      "passingScore": 70,
+      "questionsCount": 8,
+      "questionIds": [
+        "q_1",
+        "q_2",
+        "q_3",
+        "q_4",
+        "q_5",
+        "q_6",
+        "q_7",
+        "q_8"
+      ],
+      "maxAttempts": 5,
+      "isPublished": true
+    }
+  ],
+  "studentProgress": {
+    "student_1": {
+      "completedLessons": [
+        "lesson_1_1",
+        "lesson_1_2",
+        "lesson_1_3",
+        "lesson_1_4",
+        "lesson_1_5",
+        "lesson_2_1",
+        "lesson_2_2",
+        "lesson_2_3",
+        "lesson_2_4"
+      ],
+      "inProgressLesson": "lesson_3_1",
+      "unitsProgress": {
+        "unit_1": 100,
+        "unit_2": 100,
+        "unit_3": 25,
+        "unit_4": 0
+      },
+      "overallProgress": 72,
+      "examAttempts": [
+        {
+          "id": "att_1",
+          "examId": "exam_unit_1",
+          "examTitle": "اختبار الوحدة الأولى: أساسيات البرمجة وبايثون",
+          "score": 88,
+          "correctCount": 8,
+          "totalQuestions": 9,
+          "timeSpent": "14:20",
+          "date": "2026-08-15T14:30:00Z",
+          "passed": true,
+          "answers": {
+            "q_1": 1,
+            "q_2": 2,
+            "q_3": 1,
+            "q_4": 1
+          }
+        },
+        {
+          "id": "att_2",
+          "examId": "exam_unit_2",
+          "examTitle": "اختبار الوحدة الثانية: الجمل الشرطية واتخاذ القرار",
+          "score": 84,
+          "correctCount": 7,
+          "totalQuestions": 8,
+          "timeSpent": "18:42",
+          "date": "2026-08-22T17:15:00Z",
+          "passed": true,
+          "answers": {
+            "q_4": 1,
+            "q_5": 0,
+            "q_1": 1
+          }
+        }
+      ]
+    }
+  },
+  "announcements": [
+    {
+      "id": "ann_1",
+      "title": "فتح باب الاختبارات التجريبية للوحدة الثالثة ⚡",
+      "content": "تم تفعيل بنك تدريبات حلقات التكرار وحلقات while لجميع طلاب الصف الأول والثاني الثانوي مع تصحيح فوري وشرح تفصيلي للحلول.",
+      "date": "2026-08-26T10:00:00Z",
+      "priority": "high",
+      "targetGrade": "الكل"
+    },
+    {
+      "id": "ann_2",
+      "title": "مراجعة ليلة الامتحان التفاعلية على منصة Code Spark",
+      "content": "سيكون هناك بث مسجل ونماذج أسئلة امتحانات سابقة محلولة خطوة بخطوة لمساعدتكم على تحقيق الدرجة النهائية بإذن الله.",
+      "date": "2026-08-20T12:00:00Z",
+      "priority": "normal",
+      "targetGrade": "الصف الأول الثانوي"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif_1",
+      "userId": "student_1",
+      "title": "أحسنت! أكملت الوحدة الثانية بنجاح 🎉",
+      "message": "حققت نسبة 100% في دروس الوحدة الثانية، تابع الآن الوحدة الثالثة.",
+      "type": "achievement",
+      "read": false,
+      "link": "#unit/unit_3",
+      "date": "2026-08-24T18:00:00Z"
+    },
+    {
+      "id": "notif_2",
+      "userId": "student_1",
+      "title": "اختبار جديد متاح: مراجعة الحلقات التكرارية",
+      "message": "تمت إضافة اختبار قصير جديد لقياس مهاراتك في حلقة for ودالة range.",
+      "type": "exam",
+      "read": false,
+      "link": "#exam/exam_unit_3",
+      "date": "2026-08-26T09:30:00Z"
+    },
+    {
+      "id": "notif_3",
+      "userId": "student_1",
+      "title": "حافظ على حماسك 🔥 (5 أيام متتالية)",
+      "message": "رائع يا أحمد! حافظ على تقدمك اليومي لتحصل على وسام المبرمج المتميز.",
+      "type": "streak",
+      "read": true,
+      "link": "#progress",
+      "date": "2026-08-27T08:00:00Z"
+    }
+  ],
+  "supportTickets": [
+    {
+      "id": "tick_1",
+      "studentId": "student_1",
+      "studentName": "أحمد محمد الشناوي",
+      "subject": "سؤال حول معاملات دالة range في بايثون",
+      "message": "السلام عليكم، هل القيمة stop في دالة range تكون مشمولة داخل التكرار أم يتوقف قبلها برقم؟",
+      "status": "answered",
+      "reply": "وعليكم السلام يا أحمد، دائمًا القيمة stop تكون غير مشمولة (Exclusive)، أي يتوقف قبلها بخطوة واحدة: range(1, 5) تعطي 1, 2, 3, 4 فقط.",
+      "date": "2026-08-25T11:00:00Z"
+    }
+  ]
+}

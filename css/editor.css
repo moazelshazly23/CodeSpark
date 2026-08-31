@@ -1,0 +1,354 @@
+/* Code Spark Interactive Code Playground & Editor Styles */
+
+.editor-wrapper {
+  display: flex;
+  flex-direction: column;
+  background: #0D1527;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  margin: 1.5rem 0;
+}
+
+.editor-toolbar {
+  background: #080D1A;
+  padding: 0.625rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.editor-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.editor-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.editor-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.editor-dot.red { background: #EF4444; }
+.editor-dot.yellow { background: #F59E0B; }
+.editor-dot.green { background: #10B981; }
+
+.editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.editor-workspace {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 280px;
+  background: #0B1120;
+}
+
+@media (max-width: 900px) {
+  .editor-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+.code-input-area {
+  position: relative;
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  border-left: 1px solid var(--border-subtle);
+  direction: ltr !important;
+  text-align: left !important;
+  overflow: hidden;
+}
+
+.line-numbers {
+  padding: 1rem 0.5rem;
+  background: #080E1C;
+  color: #475569;
+  user-select: none;
+  text-align: right;
+  min-width: 40px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.code-textarea {
+  flex: 1;
+  padding: 1rem;
+  background: transparent;
+  color: #E2E8F0;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  resize: none;
+  border: none;
+  outline: none;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+.code-textarea:focus {
+  background: rgba(37, 99, 235, 0.02);
+}
+
+/* Console Output Area */
+.console-area {
+  background: #060A14;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  direction: ltr !important;
+  text-align: left !important;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  border-top: none;
+  overflow-y: auto;
+  max-height: 350px;
+}
+
+.console-header {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748B;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding-bottom: 0.35rem;
+}
+
+.console-output {
+  color: #38BDF8;
+  white-space: pre-wrap;
+  word-break: break-all;
+  flex: 1;
+  min-height: 100px;
+}
+
+.console-output.error {
+  color: #F87171;
+}
+
+.console-output.success {
+  color: #34D399;
+}
+
+.console-prompt-waiting {
+  color: #FBBF24;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* Syntax highlighted static blocks */
+.code-block-static {
+  background: #070C18;
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  direction: ltr !important;
+  text-align: left !important;
+  color: #E2E8F0;
+  overflow-x: auto;
+  position: relative;
+  margin: 1rem 0;
+}
+
+.code-keyword { color: #F43F5E; font-weight: 600; }
+.code-func { color: #38BDF8; }
+.code-string { color: #34D399; }
+.code-num { color: #FBBF24; }
+.code-comment { color: #64748B; font-style: italic; }
+.code-bool { color: #A855F7; }
+
+/* Callout Boxes in Lessons */
+.callout-box {
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  margin: 1.25rem 0;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.callout-tip {
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-right: 4px solid var(--cyan);
+}
+
+.callout-important {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-right: 4px solid var(--warning);
+}
+
+.callout-note {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  border-right: 4px solid var(--primary);
+}
+
+.callout-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   CodeSpark Advanced Educational IDE & Assistant UI Enhancements
+   ========================================================================== */
+
+/* Autocomplete Dropdown Overlay */
+.editor-autocomplete-box {
+  position: absolute;
+  background: #0f172a;
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+  z-index: 50;
+  max-height: 220px;
+  width: 260px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  direction: ltr !important;
+  text-align: left !important;
+}
+
+.autocomplete-item {
+  padding: 0.45rem 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #E2E8F0;
+}
+
+.autocomplete-item:hover, .autocomplete-item.active {
+  background: rgba(6, 182, 212, 0.15);
+  color: var(--cyan);
+}
+
+.autocomplete-badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Syntax Error Banner */
+.editor-error-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border-top: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 0.65rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  color: #FCA5A5;
+  gap: 0.75rem;
+}
+
+.editor-error-banner .explain-btn {
+  background: rgba(239, 68, 68, 0.25);
+  color: #FFF;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Progressive Hints Drawer */
+.editor-hints-box {
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+.hint-tier-step {
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #FEF3C7;
+  line-height: 1.6;
+}
+
+/* Fullscreen IDE Mode */
+.editor-wrapper.fullscreen-mode {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  margin: 0;
+  border-radius: 0;
+}
+
+.editor-wrapper.fullscreen-mode .editor-workspace {
+  height: calc(100vh - 50px);
+}
+
+/* Light Theme for Code Editor */
+.editor-wrapper.light-theme {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+}
+
+.editor-wrapper.light-theme .editor-toolbar {
+  background: #F1F5F9;
+  border-bottom-color: #E2E8F0;
+}
+
+.editor-wrapper.light-theme .editor-title {
+  color: #334155;
+}
+
+.editor-wrapper.light-theme .editor-workspace {
+  background: #F8FAFC;
+}
+
+.editor-wrapper.light-theme .line-numbers {
+  background: #F1F5F9;
+  color: #64748B;
+  border-right-color: #E2E8F0;
+}
+
+.editor-wrapper.light-theme .code-textarea {
+  color: #0F172A;
+}
+
+.editor-wrapper.light-theme .console-area {
+  background: #0F172A;
+  color: #38BDF8;
+}

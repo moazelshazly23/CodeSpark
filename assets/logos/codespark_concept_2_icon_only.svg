@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  
+    <defs>
+      <linearGradient id="c2_icon_blue_cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#2563EB" />
+        <stop offset="100%" stop-color="#06B6D4" />
+      </linearGradient>
+      <linearGradient id="c2_icon_spark_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#38BDF8" />
+        <stop offset="60%" stop-color="#06B6D4" />
+        <stop offset="100%" stop-color="#0284C7" />
+      </linearGradient>
+      <linearGradient id="c2_icon_text_spark" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#2563EB" />
+        <stop offset="100%" stop-color="#06B6D4" />
+      </linearGradient>
+      <filter id="c2_icon_glow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="8" result="blur" />
+        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+      </filter>
+    </defs>
+    
+  
+    <g class="icon-c2">
+      <path d="M 220,72 L 72,220 C 56,236 56,260 72,276 L 220,424 L 276,368 L 164,256 L 276,144 Z" fill="url(#c2_icon_blue_cyan)" />
+      <path d="M 300,72 L 444,72 L 396,144 L 276,144 Z" fill="url(#c2_icon_blue_cyan)" />
+      <path d="M 276,368 L 396,368 L 444,440 L 300,440 Z" fill="url(#c2_icon_blue_cyan)" />
+      <path d="M 368,168 Q 368,256 456,256 Q 368,256 368,344 Q 368,256 280,256 Q 368,256 368,168 Z" fill="url(#c2_icon_spark_grad)" />
+    </g>
+    
+</svg>

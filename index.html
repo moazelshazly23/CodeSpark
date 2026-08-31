@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Spark | منصة تعليم البرمجة للمرحلة الثانوية</title>
+  <meta name="description" content="Code Spark منصة تعليمية متقدمة لتعليم البرمجة وتطوير مهارات التفكير المنطقي لطلاب المرحلة الثانوية بشرح تفاعلي وبيئة كود متكاملة.">
+  <meta name="theme-color" content="#070B14">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="assets/logos/favicon.svg">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/editor.css">
+</head>
+<body>
+
+  <!-- Dynamic Programming Background Canvas (Fixed & Non-blocking) -->
+  <canvas id="code-spark-bg-canvas" style="position:fixed; top:0; left:0; width:100vw; height:100vh; pointer-events:none; z-index:0; margin:0; padding:0; border:none; display:block;"></canvas>
+
+  <!-- Main Root Container -->
+  <div id="app"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Core & Services -->
+  <script src="js/components/icons.js"></script>
+  <script src="js/components/codeEditorHelper.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/services/authService.js"></script>
+  <script src="js/services/curriculumService.js"></script>
+  <script src="js/services/progressService.js"></script>
+  <script src="js/services/questionService.js"></script>
+  <script src="js/services/examService.js"></script>
+  <script src="js/services/quizService.js"></script>
+  <script src="js/services/studentService.js"></script>
+  <script src="js/services/adminService.js"></script>
+  <script src="js/services/assistantService.js"></script>
+  <script src="js/services/notificationService.js"></script>
+  <script src="js/services/announcementService.js"></script>
+  <script src="js/services/supportService.js"></script>
+  <script src="js/services/resourceService.js"></script>
+  <script src="js/services/codeExecutor.js"></script>
+  <script src="js/pythonEngine.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/charts.js"></script>
+  
+  <!-- Views -->
+  <script src="js/views/landingView.js"></script>
+  <script src="js/views/authViews.js"></script>
+  <script src="js/views/studentDashboardView.js"></script>
+  <script src="js/views/curriculumView.js"></script>
+  <script src="js/views/unitDetailsView.js"></script>
+  <script src="js/views/lessonView.js"></script>
+  <script src="js/views/practiceView.js"></script>
+  <script src="js/views/exercisesView.js"></script>
+  <script src="js/views/examView.js"></script>
+  <script src="js/views/examResultView.js"></script>
+  <script src="js/views/progressView.js"></script>
+  <script src="js/views/userViews.js"></script>
+  <script src="js/views/adminViews.js"></script>
+  <script src="js/views/assistantViews.js"></script>
+  <script src="js/views/resourcesView.js"></script>
+  
+  <!-- Core Routing & App Entry -->
+  <script src="js/router.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "code-spark-educational-platform",
+  "version": "2.0.0",
+  "description": "Code Spark - Complete Secondary School Programming Educational Platform (Real Backend + SQLite/PostgreSQL Database Integration)",
+  "main": "backend/run_server.py",
+  "scripts": {
+    "start": "python3 backend/run_server.py",
+    "dev": "python3 backend/run_server.py",
+    "test": "python3 backend/test_acceptance_suite.py",
+    "db:migrate": "python3 -c 'from backend.app.database import init_db; init_db()'",
+    "db:seed": "python3 -c 'from backend.app.seed_data import seed_database; seed_database(force_refresh=True)'"
+  },
+  "keywords": [
+    "education",
+    "programming",
+    "high-school",
+    "python",
+    "fastapi",
+    "sqlite",
+    "postgresql",
+    "arabic-rtl",
+    "codespark"
+  ],
+  "author": "Code Spark Development Team",
+  "license": "MIT"
+}

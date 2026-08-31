@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 512" width="1600" height="512">
+  <rect width="100%" height="100%" fill="#FFFFFF" />
+  <g transform="translate(48, 0)">
+    <g class="icon-c1">
+      <path d="M 390,96 C 310,50 205,55 125,120 L 68,236 C 58,248 58,264 68,276 L 125,392 C 205,457 310,462 390,416 L 348,344 C 288,382 216,378 165,334 L 128,256 L 165,178 C 216,134 288,130 348,168 Z" fill="#0B1120" />
+      <path d="M 345,160 Q 345,256 441,256 Q 345,256 345,352 Q 345,256 249,256 Q 345,256 345,160 Z" fill="#0B1120" />
+      <path d="M 435,115 Q 435,140 460,140 Q 435,140 435,165 Q 435,140 410,140 Q 435,140 435,115 Z" fill="#0B1120" opacity="0.85" />
+    </g>
+    </g>
+  
+    <g class="wordmark-group" transform="translate(540, 310)">
+      <text font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" 
+            font-size="158" 
+            font-weight="800" 
+            letter-spacing="-3.5">
+        <tspan fill="#0B1120">Code</tspan><tspan fill="#0B1120" dx="2">Spark</tspan>
+      </text>
+      <!-- Subtitle descriptor -->
+      <text font-family="'Plus Jakarta Sans', 'Inter', sans-serif"
+            font-size="24"
+            font-weight="600"
+            letter-spacing="6"
+            fill="#475569"
+            x="8"
+            y="54">
+        PROGRAMMING EDUCATION
+      </text>
+      <!-- Subtle spark terminal on the 'k' -->
+      <circle cx="826.34" cy="-97.96" r="5" fill="#06B6D4" />
+    </g>
+    
+</svg>

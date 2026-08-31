@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 512" width="1600" height="512">
+  <rect width="100%" height="100%" fill="#FFFFFF" />
+  <g transform="translate(48, 0)">
+    <g class="icon-c2">
+      <path d="M 220,72 L 72,220 C 56,236 56,260 72,276 L 220,424 L 276,368 L 164,256 L 276,144 Z" fill="#0B1120" />
+      <path d="M 300,72 L 444,72 L 396,144 L 276,144 Z" fill="#0B1120" />
+      <path d="M 276,368 L 396,368 L 444,440 L 300,440 Z" fill="#0B1120" />
+      <path d="M 368,168 Q 368,256 456,256 Q 368,256 368,344 Q 368,256 280,256 Q 368,256 368,168 Z" fill="#0B1120" />
+    </g>
+    </g>
+  
+    <g class="wordmark-group" transform="translate(540, 310)">
+      <text font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" 
+            font-size="158" 
+            font-weight="800" 
+            letter-spacing="-3.5">
+        <tspan fill="#0B1120">Code</tspan><tspan fill="#0B1120" dx="2">Spark</tspan>
+      </text>
+      <!-- Subtitle descriptor -->
+      <text font-family="'Plus Jakarta Sans', 'Inter', sans-serif"
+            font-size="24"
+            font-weight="600"
+            letter-spacing="6"
+            fill="#475569"
+            x="8"
+            y="54">
+        PROGRAMMING EDUCATION
+      </text>
+      <!-- Subtle spark terminal on the 'k' -->
+      <circle cx="826.34" cy="-97.96" r="5" fill="#06B6D4" />
+    </g>
+    
+</svg>

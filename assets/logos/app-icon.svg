@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="c1_app_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#0B1120" />
+    </linearGradient>
+    <linearGradient id="c1_app_blue_cyan" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#06B6D4" />
+    </linearGradient>
+    <linearGradient id="c1_app_spark_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="60%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#0284C7" />
+    </linearGradient>
+    <filter id="c1_app_shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <rect x="24" y="24" width="464" height="464" rx="108" fill="url(#c1_app_bg)" stroke="#1E293B" stroke-width="4" filter="url(#c1_app_shadow)" />
+  <g transform="translate(64, 64) scale(0.75)">
+    
+    <g class="icon-c1">
+      <path d="M 390,96 C 310,50 205,55 125,120 L 68,236 C 58,248 58,264 68,276 L 125,392 C 205,457 310,462 390,416 L 348,344 C 288,382 216,378 165,334 L 128,256 L 165,178 C 216,134 288,130 348,168 Z" fill="url(#c1_app_blue_cyan)" />
+      <path d="M 345,160 Q 345,256 441,256 Q 345,256 345,352 Q 345,256 249,256 Q 345,256 345,160 Z" fill="url(#c1_app_spark_grad)" />
+      <path d="M 435,115 Q 435,140 460,140 Q 435,140 435,165 Q 435,140 410,140 Q 435,140 435,115 Z" fill="url(#c1_app_spark_grad)" opacity="0.85" />
+    </g>
+    
+  </g>
+</svg>

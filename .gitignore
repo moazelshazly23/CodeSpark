@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.sqlite
+*.sqlite3
+uploads/videos/
+*.mp4
+*.webm
+*.mov
+.env
