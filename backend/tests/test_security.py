@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 """
 Code Spark — Production Security & Anti-Tampering Regression Test Suite
 Tests:
@@ -44,6 +47,7 @@ except ImportError:
 class CodeSparkSecurityRegressionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -92,7 +96,7 @@ class CodeSparkSecurityRegressionTests(unittest.TestCase):
         # Login Admin
         res_admin = cls.client.post("/api/auth/login", json={
             "identifier": "01099998888",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         cls.admin_token = res_admin.json()["token"]
 

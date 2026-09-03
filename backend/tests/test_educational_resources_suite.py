@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 import unittest
 import os
 import uuid
@@ -10,6 +13,7 @@ from backend.app.routers.resources import parse_file_url
 class CodeSparkEducationalResourcesTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -17,7 +21,7 @@ class CodeSparkEducationalResourcesTestSuite(unittest.TestCase):
         # Login Super Admin
         admin_login = cls.client.post("/api/auth/login", json={
             "identifier": "admin@codespark.edu.eg",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         assert admin_login.status_code == 200, f"Admin login failed: {admin_login.json()}"
         cls.admin_token = admin_login.json()["token"]
@@ -26,7 +30,7 @@ class CodeSparkEducationalResourcesTestSuite(unittest.TestCase):
         # Login Assistant
         ast_login = cls.client.post("/api/auth/login", json={
             "identifier": "assistant@codespark.edu.eg",
-            "password": "assistant123"
+            "password": TEST_ASSISTANT_PASSWORD
         })
         assert ast_login.status_code == 200, f"Assistant login failed: {ast_login.json()}"
         cls.ast_token = ast_login.json()["token"]
@@ -35,7 +39,7 @@ class CodeSparkEducationalResourcesTestSuite(unittest.TestCase):
         # Login Student
         std_login = cls.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         assert std_login.status_code == 200, f"Student login failed: {std_login.json()}"
         cls.student_token = std_login.json()["token"]

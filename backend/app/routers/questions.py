@@ -208,3 +208,125 @@ def delete_question(question_id: str, staff: dict = Depends(get_current_staff)):
         cursor = conn.cursor()
         cursor.execute("DELETE FROM questions WHERE id = ?", (question_id,))
         return {"success": True, "message": "تم حذف السؤال بنجاح"}
+
+
+import random
+
+@router.get("/practice/random")
+@router.get("/practice")
+def get_quick_practice_questions(
+    count: int = 10,
+    unit_id: Optional[str] = None,
+    difficulty: Optional[str] = None,
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
+    """Student Quick Practice: Returns randomized questions for self-assessment."""
+    count = max(1, min(count, 50))
+    with get_db() as conn:
+        cursor = conn.cursor()
+        query = "SELECT q.*, u.title as unit_title, l.title as lesson_title FROM questions q LEFT JOIN units u ON q.unit_id = u.id LEFT JOIN lessons l ON q.lesson_id = l.id WHERE (q.is_published = 1 OR q.published = 1)"
+        params = []
+
+        if unit_id and unit_id != "all":
+            query += " AND q.unit_id = ?"
+            params.append(unit_id)
+        if difficulty and difficulty != "all":
+            query += " AND q.difficulty = ?"
+            params.append(difficulty)
+
+        cursor.execute(query, params)
+        all_qs = [dict(r) for r in cursor.fetchall()]
+
+        if not all_qs:
+            return {"success": True, "count": 0, "questions": []}
+
+        sampled = random.sample(all_qs, min(count, len(all_qs)))
+        result = []
+
+        for q_dict in sampled:
+            q_id = q_dict["id"]
+            cursor.execute("SELECT option_key as key, option_text as text FROM question_options WHERE question_id = ? ORDER BY order_index ASC, id ASC", (q_id,))
+            options_rows = [dict(opt) for opt in cursor.fetchall()]
+            
+            q_dict["options"] = [opt["text"] for opt in options_rows]
+            q_dict["optionsDetailed"] = options_rows
+            
+            # Anti-cheat: Redact correct answers
+            q_dict.pop("correct_answer", None)
+            q_dict.pop("correctAnswer", None)
+            q_dict.pop("explanation", None)
+            result.append(q_dict)
+
+        return {"success": True, "count": len(result), "questions": result}
+
+
+@router.post("/practice/submit")
+def submit_quick_practice(
+    data: Dict[str, Any],
+    current_user: Optional[dict] = Depends(get_optional_user)
+):
+    """Grade student practice answers and provide immediate feedback and explanations."""
+    answers = data.get("answers", {})
+    time_spent = data.get("time_spent_seconds", 0)
+    
+    if not answers:
+        return {"success": True, "score": 0, "total": 0, "percentage": 0, "results": []}
+
+    q_ids = list(answers.keys())
+    results = []
+    correct_count = 0
+    total_score = 0
+    earned_score = 0
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        for q_id in q_ids:
+            cursor.execute("SELECT id, question, correct_answer, explanation, score FROM questions WHERE id = ?", (q_id,))
+            q_row = cursor.fetchone()
+            if not q_row:
+                continue
+            
+            q_dict = dict(q_row)
+            user_ans = str(answers.get(q_id, "")).strip()
+            corr_ans = str(q_dict.get("correct_answer", "")).strip()
+            score_val = q_dict.get("score", 10) or 10
+            total_score += score_val
+
+            is_correct = (user_ans == corr_ans)
+            if is_correct:
+                correct_count += 1
+                earned_score += score_val
+
+            # Fetch option texts
+            cursor.execute("SELECT option_key as key, option_text as text FROM question_options WHERE question_id = ? ORDER BY order_index ASC", (q_id,))
+            opts = [dict(o) for opt in cursor.fetchall() for o in [opt]]
+
+            results.append({
+                "question_id": q_id,
+                "question": q_dict["question"],
+                "user_answer": user_ans,
+                "correct_answer": corr_ans,
+                "is_correct": is_correct,
+                "explanation": q_dict.get("explanation", ""),
+                "score": score_val if is_correct else 0
+            })
+
+        total_q = len(results)
+        pct = round((correct_count / total_q * 100)) if total_q > 0 else 0
+
+        # Reward XP if student is logged in
+        if current_user and current_user.get("id"):
+            u_id = current_user["id"]
+            xp_gain = earned_score
+            cursor.execute("UPDATE student_profiles SET xp = xp + ? WHERE user_id = ?", (xp_gain, u_id))
+
+        return {
+            "success": True,
+            "total_questions": total_q,
+            "correct_count": correct_count,
+            "score": earned_score,
+            "total_score": total_score,
+            "percentage": pct,
+            "results": results,
+            "message": "🎉 ممتاز! أحسنت إنجاز التدريب السريع!" if pct >= 80 else "جيد جدًا! راجع التفسيرات لتحسين أدائك."
+        }

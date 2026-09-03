@@ -1,3 +1,4 @@
+from backend.tests.test_credentials import apply_test_credentials_env
 """
 Code Spark - Comprehensive Production Password Reset & OTP Test Suite
 Tests all 12+ security and functional scenarios for Forgot/Reset Password flow.
@@ -28,6 +29,7 @@ from backend.app.email_service import generate_otp_email_html, generate_otp_emai
 class CodeSparkPasswordResetTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database()
         cls.client = TestClient(app)

@@ -1,4 +1,5 @@
 import ast
+import re
 import io
 import sys
 import time
@@ -581,4 +582,115 @@ def get_progressive_hint(data: Dict[str, Any], student: dict = Depends(get_curre
         "max_levels": 3,
         "hint": hint_text,
         "has_more_hints": (lvl_idx + 1 < 3)
+    }
+
+@router.post("/improve-code")
+def improve_code(data: Dict[str, Any], current_user: Optional[dict] = Depends(get_optional_user)):
+    """
+    Educational Assistant: Suggest code improvements, best practices, and clean code tips
+    without replacing the student's solution.
+    """
+    code = str(data.get("code") or "").strip()
+    if not code:
+        return {"success": True, "suggestions": ["اكتب بعض الأكواد في المحرر أولاً لتلقي اقتراحات تحسين الأداء والتنظيم."]}
+    
+    suggestions = []
+    if "import *" in code:
+        suggestions.append("تجنب استخدام 'from module import *' وحدد الدوال المطلوبة بدقة للحفاظ على وضوح الكود.")
+    if "== True" in code or "== False" in code:
+        suggestions.append("في جمل if، يمكنك كتابة 'if condition:' مباشرة بدلاً من 'if condition == True:' لأن الشرط يعود بقيمة منطقية تلقائيًا.")
+    if "while 1:" in code:
+        suggestions.append("يفضل استخدام 'while True:' بدلاً من 'while 1:' لقراءة أوضح وتوافق تام مع معايير بايثون (PEP 8).")
+    if "," in code and ", " not in code:
+        suggestions.append("ضع مسافة واحدة بعد الفواصل (,) بين العناصر والمدخلات لتسهيل قراءة الكود.")
+    if "print(" in code and "f" not in code and ("+" in code or "," in code):
+        suggestions.append("نصيحة للمحترفين: استخدام f-strings مثل print(f'القيمة: {val}') يعطي شكلاً أنظف وأسرع من الدمج بـ + أو الفواصل.")
+    if "for i in range(len(" in code:
+        suggestions.append("يمكنك استخدام enumerate() بدلاً من range(len()) إذا كنت بحاجة لكل من الفهرس والعنصر معًا.")
+        
+    if not suggestions:
+        suggestions.append("كودك منظم ومكتوب بطريقة جيدة! استمر في اتباع قواعد التسمية المعبرة وتنسيق الأسطر (PEP 8).")
+        suggestions.append("تأكد دائمًا من إضافة تعليقات # تشرح الغرض من العمليات الحسابية أو الدوال المعقدة.")
+        
+    return {"success": True, "suggestions": suggestions}
+
+
+@router.post("/explain-code")
+def explain_code_concept(data: Dict[str, Any], current_user: Optional[dict] = Depends(get_optional_user)):
+    """
+    Educational Assistant: Explain what student's code does step-by-step in clear Arabic,
+    identifying constructs, concepts, and data flow without solving assignments directly.
+    """
+    code = str(data.get("code") or "").strip()
+    if not code:
+        return {
+            "success": True,
+            "summary": "المحرر فارغ حاليًا.",
+            "steps": ["اكتب بعض أسطر بايثون لشرح كيفية عملها خطوة بخطوة."],
+            "concepts": ["أساسيات بايثون"]
+        }
+
+    steps = []
+    concepts = []
+
+    # AST analysis
+    try:
+        tree = ast.parse(code)
+        has_input = False
+        has_print = False
+        has_loops = False
+        has_conditions = False
+        has_functions = False
+        has_lists = False
+
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    if node.func.id == "input":
+                        has_input = True
+                    elif node.func.id == "print":
+                        has_print = True
+            elif isinstance(node, (ast.For, ast.While)):
+                has_loops = True
+            elif isinstance(node, ast.If):
+                has_conditions = True
+            elif isinstance(node, ast.FunctionDef):
+                has_functions = True
+            elif isinstance(node, (ast.List, ast.ListComp)):
+                has_lists = True
+
+        if has_functions:
+            steps.append("1. تعريف دوال مخصصة (def): يقوم البرنامج بتعريف دوال فرعية تؤدي مهام محددة وقابلة لإعادة الاستخدام.")
+            concepts.append("الدوال المعرفة من المستخدم (Functions)")
+        if has_input:
+            steps.append("2. استقبال المدخلات: يستقبل البرنامج بيانات من المستخدم عبر دالة input() لتخزينها في متغيرات.")
+            concepts.append("الإدخال والتفاعل (User Input)")
+        if has_conditions:
+            steps.append("3. اتخاذ القرارات والمسارات (if/elif/else): يفحص البرنامج شروطاً منطقية وينفذ كتل برمجية محددة بناءً على تحقق الشرط.")
+            concepts.append("الجمل الشرطية والتحكم المنطقي (Conditionals)")
+        if has_loops:
+            steps.append("4. التكرار والدوران (Loops): يقوم بتكرار مجموعة من الأوامر لعدد محدد من المرات أو طالما الشرط مستمر.")
+            concepts.append("حلقات التكرار (Iteration & Loops)")
+        if has_lists:
+            steps.append("5. هياكل البيانات والقوائم: ينشئ ويتعامل مع مصفوفات وقوائم لتجميع عناصر وبيانات متعددة.")
+            concepts.append("القوائم وهياكل البيانات (Lists)")
+        if has_print:
+            steps.append("6. إخراج النتائج: يقوم بعرض المخرجات النهائية أو القيم الحسابية للمستخدم عبر دالة print().")
+            concepts.append("إخراج البيانات والطباعة (Console Output)")
+
+        if not steps:
+            steps.append("يقوم البرنامج بتعريف متغيرات وتعيين قيم أولية وإجراء بعض العمليات الحسابية.")
+            concepts.append("المتغيرات والعمليات الحسابية (Variables & Expressions)")
+
+        summary = f"برنامج بايثون يتضمن {len(concepts)} مفاهيم برمجية أساسية تركز على {' و '.join(concepts[:3])}."
+    except Exception as e:
+        summary = "كود تجريبي قيد الكتابة."
+        steps = ["تحليل عام: راجع بناء الجمل في الكود للتأكد من تسلسل العمليات الحسابية والمنطقية."]
+        concepts = ["أساسيات البرمجة"]
+
+    return {
+        "success": True,
+        "summary": summary,
+        "steps": steps,
+        "concepts": concepts
     }

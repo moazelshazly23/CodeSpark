@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 import unittest
 from fastapi.testclient import TestClient
 from backend.app.main import app
@@ -7,6 +10,7 @@ from backend.app.seed_data import seed_database
 class CodeSparkStudentAffairsAndFeaturesTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -39,7 +43,7 @@ class CodeSparkStudentAffairsAndFeaturesTestSuite(unittest.TestCase):
         """2. POST /api/code/explain-error provides educational Arabic explanations for Python syntax errors."""
         student_login = self.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         st_token = student_login.json()["token"]
         headers = {"Authorization": f"Bearer {st_token}"}
@@ -58,7 +62,7 @@ class CodeSparkStudentAffairsAndFeaturesTestSuite(unittest.TestCase):
         """3. POST /api/code/hint provides 3-tier progressive guidance without spoiling the direct answer."""
         student_login = self.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         st_token = student_login.json()["token"]
         headers = {"Authorization": f"Bearer {st_token}"}
@@ -86,7 +90,7 @@ class CodeSparkStudentAffairsAndFeaturesTestSuite(unittest.TestCase):
         """4. Student bookmarks lessons/questions, retrieves list, and removes bookmarks."""
         student_login = self.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         st_token = student_login.json()["token"]
         headers = {"Authorization": f"Bearer {st_token}"}
@@ -114,7 +118,7 @@ class CodeSparkStudentAffairsAndFeaturesTestSuite(unittest.TestCase):
         """5. Student creates lesson notes and code drafts with cloud autosave."""
         student_login = self.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         st_token = student_login.json()["token"]
         headers = {"Authorization": f"Bearer {st_token}"}
@@ -148,7 +152,7 @@ class CodeSparkStudentAffairsAndFeaturesTestSuite(unittest.TestCase):
         """6. Student global search and verified achievements calculation."""
         student_login = self.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         st_token = student_login.json()["token"]
         headers = {"Authorization": f"Bearer {st_token}"}

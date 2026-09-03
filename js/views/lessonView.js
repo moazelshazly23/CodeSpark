@@ -316,6 +316,12 @@
                       <button id="lesson-explain-btn" class="btn btn-secondary btn-sm" style="display:none;" title="شرح وتفسير الخطأ تعليميًا">
                         🤔 فهمني الخطأ
                       </button>
+                      <button id="copy-lesson-code-btn" class="btn btn-secondary btn-sm" title="نسخ الكود البرمجي">
+                        📋 نسخ الكود
+                      </button>
+                      <button id="try-lesson-code-btn" class="btn btn-secondary btn-sm" title="فتح وتجربة الكود في المحرر العام (Playground)">
+                        💻 جرّب هذا الكود
+                      </button>
                       <button id="reset-lesson-code" class="btn btn-secondary btn-sm" title="إعادة الكود الأصلي">
                         ${Icons.refresh()} إعادة تعيين
                       </button>
@@ -958,6 +964,27 @@
       if (codeInput) {
         codeInput.addEventListener('input', updateLines);
         updateLines();
+      }
+
+      const copyCodeBtn = document.getElementById('copy-lesson-code-btn');
+      const tryCodeBtn = document.getElementById('try-lesson-code-btn');
+
+      if (copyCodeBtn && codeInput) {
+        copyCodeBtn.addEventListener('click', () => {
+          navigator.clipboard.writeText(codeInput.value).then(() => {
+            if (window.UI && window.UI.showToast) window.UI.showToast('تم نسخ الكود البرمجي بنجاح! 📋', 'success');
+          }).catch(() => {
+            if (window.UI && window.UI.showToast) window.UI.showToast('تعذر نسخ الكود تلقائيًا.', 'warning');
+          });
+        });
+      }
+
+      if (tryCodeBtn && codeInput) {
+        tryCodeBtn.addEventListener('click', () => {
+          localStorage.setItem('codespark_try_code', codeInput.value);
+          if (window.UI && window.UI.showToast) window.UI.showToast('جاري الانتقال إلى محرر الأكواد... 🚀', 'info');
+          window.location.hash = '#practice';
+        });
       }
 
       if (resetBtn && codeInput) {

@@ -223,6 +223,7 @@
           initCallback = () => window.LessonView && window.LessonView.initEvents && window.LessonView.initEvents(param, user);
           break;
         case '#practice':
+        case '#playground':
           mainViewHtml = window.PracticeView ? window.PracticeView.render(user) : '';
           initCallback = () => window.PracticeView && window.PracticeView.initEvents && window.PracticeView.initEvents();
           break;
@@ -342,7 +343,7 @@
 
               <!-- 5. 📝 محرر بايثون التفاعلي -->
               <a href="#practice" class="nav-link ${path === '#practice' ? 'active' : ''}">
-                <span class="nav-icon">${Icons.code()}</span> محرر بايثون
+                <span class="nav-icon">${Icons.code()}</span> 💻 جرّب الكود
               </a>
 
               <!-- 5b. 📚 الملفات التعليمية PDF -->
@@ -867,6 +868,10 @@
           astHtml = window.AssistantViews ? await window.AssistantViews.renderDashboard(user) : '';
           initCallback = () => window.AssistantViews && window.AssistantViews.initEvents && window.AssistantViews.initEvents(path, param, user);
           break;
+        case '#assistant-subscriptions':
+          astHtml = window.AssistantViews ? await window.AssistantViews.renderSubscriptions(user) : '';
+          initCallback = () => window.AssistantViews && window.AssistantViews.initEvents && window.AssistantViews.initEvents(path, param, user);
+          break;
         case '#assistant-code':
           astHtml = window.AssistantViews ? await window.AssistantViews.renderCodeGenerator(user) : '';
           initCallback = () => window.AssistantViews && window.AssistantViews.initEvents && window.AssistantViews.initEvents(path, param, user);
@@ -916,6 +921,9 @@
               <div class="sidebar-section-title">لوحة المساعد الأكاديمي</div>
               <a href="#assistant-dashboard" class="nav-link ${path === '#assistant-dashboard' || path === '#assistant' ? 'active' : ''}">
                 <span class="nav-icon">${Icons.home()}</span> الرئيسية الإحصائية
+              </a>
+              <a href="#assistant-subscriptions" class="nav-link ${path === '#assistant-subscriptions' ? 'active' : ''}">
+                <span class="nav-icon">🔑</span> أكواد الاشتراك (30 يوم)
               </a>
               <a href="#assistant-resources" class="nav-link ${path === '#assistant-resources' || path === '#admin-resources' ? 'active' : ''}">
                 <span class="nav-icon">${Icons.fileText ? Icons.fileText() : '📄'}</span> إدارة الملفات (PDF)

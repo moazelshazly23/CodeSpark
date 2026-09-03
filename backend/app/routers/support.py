@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/support", tags=["Academic Support & Helpdesk"])
 def get_tickets(current_user: dict = Depends(get_current_user)):
     """Fetch support tickets (students get their own, admin gets all)."""
     user_id = current_user["id"]
-    is_admin = current_user["role"] == "admin"
+    is_admin = current_user.get("role", "").upper() in ("SUPER_ADMIN", "ADMIN", "ASSISTANT") or current_user.get("is_staff") or current_user.get("is_super_admin")
 
     with get_db() as conn:
         cursor = conn.cursor()

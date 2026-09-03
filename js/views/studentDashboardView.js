@@ -477,56 +477,6 @@
             </div>
           </div>
 
-          <!-- 7. RECOMMENDED COURSES SECTION (الكورسات الموصى بها) -->
-          <div style="margin-bottom:2.5rem;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
-              <div>
-                <h2 style="font-size:1.375rem; font-weight:800; color:var(--text-main); margin-bottom:0.25rem; display:flex; align-items:center; gap:0.5rem;">
-                  ${Icons.sparkles ? Icons.sparkles() : '✨'} الكورسات والمسارات الموصى بها
-                </h2>
-                <p style="font-size:0.875rem; color:var(--text-muted); margin:0;">مسارات مخصصة لتطوير مستواك البرمجي بناءً على تقدمك الحالي</p>
-              </div>
-            </div>
-
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1.25rem;">
-              ${recommendedCourses.map(rc => `
-                <div class="card card-hover" style="display:flex; flex-direction:column; justify-content:space-between; background:var(--gradient-card);">
-                  <div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.85rem;">
-                      <span class="badge ${rc.badgeClass}">${rc.tag}</span>
-                      <span style="font-size:0.75rem; color:var(--text-subtle);">${rc.level}</span>
-                    </div>
-
-                    <h3 style="font-size:1.1rem; font-weight:800; color:var(--text-main); margin-bottom:0.5rem; line-height:1.4;">
-                      ${rc.title}
-                    </h3>
-                    
-                    <div style="display:flex; align-items:center; gap:1rem; font-size:0.8125rem; color:var(--text-muted); margin-bottom:1rem;">
-                      <span>📚 ${rc.lessonsCount} دروس عملية</span>
-                      <span>⭐ 4.9 تقييم</span>
-                    </div>
-                  </div>
-
-                  <div>
-                    ${rc.progress > 0 ? `
-                      <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-bottom:0.35rem;">
-                        <span>نسبة الإنجاز</span>
-                        <span class="number-font" style="color:var(--cyan); font-weight:700;">${rc.progress}%</span>
-                      </div>
-                      <div class="progress-container" style="margin-bottom:1rem;">
-                        <div class="progress-bar-fill animated-progress-fill" data-progress="${rc.progress}" style="width: 0%;"></div>
-                      </div>
-                    ` : ''}
-
-                    <a href="${rc.unitLink}" class="btn ${rc.progress > 0 ? 'btn-primary' : 'btn-outline'} btn-sm" style="width:100%;">
-                      ${rc.progress > 0 ? 'متابعة الكورس' : 'ابدأ التعلم الآن 🚀'}
-                    </a>
-                  </div>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
           <!-- 8. BOTTOM GRID: DAILY CHALLENGE & ANNOUNCEMENTS -->
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem;" class="dashboard-secondary-grid">
             

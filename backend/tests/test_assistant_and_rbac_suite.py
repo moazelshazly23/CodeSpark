@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 import unittest
 import os
 import uuid
@@ -9,6 +12,7 @@ from backend.app.seed_data import seed_database
 class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -17,7 +21,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
         """1. Super Admin (المهندس معاذ الشاذلي) authenticates with SUPER_ADMIN role."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "admin@codespark.edu.eg",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         self.assertEqual(res.status_code, 200)
         data = res.json()
@@ -33,7 +37,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
         """2. Assistant Demo authenticates with ASSISTANT role and redirect info."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "assistant@codespark.edu.eg",
-            "password": "assistant123"
+            "password": TEST_ASSISTANT_PASSWORD
         })
         self.assertEqual(res.status_code, 200)
         data = res.json()
@@ -53,7 +57,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
         ]:
             res = self.client.post("/api/auth/login", json={
                 "identifier": email,
-                "password": "password123"
+                "password": TEST_STUDENT_PASSWORD
             })
             self.assertEqual(res.status_code, 200)
             user = res.json()["user"]
@@ -63,7 +67,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
 
     def test_04_super_admin_manages_assistants_lifecycle(self):
         """4. Super Admin full CRUD on Assistants: Create, Edit, Status Toggle, Reset PW, Delete."""
-        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": "admin12345"})
+        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": TEST_ADMIN_PASSWORD})
         admin_token = admin_res.json()["token"]
         headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -128,7 +132,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
 
     def test_05_assistant_strictly_forbidden_from_managing_assistants(self):
         """5. RBAC Enforcement: Assistant is blocked (403 Forbidden) from managing Assistants."""
-        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": "assistant123"})
+        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": TEST_ASSISTANT_PASSWORD})
         ast_token = ast_res.json()["token"]
         headers = {"Authorization": f"Bearer {ast_token}"}
 
@@ -139,11 +143,11 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
 
     def test_06_assistant_strictly_forbidden_from_publishing_lessons(self):
         """6. Strict RBAC: Assistant CANNOT publish/unpublish lessons or modify published lessons."""
-        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": "assistant123"})
+        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": TEST_ASSISTANT_PASSWORD})
         ast_token = ast_res.json()["token"]
         headers = {"Authorization": f"Bearer {ast_token}"}
 
-        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": "admin12345"})
+        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": TEST_ADMIN_PASSWORD})
         admin_token = admin_res.json()["token"]
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -191,7 +195,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
 
     def test_07_assistant_authorized_operations(self):
         """7. Assistant permissions verified: Code Generator, Questions Bank, Exams, Inquiries, Grades."""
-        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": "assistant123"})
+        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": TEST_ASSISTANT_PASSWORD})
         ast_token = ast_res.json()["token"]
         headers = {"Authorization": f"Bearer {ast_token}"}
 
@@ -240,7 +244,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
 
     def test_08_student_soft_delete_preserves_relational_integrity(self):
         """8. Admin soft-deletes student who canceled subscription; student cannot login but grades persist."""
-        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": "admin12345"})
+        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": TEST_ADMIN_PASSWORD})
         admin_token = admin_res.json()["token"]
         headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -249,7 +253,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
         self.assertEqual(del_res.status_code, 200)
 
         # Verify soft-deleted student login fails with 401
-        st_login = self.client.post("/api/auth/login", json={"identifier": "salma@codespark.edu.eg", "password": "password123"})
+        st_login = self.client.post("/api/auth/login", json={"identifier": "salma@codespark.edu.eg", "password": TEST_STUDENT_PASSWORD})
         self.assertEqual(st_login.status_code, 401)
         self.assertIn("تم حذف هذا الحساب", st_login.json()["detail"])
 
@@ -264,7 +268,7 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
 
     def test_09_super_admin_activity_log_monitoring(self):
         """9. Activity Log verifies tracking of Admin and Assistant actions with full audit metadata."""
-        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": "admin12345"})
+        admin_res = self.client.post("/api/auth/login", json={"identifier": "admin@codespark.edu.eg", "password": TEST_ADMIN_PASSWORD})
         admin_token = admin_res.json()["token"]
         headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -278,13 +282,13 @@ class CodeSparkAssistantAndRBACTestSuite(unittest.TestCase):
         self.assertTrue(any(a in ["CREATE_ASSISTANT", "CREATE_EXAM", "CREATE_QUESTION", "PUBLISH_LESSON", "SOFT_DELETE_STUDENT", "USER_LOGIN"] for a in actions))
 
         # Assistant is blocked from activity logs -> 403
-        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": "assistant123"})
+        ast_res = self.client.post("/api/auth/login", json={"identifier": "assistant@codespark.edu.eg", "password": TEST_ASSISTANT_PASSWORD})
         ast_token = ast_res.json()["token"]
         self.assertEqual(self.client.get("/api/admin/activity-logs", headers={"Authorization": f"Bearer {ast_token}"}).status_code, 403)
 
     def test_10_student_rbac_comprehensive_blocking(self):
         """10. Students are blocked (403 Forbidden) from all Admin & Assistant privileged endpoints."""
-        std_res = self.client.post("/api/auth/login", json={"identifier": "ahmed@codespark.edu.eg", "password": "password123"})
+        std_res = self.client.post("/api/auth/login", json={"identifier": "ahmed@codespark.edu.eg", "password": TEST_STUDENT_PASSWORD})
         std_token = std_res.json()["token"]
         headers = {"Authorization": f"Bearer {std_token}"}
 

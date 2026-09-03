@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 import unittest
 import os
 import uuid
@@ -9,6 +12,7 @@ from backend.app.seed_data import seed_database
 class CodeSparkCriticalFixesTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -16,7 +20,15 @@ class CodeSparkCriticalFixesTestSuite(unittest.TestCase):
     def _get_admin_token(self):
         res = self.client.post("/api/auth/login", json={
             "identifier": "admin@codespark.edu.eg",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
+        })
+        self.assertEqual(res.status_code, 200)
+        return res.json()["token"]
+
+    def _get_student_token(self):
+        res = self.client.post("/api/auth/login", json={
+            "identifier": "ahmed@codespark.edu.eg",
+            "password": TEST_STUDENT_PASSWORD
         })
         self.assertEqual(res.status_code, 200)
         return res.json()["token"]
@@ -98,7 +110,7 @@ class CodeSparkCriticalFixesTestSuite(unittest.TestCase):
         res_std = self.client.post("/api/admin/assistants", json={
             "name": "Bad Actor",
             "email": "bad@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         }, headers=student_headers)
         self.assertEqual(res_std.status_code, 403)
 
@@ -106,7 +118,7 @@ class CodeSparkCriticalFixesTestSuite(unittest.TestCase):
         res_dup_email = self.client.post("/api/admin/assistants", json={
             "name": "مساعد مكرر",
             "email": "admin@codespark.edu.eg", # Existing email
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         }, headers=admin_headers)
         self.assertEqual(res_dup_email.status_code, 400)
         self.assertIn("مسجل بالفعل", res_dup_email.json()["detail"])
@@ -123,7 +135,7 @@ class CodeSparkCriticalFixesTestSuite(unittest.TestCase):
         res_inv_email = self.client.post("/api/admin/assistants", json={
             "name": "مساعد إيميل خاطئ",
             "email": "invalid_email_format",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         }, headers=admin_headers)
         self.assertEqual(res_inv_email.status_code, 400)
 

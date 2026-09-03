@@ -698,3 +698,93 @@ def get_student_achievements(student: dict = Depends(get_current_student)):
             "unlocked_count": unlocked_count,
             "total_count": len(achievements)
         }
+
+
+
+# ==================== CERTIFICATES & QR VERIFICATION ====================
+
+@router.get("/certificate")
+def get_student_certificate(student: dict = Depends(get_current_student)):
+    """GET /api/student/certificate: Fetch student certificate or generate if eligible."""
+    student_id = student["id"]
+    student_name = student.get("name", "طالب")
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Check existing certificate
+        cursor.execute("SELECT * FROM certificates WHERE student_id = ?", (student_id,))
+        existing = cursor.fetchone()
+        if existing:
+            cert = dict(existing)
+            cert["verification_url"] = f"/certificate-verify.html?code={cert['certificate_code']}"
+            return {"success": True, "has_certificate": True, "certificate": cert}
+
+        # Check eligibility: total completed lessons vs total published lessons
+        cursor.execute("SELECT COUNT(*) as cnt FROM lessons WHERE is_published = 1 OR published = 1")
+        total_lessons = cursor.fetchone()["cnt"] or 1
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM lesson_progress WHERE student_id = ? AND completed = 1", (student_id,))
+        completed_lessons = cursor.fetchone()["cnt"]
+
+        pct = round(completed_lessons / total_lessons * 100)
+        
+        # If student has completed at least 80% or 100%, generate certificate
+        if pct >= 80:
+            cert_id = f"cert_{student_id}_{int(datetime.datetime.now().timestamp())}"
+            rand_suffix = secrets.token_hex(3).upper()
+            cert_code = f"CSPARK-CERT-{rand_suffix[:4]}-{rand_suffix[4:] if len(rand_suffix) > 4 else secrets.token_hex(2).upper()}"
+            grade = "ممتاز مع مرتبة الشرف" if pct >= 95 else ("ممتاز" if pct >= 90 else "جيد جدًا")
+            course_name = "مسار البرمجة الاحترافي وعلوم الحاسب — CodeSpark"
+            qr_data = f"https://codespark.edu.eg/verify-cert?code={cert_code}&student={student_name}"
+
+            cursor.execute("""
+            INSERT INTO certificates (
+                id, certificate_code, student_id, student_name, course_name,
+                completion_percentage, grade, issue_date, qr_data, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (cert_id, cert_code, student_id, student_name, course_name, pct, grade, today_str, qr_data, now))
+
+            cursor.execute("SELECT * FROM certificates WHERE id = ?", (cert_id,))
+            new_cert = dict(cursor.fetchone())
+            new_cert["verification_url"] = f"/certificate-verify.html?code={cert_code}"
+
+            return {
+                "success": True,
+                "has_certificate": True,
+                "certificate": new_cert,
+                "message": "🎉 مبارك! تم إصدار شهادة إتمام المسار التعليمي بنجاح."
+            }
+
+        return {
+            "success": True,
+            "has_certificate": False,
+            "progress_percentage": pct,
+            "completed_lessons": completed_lessons,
+            "total_lessons": total_lessons,
+            "message": f"أنت على بُعد خطوات من نيل الشهادة! أنجزت {pct}% من المنهج. تمنح الشهادة عند إكمال 80% فما فوق."
+        }
+
+
+@router.get("/certificates/verify/{certificate_code}")
+def verify_certificate_public(certificate_code: str):
+    """Public endpoint: Verify certificate authenticity by its unique verification code."""
+    code_clean = certificate_code.strip().upper()
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM certificates WHERE UPPER(certificate_code) = ?", (code_clean,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="رمز الشهادة غير موجود أو غير معتمد في سجلات منصة CodeSpark الرسمية."
+            )
+        cert = dict(row)
+        return {
+            "success": True,
+            "is_valid": True,
+            "certificate": cert,
+            "message": "✓ شهادة رسمية معتمدة وموثقة من منصة CodeSpark التعليمية."
+        }

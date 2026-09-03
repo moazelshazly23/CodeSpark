@@ -308,9 +308,18 @@ def get_lesson_detail(lesson_id: str, current_user: Optional[dict] = Depends(get
             raise HTTPException(status_code=404, detail="الدرس غير موجود")
 
         lesson = dict(row)
-        if current_user and current_user.get("role") != "admin":
-            if not check_student_subscription(current_user):
-                raise HTTPException(status_code=403, detail="انتهى اشتراكك، يرجى تجديد الاشتراك.")
+        is_public = (
+            lesson.get("access_level") == "public" or
+            lesson.get("is_free") == 1 or
+            lesson.get("type") == "free" or
+            lesson_id == "lesson_1_1"
+        )
+        if not is_public:
+            if not current_user:
+                raise HTTPException(status_code=401, detail="يرجى تسجيل الدخول للوصول إلى هذا الدرس")
+            if current_user.get("role") not in ("admin", "SUPER_ADMIN", "ASSISTANT"):
+                if not check_student_subscription(current_user):
+                    raise HTTPException(status_code=403, detail="هذا الدرس متاح للمشتركين فقط. يرجى تفعيل كود الاشتراك للمتابعة.")
 
         if not (lesson.get("is_published") or lesson.get("published")) and not is_admin:
             raise HTTPException(status_code=403, detail="هذا الدرس غير منشور حاليًا")

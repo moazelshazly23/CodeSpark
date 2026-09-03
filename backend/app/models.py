@@ -300,7 +300,7 @@ class StudentCreateRequest(BaseModel):
     section: Optional[str] = None
     class_name: Optional[str] = None
     email: Optional[str] = None
-    password: Optional[str] = "Spark@2026"
+    password: Optional[str] = None
     status: Optional[str] = "active"
 
 class StudentUpdateRequest(BaseModel):
@@ -469,3 +469,78 @@ class EducationalResourceUpdateRequest(BaseModel):
 
 class EducationalResourceStatusUpdateRequest(BaseModel):
     status: str
+
+# Subscription Offers / Packages Models
+class SubscriptionOfferCreateRequest(BaseModel):
+    name: Optional[str] = None
+    title: str
+    duration_type: str = "1_month" # '1_month', '3_months', '6_months', '1_year', 'custom', 'lifetime'
+    duration_days: Optional[int] = 30
+    price: float = 99.0
+    currency: Optional[str] = "EGP"
+    description: Optional[str] = ""
+    badge: Optional[str] = None
+    features: Optional[List[str]] = None
+    features_json: Optional[str] = None
+    image_url: Optional[str] = None
+    is_active: Optional[bool] = True
+    display_order: Optional[int] = 0
+
+class SubscriptionOfferUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    duration_type: Optional[str] = None
+    duration_days: Optional[int] = None
+    price: Optional[float] = None
+    currency: Optional[str] = None
+    description: Optional[str] = None
+    badge: Optional[str] = None
+    features: Optional[List[str]] = None
+    features_json: Optional[str] = None
+    image_url: Optional[str] = None
+    is_active: Optional[bool] = None
+    display_order: Optional[int] = None
+
+# Generic Content Files Models
+class ContentFileCreateRequest(BaseModel):
+    name: str
+    title: Optional[str] = None
+    source_type: str = "UPLOAD" # 'UPLOAD', 'GOOGLE_DRIVE', 'EXTERNAL_URL'
+    file_url: Optional[str] = None
+    storage_path: Optional[str] = None
+    file_type: Optional[str] = "file" # 'video', 'pdf', 'code', 'file', 'image', 'attachment'
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None
+    category: Optional[str] = None
+    unit_id: Optional[str] = None
+    lesson_id: Optional[str] = None
+    is_paid: Optional[bool] = False
+    is_active: Optional[bool] = True
+    display_order: Optional[int] = 0
+
+class ContentFileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    source_type: Optional[str] = None
+    file_url: Optional[str] = None
+    storage_path: Optional[str] = None
+    file_type: Optional[str] = None
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None
+    category: Optional[str] = None
+    unit_id: Optional[str] = None
+    lesson_id: Optional[str] = None
+    is_paid: Optional[bool] = None
+    is_active: Optional[bool] = None
+    display_order: Optional[int] = None
+
+# Certificate Models
+class CertificateCreateRequest(BaseModel):
+    student_id: str
+    course_name: Optional[str] = "مسار البرمجة الشامل - CodeSpark"
+    grade: Optional[str] = "ممتاز"
+    completion_percentage: Optional[int] = 100
+
+
+class SubscriptionRedeemRequest(BaseModel):
+    code: str

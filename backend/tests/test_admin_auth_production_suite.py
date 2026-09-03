@@ -6,10 +6,12 @@ from backend.app.main import app
 from backend.app.database import init_db, get_db
 from backend.app.seed_data import seed_database
 from backend.app.security import clear_rate_limits, hash_password, verify_password
+from backend.tests.test_credentials import apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_STUDENT_PASSWORD
 
 class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -21,7 +23,7 @@ class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
         """1. Admin can log in successfully using standard email."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "admin@codespark.edu.eg",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         self.assertEqual(res.status_code, 200)
         data = res.json()
@@ -36,7 +38,7 @@ class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
             clear_rate_limits()
             res = self.client.post("/api/auth/login", json={
                 "identifier": ident,
-                "password": "admin12345"
+                "password": TEST_ADMIN_PASSWORD
             })
             self.assertEqual(res.status_code, 200, f"Failed for identifier: {ident}")
             data = res.json()
@@ -47,7 +49,7 @@ class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
         """3. Admin can log in using domain alias (admin@codespark.com)."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "admin@codespark.com",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         self.assertEqual(res.status_code, 200)
         data = res.json()
@@ -70,7 +72,7 @@ class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
             clear_rate_limits()
             res = self.client.post("/api/auth/login", json={
                 "identifier": ident,
-                "password": "password123"
+                "password": TEST_STUDENT_PASSWORD
             })
             self.assertEqual(res.status_code, 200, f"Failed for student identifier: {ident}")
             data = res.json()
@@ -102,12 +104,12 @@ class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
         clear_rate_limits()
         res_old = self.client.post("/api/auth/login", json={
             "identifier": "admin@codespark.edu.eg",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         self.assertEqual(res_old.status_code, 401)
 
-        # Reset back to default admin12345 for subsequent tests
-        default_hash = hash_password("admin12345")
+        # Reset back to default  for subsequent tests
+        default_hash = hash_password(TEST_ADMIN_PASSWORD)
         with get_db() as conn:
             cursor = conn.cursor()
             cursor.execute("UPDATE users SET password_hash = ? WHERE email = 'admin@codespark.edu.eg'", (default_hash,))

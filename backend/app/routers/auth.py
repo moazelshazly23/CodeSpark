@@ -164,17 +164,18 @@ def login(req: LoginRequest, request: Request = None):
         )
 
     candidate_emails = [lower_ident]
-    if lower_ident == "admin@codespark.com":
-        candidate_emails.append("admin@codespark.edu.eg")
-    elif lower_ident == "admin@codespark.edu.eg":
-        candidate_emails.append("admin@codespark.com")
+    if lower_ident in ("admin@codespark.com", "admin@codespark.edu.eg", "superadmin.official@codespark.edu.eg", "admin"):
+        candidate_emails.extend(["admin@codespark.edu.eg", "admin@codespark.com", "superadmin.official@codespark.edu.eg"])
     elif lower_ident == "student@codespark.com":
         candidate_emails.append("ahmed@codespark.edu.eg")
     elif lower_ident == "instructor@codespark.com":
         candidate_emails.append("admin@codespark.edu.eg")
+
     candidate_phones = [raw_ident]
     if norm_phone and norm_phone != raw_ident:
         candidate_phones.append(norm_phone)
+    if raw_ident in ("01000000000", "01099998888"):
+        candidate_phones.extend(["01000000000", "01099998888"])
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -295,12 +296,8 @@ def register(req: RegisterRequest, request: Request = None):
     if req.confirm_password and req.password != req.confirm_password:
         raise HTTPException(status_code=400, detail="كلمة المرور وتأكيد كلمة المرور غير متطابقتين")
 
-    # Subscription Code Requirement & Server-side Validation
+    # Subscription Code Handling (Optional at Registration - Student can register freely and activate later)
     sub_code_input = (req.subscription_code or "").strip()
-    if not sub_code_input:
-        raise HTTPException(status_code=400, detail="كود تفعيل الاشتراك مطلوب لإنشاء حساب طالب جديد")
-
-    c_hash = hash_code(sub_code_input)
     email = req.email.strip() if req.email else f"{phone}@student.codespark.edu.eg"
 
     now_dt = datetime.datetime.now(datetime.timezone.utc)
@@ -319,58 +316,71 @@ def register(req: RegisterRequest, request: Request = None):
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="هذا الحساب مسجل بالفعل برقم الهاتف أو البريد الإلكتروني المدخل")
 
-        # 2. Check and atomically validate subscription code
-        cursor.execute("""
-        SELECT id, code_prefix, masked_code, status, subscription_type,
-               duration_days, max_uses, uses_count, expires_at, disabled_at
-        FROM subscription_codes
-        WHERE code_hash = ?
-        """, (c_hash,))
-        code_row = cursor.fetchone()
+        # 2. Check subscription code if provided
+        code_data = None
+        computed_expires_at = None
+        sub_duration_days = 0
+        sub_type = "none"
+        masked_code_val = None
+        sub_code_id = None
+        sub_status = "unsubscribed"
 
-        if not code_row:
-            raise HTTPException(status_code=400, detail="كود الاشتراك غير صحيح أو غير موجود")
+        if sub_code_input:
+            c_hash = hash_code(sub_code_input)
+            cursor.execute("""
+            SELECT id, code_prefix, masked_code, status, subscription_type,
+                   duration_days, max_uses, uses_count, expires_at, disabled_at
+            FROM subscription_codes
+            WHERE code_hash = ?
+            """, (c_hash,))
+            code_row = cursor.fetchone()
 
-        code_data = dict(code_row)
-        if code_data.get("status") == "disabled" or code_data.get("disabled_at"):
-            raise HTTPException(status_code=400, detail="كود الاشتراك معطل، يرجى التواصل مع الإدارة")
+            if not code_row:
+                raise HTTPException(status_code=400, detail="كود الاشتراك غير صحيح أو غير موجود")
 
-        max_uses = code_data.get("max_uses") or 1
-        uses_count = code_data.get("uses_count") or 0
-        if uses_count >= max_uses or code_data.get("status") == "used":
-            raise HTTPException(status_code=400, detail="تم استخدام كود الاشتراك هذا من قبل")
+            code_data = dict(code_row)
+            if code_data.get("status") == "disabled" or code_data.get("disabled_at"):
+                raise HTTPException(status_code=400, detail="كود الاشتراك معطل، يرجى التواصل مع الإدارة")
 
-        if code_data.get("expires_at") and code_data["expires_at"] <= now_str:
-            raise HTTPException(status_code=400, detail="انتهت صلاحية كود الاشتراك المدخل")
+            max_uses = code_data.get("max_uses") or 1
+            uses_count = code_data.get("uses_count") or 0
+            if uses_count >= max_uses or code_data.get("status") == "used":
+                raise HTTPException(status_code=400, detail="تم استخدام كود الاشتراك هذا من قبل")
 
-        sub_duration_days = code_data.get("duration_days") or 30
-        sub_type = code_data.get("subscription_type") or "1_month"
-        computed_expires_at = compute_expiration_date(now_dt, sub_duration_days)
+            if code_data.get("expires_at") and code_data["expires_at"] <= now_str:
+                raise HTTPException(status_code=400, detail="انتهت صلاحية كود الاشتراك المدخل")
 
-        # 3. Insert into users table first
+            sub_duration_days = code_data.get("duration_days") or 30
+            sub_type = code_data.get("subscription_type") or "1_month"
+            computed_expires_at = compute_expiration_date(now_dt, sub_duration_days)
+            masked_code_val = code_data.get("masked_code") or mask_code(sub_code_input)
+            sub_code_id = code_data["id"]
+            sub_status = "active"
+
+        # 3. Insert into users table
         cursor.execute("""
         INSERT INTO users (id, name, email, phone, role, avatar, password_hash, status, is_active, created_at, updated_at)
         VALUES (?, ?, ?, ?, 'student', ?, ?, 'active', 1, ?, ?)
         """, (user_id, name, email, phone, initials, pw_hash, now_str, now_str))
 
-        # 4. Atomic update of subscription_codes
-        cursor.execute("""
-        UPDATE subscription_codes
-        SET uses_count = uses_count + 1,
-            status = CASE WHEN (uses_count + 1) >= max_uses THEN 'used' ELSE 'active' END,
-            assigned_user_id = ?,
-            activated_at = ?,
-            expires_at = COALESCE(expires_at, ?)
-        WHERE id = ? AND uses_count < max_uses AND (status = 'active' OR status IS NULL) AND disabled_at IS NULL
-        """, (user_id, now_str, computed_expires_at, code_data["id"]))
+        # 4. Atomic update of subscription_codes if code provided
+        if code_data:
+            cursor.execute("""
+            UPDATE subscription_codes
+            SET uses_count = uses_count + 1,
+                status = CASE WHEN (uses_count + 1) >= max_uses THEN 'used' ELSE 'active' END,
+                assigned_user_id = ?,
+                activated_at = ?,
+                expires_at = COALESCE(expires_at, ?)
+            WHERE id = ? AND uses_count < max_uses AND (status = 'active' OR status IS NULL) AND disabled_at IS NULL
+            """, (user_id, now_str, computed_expires_at, code_data["id"]))
 
-        if cursor.rowcount == 0:
-            raise HTTPException(status_code=400, detail="تم استخدام كود الاشتراك في هذه اللحظة من قِبل مستخدم آخر")
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=400, detail="تم استخدام كود الاشتراك في هذه اللحظة من قِبل مستخدم آخر")
 
         # 5. Insert into student_profiles table
-        grade = req.grade or "الصف الأول الثانوي"
+        grade = req.grade or "الصف الثاني الثانوي"
         section = req.section or req.class_name or None
-        masked_code_val = code_data.get("masked_code") or mask_code(sub_code_input)
 
         cursor.execute("""
         INSERT INTO student_profiles (
@@ -379,11 +389,12 @@ def register(req: RegisterRequest, request: Request = None):
             subscription_expires_at, subscription_duration_days, subscription_type,
             subscription_code_id, streak, xp, learning_hours, last_activity, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, ?, ?, 1, 100, 0.0, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 100, 0.0, ?, ?, ?)
         """, (
             f"sp_{user_id}", user_id, grade, section, section, parent_phone,
-            masked_code_val, now_str, computed_expires_at, sub_duration_days, sub_type,
-            code_data["id"], now_str, now_str, now_str
+            masked_code_val, sub_status, now_str if code_data else None,
+            computed_expires_at, sub_duration_days, sub_type,
+            sub_code_id, now_str, now_str, now_str
         ))
 
         # 6. Welcome notification

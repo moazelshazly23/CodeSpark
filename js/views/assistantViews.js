@@ -42,6 +42,7 @@
                 </p>
               </div>
               <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+                <a href="#assistant-subscriptions" class="btn btn-warning btn-sm" style="font-weight:bold;">🔑 توليد كود اشتراك شهري (30 يوم)</a>
                 <a href="#assistant-code" class="btn btn-primary btn-sm">${Icons.terminal ? Icons.terminal() : '💻'} توليد كود جديد</a>
                 <a href="#assistant-questions" class="btn btn-secondary btn-sm">${Icons.helpCircle()} أسئلة الطلاب (${pendingTickets})</a>
               </div>
@@ -1298,6 +1299,148 @@
     }
 
 ,
+
+    // ==================== ASSISTANT 30-DAY SUBSCRIPTION CODES ====================
+    async renderSubscriptions(assistant) {
+      let codesData = { codes: [], total: 0 };
+      try {
+        codesData = await window.AssistantService.getSubscriptionCodes({ limit: 100 });
+      } catch (e) {
+        console.error("Error fetching assistant codes:", e);
+      }
+
+      const codes = codesData.codes || codesData.subscription_codes || [];
+
+      return `
+        <div class="content-body">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <div class="badge badge-purple" style="margin-bottom:0.35rem;">🔑 صلاحيات المساعد التعليمي</div>
+              <h1 style="font-size:1.75rem; font-weight:800; margin:0;">أكواد الاشتراك الشهرية (30 يومًا)</h1>
+              <p style="color:var(--text-muted); font-size:0.875rem; margin-top:0.25rem;">
+                يمكنك توليد أكواد اشتراك لمدة شهر واحد فقط (30 يومًا) وتوزيعها على الطلاب.
+              </p>
+            </div>
+
+            <button id="ast-open-code-modal-btn" class="btn btn-primary btn-glow" style="box-shadow:0 0 15px rgba(168,85,247,0.35);">
+              ➕ إنشاء كود اشتراك شهري (30 يوم)
+            </button>
+          </div>
+
+          <!-- Alert Note -->
+          <div style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.25); border-radius:var(--radius-md); padding:0.85rem 1.25rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem;">
+            <span style="font-size:1.25rem;">ℹ️</span>
+            <div style="font-size:0.875rem; color:var(--text-main);">
+              <strong>تنبيه الصلاحيات:</strong> طبقًا لإعدادات الإدارة، يقتصر دور المساعد على إنشاء أكواد لمدة <strong>شهر واحد (30 يومًا) فقط</strong>. لا يمكن توليد مدد أخرى (3 أشهر أو 6 أشهر أو سنة).
+            </div>
+          </div>
+
+          <!-- Codes Table Card -->
+          <div class="card" style="padding:0; overflow:hidden;">
+            <div style="padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+              <h3 style="margin:0; font-size:1.1rem; font-weight:800;">سجل أكواد الاشتراك المتاحة والمستخدمة (${codes.length})</h3>
+              <input type="text" id="ast-codes-search" class="form-input" style="max-width:250px; padding:0.4rem 0.75rem; font-size:0.85rem;" placeholder="بحث في الأكواد...">
+            </div>
+
+            <div class="table-responsive">
+              <table class="table" style="margin:0;">
+                <thead>
+                  <tr>
+                    <th>الكود</th>
+                    <th>المدة المعتمدة</th>
+                    <th>الحالة</th>
+                    <th>مرات الاستخدام</th>
+                    <th>الملاحظات</th>
+                    <th>تاريخ الإنشاء</th>
+                  </tr>
+                </thead>
+                <tbody id="ast-codes-table-body">
+                  ${codes.length === 0 ? `
+                    <tr>
+                      <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                        لم تقم بتوليد أي أكواد بعد. اضغط على الزر أعلاه لتوليد أول كود اشتراك شهري.
+                      </td>
+                    </tr>
+                  ` : codes.map(c => `
+                    <tr>
+                      <td style="font-family:var(--font-mono); font-weight:700; color:var(--cyan); direction:ltr; text-align:right;">
+                        ${c.masked_code || c.code || 'CS-****'}
+                      </td>
+                      <td>
+                        <span class="badge badge-cyan">شهر واحد (30 يوم)</span>
+                      </td>
+                      <td>
+                        ${c.status === 'active' || c.status === 'ACTIVE' 
+                          ? '<span class="badge badge-success">متاح للتفعيل</span>' 
+                          : c.status === 'used' || c.status === 'USED'
+                          ? '<span class="badge badge-neutral">تم الاستخدام</span>'
+                          : '<span class="badge badge-danger">معطل</span>'}
+                      </td>
+                      <td>${c.uses_count || 0} / ${c.max_uses || 1}</td>
+                      <td style="font-size:0.85rem; color:var(--text-muted);">${c.notes || '—'}</td>
+                      <td style="font-size:0.8rem; color:var(--text-subtle);">${(c.created_at || '').slice(0, 10) || '—'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Generate Monthly Codes Modal -->
+          <div id="ast-code-modal" class="modal-backdrop" style="display:none;">
+            <div class="modal-dialog" style="max-width:500px;">
+              <div class="modal-header">
+                <h3 class="modal-title">🔑 توليد كود اشتراك شهري جديد</h3>
+                <button type="button" class="modal-close" id="ast-close-code-modal-btn">✕</button>
+              </div>
+
+              <div class="modal-body" style="padding:1.25rem;">
+                <form id="ast-generate-codes-form">
+                  <div class="form-group" style="margin-bottom:1rem;">
+                    <label class="form-label">مدة الاشتراك (محددة للمساعد تلقائيًا)</label>
+                    <input type="text" value="اشتراك شهر واحد (30 يومًا) — إجباري" disabled class="form-input" style="background:rgba(0,0,0,0.3); color:var(--cyan); font-weight:bold; cursor:not-allowed;">
+                    <small style="color:var(--text-muted); font-size:0.75rem;">طبقًا لصلاحيات المساعد، لا يمكن اختيار أي مدة أخرى سوى 30 يومًا.</small>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:1rem;">
+                    <label class="form-label">عدد الأكواد المطلوبة</label>
+                    <select id="ast-codes-count" class="form-select">
+                      <option value="1">1 كود واحد</option>
+                      <option value="3">3 أكواد</option>
+                      <option value="5">5 أكواد</option>
+                      <option value="10">10 أكواد</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:1.25rem;">
+                    <label class="form-label">ملاحظات أو اسم الطالب/المجموعة (اختياري)</label>
+                    <input type="text" id="ast-codes-notes" class="form-input" placeholder="مثال: طلاب سنتر الأمل - مجموعة السبت">
+                  </div>
+
+                  <!-- Generated Code Display Result -->
+                  <div id="ast-generated-result-box" style="display:none; background:#070C18; border:1px solid var(--border-cyan); border-radius:var(--radius-md); padding:1rem; margin-bottom:1.25rem;">
+                    <div style="font-size:0.8rem; color:#10B981; font-weight:800; margin-bottom:0.5rem;">🎉 تم توليد الكود بنجاح! احفظه الآن:</div>
+                    <div id="ast-generated-codes-list" style="font-family:var(--font-mono); font-size:1.1rem; color:#38BDF8; font-weight:bold; word-break:break-all; direction:ltr; text-align:left; background:rgba(0,0,0,0.4); padding:0.75rem; border-radius:4px; margin-bottom:0.75rem;"></div>
+                    <button type="button" id="ast-copy-generated-btn" class="btn btn-secondary btn-sm" style="width:100%;">
+                      📋 نسخ الأكواد للحافظة
+                    </button>
+                  </div>
+
+                  <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+                    <button type="button" class="btn btn-ghost" id="ast-cancel-code-modal-btn">إلغاء</button>
+                    <button type="submit" id="ast-submit-code-btn" class="btn btn-primary btn-glow">
+                      ⚡ توليد الأكواد الآن
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      `;
+    },
+
     renderResources(assistant) {
       return window.AdminViews.renderResources(assistant);
     },

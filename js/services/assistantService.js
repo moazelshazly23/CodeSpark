@@ -88,6 +88,22 @@
     },
 
     // 7. Grades, Exam Results & Analytics
+
+    // 8. Subscription Codes (Strictly 1-Month / 30 Days ONLY)
+    async getSubscriptionCodes(filters = {}) {
+      const res = await window.CodeSparkAPI.get("/admin/subscriptions", filters);
+      return res || { codes: [] };
+    },
+
+    async generateMonthlyCodes(count = 1, notes = "") {
+      return await window.CodeSparkAPI.post("/admin/subscriptions/generate", {
+        type: "1_month",
+        duration_days: 30,
+        count: parseInt(count, 10) || 1,
+        notes: notes || "كود اشتراك شهري تم إنشاؤه بواسطة المساعد"
+      });
+    },
+
     async getGrades(filters = {}) {
       const res = await window.CodeSparkAPI.get("/admin/results", filters);
       return res.results || [];

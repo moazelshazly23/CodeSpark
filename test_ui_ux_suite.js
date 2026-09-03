@@ -181,10 +181,8 @@ async function runUiUxTestSuite() {
   // Course Progress Section
   assert(dashHtml.includes("التقدم في الكورسات ووحدات المنهج"), "Dashboard renders 'التقدم في الكورسات' section");
 
-  // Recommended Courses Section
-  assert(dashHtml.includes("الكورسات والمسارات الموصى بها"), "Dashboard renders 'الكورسات والمسارات الموصى بها' section");
-  assert(dashHtml.includes("أساسيات لغة بايثون والتفكير المنطقي"), "Recommended courses contain Python core track");
-  assert(dashHtml.includes("المستوى المبتدئ"), "Recommended courses display difficulty level");
+  // Recommended Courses Section strictly removed per user request
+  assert(!dashHtml.includes("الكورسات والمسارات الموصى بها"), "Dashboard strictly does NOT render 'الكورسات والمسارات الموصى بها' section");
 
   // 4. Settings View UI Click Sound Toggle
   const settingsHtml = SettingsView.render(mockStudent);

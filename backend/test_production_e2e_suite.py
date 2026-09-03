@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 """
 Code Spark — Comprehensive Production E2E & Security Test Suite
 Verifies all critical educational flows, student journey, admin management,
@@ -35,6 +38,7 @@ except ImportError:
 class CodeSparkComprehensiveTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -68,7 +72,7 @@ class CodeSparkComprehensiveTestSuite(unittest.TestCase):
         """Test Admin login and analytics retrieval."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "01099998888",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         self.assertEqual(res.status_code, 200, res.text)
         admin_token = res.json()["token"]
@@ -85,7 +89,7 @@ class CodeSparkComprehensiveTestSuite(unittest.TestCase):
         """Test that student token is rejected with 403 Forbidden on all admin routes."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "01012345678",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         student_token = res.json()["token"]
         headers = {"Authorization": f"Bearer {student_token}"}
@@ -112,7 +116,7 @@ class CodeSparkComprehensiveTestSuite(unittest.TestCase):
         """Test that students CANNOT see correct_answer or explanation prior to submitting."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "01012345678",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         student_token = res.json()["token"]
         student_headers = {"Authorization": f"Bearer {student_token}"}
@@ -172,7 +176,7 @@ class CodeSparkComprehensiveTestSuite(unittest.TestCase):
         """Test student submitting code to /api/code/verify-exercise with server-side validation."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "01012345678",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         token = res.json()["token"]
         headers = {"Authorization": f"Bearer {token}"}
@@ -193,7 +197,7 @@ class CodeSparkComprehensiveTestSuite(unittest.TestCase):
         """Test student taking lesson quiz, getting server-side score and explanations."""
         res = self.client.post("/api/auth/login", json={
             "identifier": "01012345678",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         student_id = res.json()["user"]["id"]
         token = res.json()["token"]
@@ -294,7 +298,7 @@ class CodeSparkComprehensiveTestSuite(unittest.TestCase):
         # Login admin
         res = self.client.post("/api/auth/login", json={
             "identifier": "01099998888",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         admin_token = res.json()["token"]
         headers = {"Authorization": f"Bearer {admin_token}"}

@@ -67,6 +67,33 @@
       }
     },
 
+    
+    async explainCode(code) {
+      try {
+        const res = await window.CodeSparkAPI.post('/code/explain-code', { code });
+        return res;
+      } catch (e) {
+        return {
+          success: false,
+          summary: 'تعذر تحليل الكود حالياً.',
+          steps: ['تأكد من الاتصال بالخادم ثم أعد المحاولة.'],
+          concepts: []
+        };
+      }
+    },
+
+    async improveCode(code) {
+      try {
+        const res = await window.CodeSparkAPI.post('/code/improve-code', { code });
+        return res;
+      } catch (e) {
+        return {
+          success: false,
+          suggestions: ['تعذر جلب نصائح التحسين حالياً. راجع معايير PEP 8 يدويًا.']
+        };
+      }
+    },
+
     async verifyExercise(lessonId, code) {
       if (!code || !code.trim()) {
         return {

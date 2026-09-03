@@ -1,3 +1,4 @@
+import secrets
 import os
 import logging
 from pathlib import Path
@@ -48,14 +49,15 @@ if ENVIRONMENT == "production":
         )
 else:
     if not _raw_secret:
-        _raw_secret = "codespark_dev_secret_jwt_key_2026_high_school_edu"
+        _raw_secret = secrets.token_urlsafe(48)
 
 SECRET_KEY = _raw_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days default
 
 # Database configuration: PostgreSQL in production or local SQLite
-DATABASE_PATH = os.getenv("DATABASE_PATH", "/tmp/codespark_production.db")
+_default_db = "/tmp/codespark_production.db" if os.path.exists("/tmp") else str(Path(__file__).resolve().parent.parent / "codespark_production.db")
+DATABASE_PATH = os.getenv("DATABASE_PATH", _default_db)
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATABASE_PATH}")
 DATABASE_POOL_SIZE = int(os.getenv("DATABASE_POOL_SIZE", "10"))
 

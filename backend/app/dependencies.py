@@ -139,8 +139,8 @@ def check_student_subscription(user: Optional[Dict[str, Any]]) -> bool:
     if is_staff_user(user):
         return True
 
-    status_val = user.get("subscription_status") or "active"
-    if status_val in ("disabled", "expired", "inactive"):
+    status_val = (user.get("subscription_status") or "active").lower()
+    if status_val in ("disabled", "expired", "inactive", "unsubscribed", "none", "not_subscribed"):
         return False
 
     exp_str = user.get("subscription_expires_at")

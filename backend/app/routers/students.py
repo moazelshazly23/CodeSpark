@@ -108,7 +108,13 @@ def create_student_by_admin(req: StudentCreateRequest, admin: dict = Depends(get
     name = req.name.strip()
     phone = req.phone.strip()
     parent_phone = req.parent_phone.strip() if req.parent_phone else ""
-    raw_password = req.password or "123456"
+    if req.password and req.password.strip():
+        raw_password = req.password.strip()
+        if len(raw_password) < 6:
+            raise HTTPException(status_code=400, detail="كلمة المرور للطالب يجب ألا تقل عن 6 أحرف")
+    else:
+        import secrets
+        raw_password = secrets.token_urlsafe(10)
 
     if len(name) < 3:
         raise HTTPException(status_code=400, detail="اسم الطالب يجب أن يكون ثلاثياً على الأقل")
@@ -271,7 +277,11 @@ def patch_student_status(student_id: str, req: StudentStatusUpdateRequest, admin
 @router.post("/students/{student_id}/reset-password")
 def reset_student_password(student_id: str, data: Dict[str, Any], admin: dict = Depends(get_current_admin)):
     """Admin: Reset student password."""
-    new_pw = data.get("password") or data.get("new_password") or "123456"
+    new_pw = (data.get("password") or data.get("new_password") or "").strip()
+    if not new_pw:
+        raise HTTPException(status_code=400, detail="يرجى إدخال كلمة المرور الجديدة للطالب")
+    if len(new_pw) < 6:
+        raise HTTPException(status_code=400, detail="كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف")
     if len(new_pw) < 6:
         raise HTTPException(status_code=400, detail="كلمة المرور يجب ألا تقل عن 6 أحرف")
 

@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 """
 Code Spark - Comprehensive Subscription Codes End-to-End Test Suite
 Tests:
@@ -26,6 +29,7 @@ from backend.app.subscription_utils import hash_code, mask_code, get_code_prefix
 class SubscriptionCodesComprehensiveTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -33,7 +37,7 @@ class SubscriptionCodesComprehensiveTestSuite(unittest.TestCase):
     def _get_admin_token(self):
         res = self.client.post("/api/auth/login", json={
             "identifier": "admin@codespark.edu.eg",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         self.assertEqual(res.status_code, 200)
         return res.json()["token"]
@@ -41,7 +45,7 @@ class SubscriptionCodesComprehensiveTestSuite(unittest.TestCase):
     def _get_student_token(self):
         res = self.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         self.assertEqual(res.status_code, 200)
         return res.json()["token"]
@@ -268,7 +272,7 @@ class SubscriptionCodesComprehensiveTestSuite(unittest.TestCase):
         # Student login works
         std_res = self.client.post("/api/auth/login", json={
             "identifier": "ahmed@codespark.edu.eg",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         self.assertEqual(std_res.status_code, 200)
         u = std_res.json()["user"]

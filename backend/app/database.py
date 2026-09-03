@@ -469,7 +469,9 @@ def init_db():
             ("storage_path", "VARCHAR(512)"),
             ("thumbnail_url", "TEXT"),
             ("file_size", "INTEGER"),
-            ("mime_type", "VARCHAR(64)")
+            ("mime_type", "VARCHAR(64)"),
+            ("access_level", "VARCHAR(32) DEFAULT 'subscribers_only'"),
+            ("is_free", "INTEGER DEFAULT 0")
         ]
         for col_name, col_def in video_cols:
             try:
@@ -935,6 +937,22 @@ def init_db():
         )
         """)
 
+        
+        # Auto-migrate educational_resources for access_level and storage_source
+        res_cols = [
+            ("access_level", "VARCHAR(32) DEFAULT 'subscribers_only'"),
+            ("is_free", "INTEGER DEFAULT 0"),
+            ("storage_source", "VARCHAR(32) DEFAULT 'upload'")
+        ]
+        for col_name, col_def in res_cols:
+            try:
+                if db_type == "postgres":
+                    cursor.execute(f"ALTER TABLE educational_resources ADD COLUMN IF NOT EXISTS {col_name} {col_def}")
+                else:
+                    cursor.execute(f"ALTER TABLE educational_resources ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
+
         # Performance Indexes for New Features
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_bookmarks_user ON user_bookmarks(user_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_notes_user ON student_notes(user_id)")
@@ -951,6 +969,83 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_logs_action ON activity_logs(action)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_logs_created ON activity_logs(created_at)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_logs_target ON activity_logs(target_type)")
+
+
+
+        # 30. Subscription Offers / Packages Table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS subscription_offers (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(255),
+            title VARCHAR(255) NOT NULL,
+            duration_type VARCHAR(32) NOT NULL DEFAULT '1_month',
+            duration_days INTEGER NOT NULL DEFAULT 30,
+            price REAL NOT NULL DEFAULT 99.0,
+            currency VARCHAR(16) NOT NULL DEFAULT 'EGP',
+            description TEXT,
+            badge VARCHAR(64),
+            features_json TEXT,
+            image_url TEXT,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            display_order INTEGER NOT NULL DEFAULT 0,
+            created_at VARCHAR(64) NOT NULL,
+            updated_at VARCHAR(64) NOT NULL
+        )
+        """)
+
+        # 31. Certificates Table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS certificates (
+            id VARCHAR(64) PRIMARY KEY,
+            certificate_code VARCHAR(64) UNIQUE NOT NULL,
+            student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            student_name VARCHAR(255) NOT NULL,
+            course_name VARCHAR(255) NOT NULL,
+            completion_percentage INTEGER NOT NULL DEFAULT 100,
+            grade VARCHAR(64) DEFAULT 'ممتاز',
+            issue_date VARCHAR(64) NOT NULL,
+            qr_data TEXT,
+            created_at VARCHAR(64) NOT NULL
+        )
+        """)
+
+        # 32. Content Files Table (Generic Source Support: UPLOAD, GOOGLE_DRIVE, EXTERNAL_URL)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS content_files (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            title VARCHAR(255),
+            source_type VARCHAR(32) NOT NULL DEFAULT 'UPLOAD',
+            file_url TEXT,
+            storage_path VARCHAR(512),
+            mime_type VARCHAR(64),
+            file_size INTEGER,
+            file_type VARCHAR(32) DEFAULT 'file',
+            category VARCHAR(100),
+            unit_id VARCHAR(64) REFERENCES units(id) ON DELETE SET NULL,
+            lesson_id VARCHAR(64) REFERENCES lessons(id) ON DELETE SET NULL,
+            is_paid INTEGER NOT NULL DEFAULT 0,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            status VARCHAR(32) NOT NULL DEFAULT 'active',
+            display_order INTEGER DEFAULT 0,
+            views_count INTEGER DEFAULT 0,
+            downloads_count INTEGER DEFAULT 0,
+            uploaded_by VARCHAR(64) REFERENCES users(id) ON DELETE SET NULL,
+            uploaded_by_name VARCHAR(255),
+            created_at VARCHAR(64) NOT NULL,
+            updated_at VARCHAR(64) NOT NULL
+        )
+        """)
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_offers_active ON subscription_offers(is_active)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_offers_order ON subscription_offers(display_order)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_cert_student ON certificates(student_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_cert_code ON certificates(certificate_code)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_files_active ON content_files(is_active)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_files_unit ON content_files(unit_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_files_lesson ON content_files(lesson_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_files_order ON content_files(display_order)")
 
 
 if __name__ == "__main__":

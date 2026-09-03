@@ -215,7 +215,7 @@ def send_password_reset_email(to_email: str, recipient_name: str, otp_code: str)
     if not SMTP_HOST or ENVIRONMENT == "development":
         logger.info(
             f"[EMAIL_DELIVERY:DEV_OR_LOCAL] Password reset OTP generated for {name_clean} <{recipient_clean}>. "
-            f"Subject: '{subject}' | OTP: {otp_code} (Valid for 10 minutes)"
+            f"Subject: '{subject}' | Status: Dispatched (Valid for 10 minutes)"
         )
         if not SMTP_HOST:
             return True

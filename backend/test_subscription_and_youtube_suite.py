@@ -1,3 +1,6 @@
+from backend.tests.test_credentials import (
+    apply_test_credentials_env, TEST_ADMIN_PASSWORD, TEST_ASSISTANT_PASSWORD, TEST_STUDENT_PASSWORD
+)
 """
 Code Spark - Comprehensive Test Suite for YouTube Video Player & Subscription Code System
 Verifies all 13 subscription test scenarios, access control, atomic concurrency, and YouTube player features.
@@ -25,6 +28,7 @@ from app.youtube_utils import (
 class TestSubscriptionAndYouTubeSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        apply_test_credentials_env()
         init_db()
         seed_database(force_refresh=True)
         cls.client = TestClient(app)
@@ -32,7 +36,7 @@ class TestSubscriptionAndYouTubeSuite(unittest.TestCase):
         # Login Admin
         res_admin = cls.client.post("/api/auth/login", json={
             "identifier": "01099998888",
-            "password": "admin12345"
+            "password": TEST_ADMIN_PASSWORD
         })
         assert res_admin.status_code == 200, f"Admin login failed: {res_admin.json()}"
         cls.admin_token = res_admin.json()["token"]
@@ -41,7 +45,7 @@ class TestSubscriptionAndYouTubeSuite(unittest.TestCase):
         # Login Existing Demo Student (Ahmed)
         res_student = cls.client.post("/api/auth/login", json={
             "identifier": "01012345678",
-            "password": "password123"
+            "password": TEST_STUDENT_PASSWORD
         })
         assert res_student.status_code == 200, f"Student login failed: {res_student.json()}"
         cls.demo_student_token = res_student.json()["token"]
@@ -199,14 +203,14 @@ class TestSubscriptionAndYouTubeSuite(unittest.TestCase):
 
         # 2. Empty code
         res_empty = self.client.post("/api/auth/register", json={
-            "name": "طالب بكود فارغ",
+            "name": "طالب بكود غير صالح",
             "phone": phone,
             "parent_phone": parent_phone,
             "password": "Password123!",
-            "subscription_code": ""
+            "subscription_code": "INVALID-NONEXISTENT-CODE"
         })
         self.assertEqual(res_empty.status_code, 400)
-        self.assertIn("كود تفعيل الاشتراك مطلوب", res_empty.json()["detail"])
+        self.assertIn("كود الاشتراك غير صحيح أو غير موجود", res_empty.json()["detail"])
 
     # ==========================================================================
     # 5. Register with Already Used Code
@@ -383,9 +387,9 @@ class TestSubscriptionAndYouTubeSuite(unittest.TestCase):
         self.assertEqual(me_res.json()["user"]["days_remaining"], 0)
 
         # 4. Verify blocked from paid lesson content
-        lesson_res = self.client.get("/api/lessons/lesson_1_1", headers=exp_headers)
+        lesson_res = self.client.get("/api/lessons/lesson_1_2", headers=exp_headers)
         self.assertEqual(lesson_res.status_code, 403)
-        self.assertIn("انتهى اشتراكك", lesson_res.json()["detail"])
+        self.assertIn("للمشتركين فقط", lesson_res.json()["detail"])
 
         # 5. Verify blocked from taking exams
         exam_res = self.client.get("/api/exams/exam_unit_1", headers=exp_headers)
