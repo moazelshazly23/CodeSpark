@@ -5,3 +5,6 @@ requires-python = ">=3.11,<3.15"
 
 [tool.fastapi]
 entrypoint = "app.main:app"
+
+[tool.setuptools]
+packages = ["app"]
