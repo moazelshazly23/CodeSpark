@@ -4,6 +4,7 @@ version = "1.0.0"
 requires-python = ">=3.11,<3.15"
 dependencies = [
     "fastapi[standard]",
+    "psycopg2-binary>=2.9.6",
 ]
 
 [tool.fastapi]
