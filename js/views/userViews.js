@@ -420,7 +420,7 @@
                   تواصل مع المشرف الأكاديمي ومسؤولي مادة البرمجة للرد على أسئلتك المنهجية وتجديد وتفعيل الاشتراكات مباشرة.
                 </p>
               </div>
-              <a href="https://wa.me/201012345678" target="_blank" class="btn btn-success" style="align-self:flex-start; margin-top:1rem;">
+              <a href="https://wa.me/+201559159038" target="_blank" class="btn btn-success" style="align-self:flex-start; margin-top:1rem;">
                 ${Icons.whatsapp()} محادثة واتساب المباشرة
               </a>
             </div>
