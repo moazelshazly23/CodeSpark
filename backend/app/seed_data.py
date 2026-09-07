@@ -225,7 +225,7 @@ def seed_database(force_refresh=False):
 
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO student_profiles (
+                    INSERT INTO student_profiles (
                         id,
                         user_id,
                         grade,
@@ -246,6 +246,7 @@ def seed_database(force_refresh=False):
                         updated_at
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, NULL, -1, 'lifetime', ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO NOTHING
                     """,
                     (
                         f"sp_{u_id}",
@@ -597,43 +598,44 @@ def seed_database(force_refresh=False):
                 ),
             )
 
-        if ex_title:
-            ex_id = f"ex_{lesson_id}"
-            db.execute(
-                """
-                INSERT INTO exercises (
-                    id, lesson_id, title, description, type, difficulty,
-                    starter_code, solution_code, test_cases,
-                    published, is_published, created_at, updated_at
+            if ex_title:
+                ex_id = f"ex_{lesson_id}"
+                db.execute(
+                    """
+                    INSERT INTO exercises (
+                        id, lesson_id, title, description, type, difficulty,
+                        starter_code, solution_code, test_cases,
+                        published, is_published, created_at, updated_at
+                    )
+                    VALUES (?, ?, ?, ?, 'code', 'medium', ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO UPDATE SET
+                        lesson_id = EXCLUDED.lesson_id,
+                        title = EXCLUDED.title,
+                        description = EXCLUDED.description,
+                        type = EXCLUDED.type,
+                        difficulty = EXCLUDED.difficulty,
+                        starter_code = EXCLUDED.starter_code,
+                        solution_code = EXCLUDED.solution_code,
+                        test_cases = EXCLUDED.test_cases,
+                        published = EXCLUDED.published,
+                        is_published = EXCLUDED.is_published,
+                        updated_at = EXCLUDED.updated_at
+                    """,
+                    (
+                        ex_id,
+                        lesson_id,
+                        ex_title,
+                        ex_desc,
+                        ex_starter,
+                        ex_solution,
+                        ex_tc_json,
+                        is_pub,
+                        is_pub,
+                        now,
+                        now,
+                    ),
                 )
-                VALUES (?, ?, ?, ?, 'code', 'medium', ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (id) DO UPDATE SET
-                    lesson_id = EXCLUDED.lesson_id,
-                    title = EXCLUDED.title,
-                    description = EXCLUDED.description,
-                    type = EXCLUDED.type,
-                    difficulty = EXCLUDED.difficulty,
-                    starter_code = EXCLUDED.starter_code,
-                    solution_code = EXCLUDED.solution_code,
-                    test_cases = EXCLUDED.test_cases,
-                    published = EXCLUDED.published,
-                    is_published = EXCLUDED.is_published,
-                    updated_at = EXCLUDED.updated_at
-                """,
-                (
-                    ex_id,
-                    lesson_id,
-                    ex_title,
-                    ex_desc,
-                    ex_starter,
-                    ex_solution,
-                    ex_tc_json,
-                    is_pub,
-                    is_pub,
-                    now,
-                    now,
-                ),
-            )
+
         # ============================================================
         # 7. QUESTIONS & QUESTION_OPTIONS
         # ============================================================
@@ -866,8 +868,9 @@ def seed_database(force_refresh=False):
                 for idx, qid in enumerate(q_ids):
                     db.execute(
                         """
-                        INSERT OR IGNORE INTO quiz_questions (quiz_id, question_id, order_index)
+                        INSERT INTO quiz_questions (quiz_id, question_id, order_index)
                         VALUES (?, ?, ?)
+                        ON CONFLICT (quiz_id, question_id) DO NOTHING
                         """,
                         (quiz_id, qid, idx),
                     )
@@ -946,8 +949,9 @@ def seed_database(force_refresh=False):
                 eq_id = f"eq_{e_id}_{qid}"
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO exam_questions (id, exam_id, question_id, order_index)
+                    INSERT INTO exam_questions (id, exam_id, question_id, order_index)
                     VALUES (?, ?, ?, ?)
+                    ON CONFLICT (exam_id, question_id) DO NOTHING
                     """,
                     (eq_id, e_id, qid, idx),
                 )
@@ -1118,7 +1122,7 @@ def seed_database(force_refresh=False):
                 lp_id = f"lp_{student_id}_{lesson_id}"
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO lesson_progress (
+                    INSERT INTO lesson_progress (
                         id,
                         student_id,
                         lesson_id,
@@ -1130,6 +1134,7 @@ def seed_database(force_refresh=False):
                         updated_at
                     )
                     VALUES (?, ?, ?, 100, 1, 0, ?, ?, ?)
+                    ON CONFLICT (id) DO NOTHING
                     """,
                     (lp_id, student_id, lesson_id, now, now, now),
                 )
@@ -1158,7 +1163,7 @@ def seed_database(force_refresh=False):
 
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO exam_attempts (
+                    INSERT INTO exam_attempts (
                         id,
                         exam_id,
                         student_id,
@@ -1175,6 +1180,7 @@ def seed_database(force_refresh=False):
                         completed_at
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO NOTHING
                     """,
                     (
                         att_id,
@@ -1211,8 +1217,9 @@ def seed_database(force_refresh=False):
         for s_k, s_v in default_settings:
             db.execute(
                 """
-                INSERT OR IGNORE INTO system_settings (key, value, updated_at)
+                INSERT INTO system_settings (key, value, updated_at)
                 VALUES (?, ?, ?)
+                ON CONFLICT (key) DO NOTHING
                 """,
                 (s_k, s_v, now),
             )
