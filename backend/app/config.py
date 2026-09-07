@@ -56,7 +56,19 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days default
 
 # Database configuration: PostgreSQL in production or local SQLite
-_default_db = "/tmp/codespark_production.db" if os.path.exists("/tmp") else str(Path(__file__).resolve().parent.parent / "codespark_production.db")
+_project_db = str(Path(__file__).resolve().parent.parent / "codespark_production.db")
+if os.path.exists("/tmp"):
+    _default_db = "/tmp/codespark_production.db"
+    # If project db exists in project folder but not in /tmp, copy it over to preserve initial seed & admin account
+    if os.path.exists(_project_db) and not os.path.exists(_default_db):
+        try:
+            import shutil
+            shutil.copyfile(_project_db, _default_db)
+        except Exception:
+            pass
+else:
+    _default_db = _project_db
+
 DATABASE_PATH = os.getenv("DATABASE_PATH", _default_db)
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATABASE_PATH}")
 DATABASE_POOL_SIZE = int(os.getenv("DATABASE_POOL_SIZE", "10"))
@@ -121,6 +133,6 @@ SMTP_USE_SSL = os.getenv("SMTP_USE_SSL", "False").lower() in ("true", "1", "t", 
 
 # Super Admin Initial Credentials (Optional via Environment)
 ADMIN_NAME = os.getenv("ADMIN_NAME", "المهندس معاذ الشاذلي").strip()
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "").strip()
-ADMIN_PHONE = os.getenv("ADMIN_PHONE", "").strip()
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@codespark.edu.eg").strip()
+ADMIN_PHONE = os.getenv("ADMIN_PHONE", "01000000000").strip()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin12345").strip()

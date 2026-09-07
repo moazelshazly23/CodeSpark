@@ -156,6 +156,15 @@
         return;
       }
 
+      // 1.1 Guard against deprecated student tracks
+      if (path === '#tracks' || path === '#learning-paths' || path.startsWith('#tracks/')) {
+        if (window.UI && window.UI.showToast) {
+          window.UI.showToast('المسارات التعليمية غير متوفرة في حساب الطالب', 'warning');
+        }
+        this.navigate('#dashboard');
+        return;
+      }
+
       // 2. Auth Guard
       if (!user) {
         if (window.UI && window.UI.showToast) {
@@ -229,6 +238,7 @@
           break;
         case '#exercises':
           mainViewHtml = window.ExercisesView ? window.ExercisesView.render(user) : '';
+          initCallback = () => window.ExercisesView && window.ExercisesView.initEvents && window.ExercisesView.initEvents(user);
           break;
         case '#exam':
           mainViewHtml = window.ExamView ? window.ExamView.render(param, user) : '';
@@ -306,7 +316,7 @@
       }
 
       container.innerHTML = `
-        <div class="app-container">
+        <div id="app-container" class="app-container ${typeof localStorage !== 'undefined' && localStorage.getItem('codespark_sidebar_collapsed') === 'true' ? 'sidebar-collapsed' : ''}">
           <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
           <!-- Student Sidebar (Fixed, Organized & Fully Functional) -->
@@ -331,10 +341,7 @@
                 <span class="nav-icon">${Icons.book()}</span> الكورسات والوحدات
               </a>
 
-              <!-- 3. 🧭 المسارات -->
-              <a href="#curriculum" class="nav-link">
-                <span class="nav-icon">${Icons.compass ? Icons.compass() : Icons.sparkles()}</span> المسارات التعليمية
-              </a>
+
 
               <!-- 4. 💻 التمارين -->
               <a href="#exercises" class="nav-link ${path === '#exercises' ? 'active' : ''}">
@@ -713,6 +720,7 @@
           initCallback = () => window.AdminViews && window.AdminViews.initCurriculumEvents && window.AdminViews.initCurriculumEvents();
           break;
         case '#admin-questions':
+        case '#admin-exercises':
           adminHtml = window.AdminViews && window.AdminViews.renderQuestions ? await window.AdminViews.renderQuestions() : '';
           initCallback = () => window.AdminViews && window.AdminViews.initQuestionsEvents && window.AdminViews.initQuestionsEvents();
           break;
@@ -742,7 +750,7 @@
       }
 
       container.innerHTML = `
-        <div class="app-container">
+        <div id="app-container" class="app-container ${typeof localStorage !== 'undefined' && localStorage.getItem('codespark_sidebar_collapsed') === 'true' ? 'sidebar-collapsed' : ''}">
           <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
           <!-- Admin Sidebar -->
@@ -780,8 +788,8 @@
               <a href="#admin-curriculum" class="nav-link ${path === '#admin-curriculum' ? 'active' : ''}">
                 <span class="nav-icon">${Icons.book()}</span> المنهج والدروس
               </a>
-              <a href="#admin-questions" class="nav-link ${path === '#admin-questions' ? 'active' : ''}">
-                <span class="nav-icon">${Icons.helpCircle()}</span> بنك الأسئلة
+              <a href="#admin-questions" class="nav-link ${path === '#admin-questions' || path === '#admin-exercises' ? 'active' : ''}">
+                <span class="nav-icon">${Icons.helpCircle()}</span> التمارين والتدريبات (بنك الأسئلة)
               </a>
               <a href="#admin-exams" class="nav-link ${path === '#admin-exams' ? 'active' : ''}">
                 <span class="nav-icon">${Icons.award()}</span> إدارة الاختبارات
@@ -902,7 +910,7 @@
       }
 
       container.innerHTML = `
-        <div class="app-container">
+        <div id="app-container" class="app-container ${typeof localStorage !== 'undefined' && localStorage.getItem('codespark_sidebar_collapsed') === 'true' ? 'sidebar-collapsed' : ''}">
           <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
 
           <!-- Assistant Sidebar -->
@@ -1000,15 +1008,45 @@
       const backdrop = document.getElementById('sidebar-backdrop');
       const openBtn = document.getElementById('open-sidebar-btn');
       const closeBtn = document.getElementById('close-sidebar-btn');
+      const container = document.getElementById('app-container');
 
-      const toggleSidebar = (open) => {
-        if (sidebar) sidebar.classList.toggle('open', open);
-        if (backdrop) backdrop.classList.toggle('show', open);
-      };
+      // Check desktop collapsed preference
+      const isCollapsed = typeof localStorage !== 'undefined' && localStorage.getItem('codespark_sidebar_collapsed') === 'true';
+      if (isCollapsed && container && window.innerWidth > 992) {
+        container.classList.add('sidebar-collapsed');
+      }
 
-      openBtn?.addEventListener('click', () => toggleSidebar(true));
-      closeBtn?.addEventListener('click', () => toggleSidebar(false));
-      backdrop?.addEventListener('click', () => toggleSidebar(false));
+      openBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.innerWidth <= 992) {
+          sidebar?.classList.toggle('open');
+          backdrop?.classList.toggle('show');
+        } else if (container) {
+          container.classList.toggle('sidebar-collapsed');
+          const nowCollapsed = container.classList.contains('sidebar-collapsed');
+          localStorage.setItem('codespark_sidebar_collapsed', nowCollapsed ? 'true' : 'false');
+        }
+      });
+
+      closeBtn?.addEventListener('click', () => {
+        sidebar?.classList.remove('open');
+        backdrop?.classList.remove('show');
+      });
+
+      backdrop?.addEventListener('click', () => {
+        sidebar?.classList.remove('open');
+        backdrop?.classList.remove('show');
+      });
+
+      if (typeof document !== "undefined" && document.querySelectorAll) document.querySelectorAll('.app-sidebar .nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+          if (window.innerWidth <= 992) {
+            sidebar?.classList.remove('open');
+            backdrop?.classList.remove('show');
+          }
+        });
+      });
 
       document.querySelectorAll('#sidebar-logout-btn').forEach(btn => {
         btn.addEventListener('click', async () => {

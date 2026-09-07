@@ -1240,6 +1240,95 @@
         });
       }
 
+
+      // 8. Subscription Codes Generation Events (Strictly 1-Month)
+      if (path === '#assistant-subscriptions') {
+        const genForm = document.getElementById('ast-generate-codes-form');
+        const countInput = document.getElementById('ast-codes-count');
+        const notesInput = document.getElementById('ast-codes-notes');
+        const submitBtn = document.getElementById('ast-submit-code-btn');
+        const resultBox = document.getElementById('ast-generated-result-box');
+        const listContainer = document.getElementById('ast-generated-codes-list');
+        const copyBtn = document.getElementById('ast-copy-generated-btn');
+        const tableBody = document.getElementById('ast-codes-table-body');
+        const searchInput = document.getElementById('ast-codes-search');
+
+        genForm?.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const count = parseInt(countInput?.value, 10) || 1;
+          const notes = notesInput?.value?.trim() || '';
+
+          if (count < 1 || count > 50) {
+            if (window.UI && window.UI.showToast) window.UI.showToast('يرجى تحديد عدد أكواد صحيح بين 1 و 50', 'error');
+            return;
+          }
+
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'جاري التوليد... ⏳';
+          }
+
+          try {
+            const res = await window.AssistantService.generateMonthlyCodes(count, notes);
+            if (res.success && res.generated_codes) {
+              if (window.UI && window.UI.showToast) {
+                window.UI.showToast(res.message || `تم توليد ${count} كود اشتراك شهري بنجاح`, 'success');
+              }
+
+              if (resultBox && listContainer) {
+                listContainer.innerHTML = res.generated_codes.map(c => c.code).join('<br>');
+                resultBox.style.display = 'block';
+              }
+
+              if (tableBody) {
+                const newRows = res.generated_codes.map(c => `
+                  <tr style="background:rgba(16,185,129,0.06);">
+                    <td style="font-family:var(--font-mono); font-weight:700; color:var(--cyan); direction:ltr; text-align:right;">
+                      ${c.code}
+                    </td>
+                    <td>
+                      <span class="badge badge-cyan">شهري (30 يوم)</span>
+                    </td>
+                    <td style="font-size:0.8rem; color:var(--text-subtle);">${(c.created_at || '').slice(0, 10)}</td>
+                    <td style="font-weight:600; color:var(--text-main); font-size:0.85rem;">${c.created_by_name || assistant.name || 'المساعد'}</td>
+                    <td><span class="badge badge-success">متاح للتفعيل</span></td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">—</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">—</td>
+                  </tr>
+                `).join('');
+                tableBody.insertAdjacentHTML('afterbegin', newRows);
+              }
+            }
+          } catch (err) {
+            if (window.UI && window.UI.showToast) {
+              window.UI.showToast(err.message || 'فشل توليد الأكواد. تأكد من صلاحيات المساعد (شهري فقط).', 'error');
+            }
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerHTML = '⚡ توليد الأكواد';
+            }
+          }
+        });
+
+        copyBtn?.addEventListener('click', () => {
+          if (listContainer && navigator.clipboard) {
+            const cleanText = listContainer.innerText.trim();
+            navigator.clipboard.writeText(cleanText);
+            copyBtn.textContent = 'تم النسخ ✓';
+            setTimeout(() => { copyBtn.textContent = '📋 نسخ الأكواد'; }, 2000);
+          }
+        });
+
+        searchInput?.addEventListener('input', (e) => {
+          const query = e.target.value.toLowerCase().trim();
+          tableBody?.querySelectorAll('tr').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(query) ? '' : 'none';
+          });
+        });
+      }
+
       // 5. Students Directory Events
       if (path === '#assistant-students') {
         const profModal = document.getElementById('ast-student-profile-modal');
@@ -1318,27 +1407,64 @@
               <div class="badge badge-purple" style="margin-bottom:0.35rem;">🔑 صلاحيات المساعد التعليمي</div>
               <h1 style="font-size:1.75rem; font-weight:800; margin:0;">أكواد الاشتراك الشهرية (30 يومًا)</h1>
               <p style="color:var(--text-muted); font-size:0.875rem; margin-top:0.25rem;">
-                يمكنك توليد أكواد اشتراك لمدة شهر واحد فقط (30 يومًا) وتوزيعها على الطلاب.
+                توليد أكواد اشتراك شهرية للطلاب وإدارتها ومتابعة من قام بتفعيلها.
               </p>
             </div>
-
-            <button id="ast-open-code-modal-btn" class="btn btn-primary btn-glow" style="box-shadow:0 0 15px rgba(168,85,247,0.35);">
-              ➕ إنشاء كود اشتراك شهري (30 يوم)
-            </button>
           </div>
 
           <!-- Alert Note -->
           <div style="background:rgba(168,85,247,0.08); border:1px solid rgba(168,85,247,0.25); border-radius:var(--radius-md); padding:0.85rem 1.25rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:0.75rem;">
             <span style="font-size:1.25rem;">ℹ️</span>
             <div style="font-size:0.875rem; color:var(--text-main);">
-              <strong>تنبيه الصلاحيات:</strong> طبقًا لإعدادات الإدارة، يقتصر دور المساعد على إنشاء أكواد لمدة <strong>شهر واحد (30 يومًا) فقط</strong>. لا يمكن توليد مدد أخرى (3 أشهر أو 6 أشهر أو سنة).
+              <strong>ضوابط الصلاحيات:</strong> يُسمح للمساعد بإنشاء <strong>الاشتراك الشهري فقط (30 يومًا)</strong>. لا يمكن توليد اشتراكات سنوية أو مدى الحياة أو أي نوع آخر.
             </div>
           </div>
 
-          <!-- Codes Table Card -->
+          <!-- Dedicated Monthly Code Generator Card on the Page -->
+          <div class="card card-glass" style="margin-bottom:2rem; padding:1.5rem; border-color:rgba(168,85,247,0.3);">
+            <div style="font-weight:800; font-size:1.15rem; color:var(--text-main); margin-bottom:1rem; display:flex; align-items:center; gap:0.5rem;">
+              <span>🔑</span> إنشاء وتوليد أكواد اشتراك شهرية جديدة
+            </div>
+            
+            <form id="ast-generate-codes-form">
+              <div style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
+                <div style="flex:1; min-width:180px;">
+                  <label class="form-label" style="font-size:0.8125rem;">نوع الاشتراك</label>
+                  <input type="text" value="شهري (30 يومًا)" disabled class="form-input" style="background:rgba(0,0,0,0.35); color:var(--cyan); font-weight:700; cursor:not-allowed;">
+                </div>
+
+                <div style="flex:1; min-width:140px;">
+                  <label class="form-label" for="ast-codes-count" style="font-size:0.8125rem;">عدد الأكواد المطلوبة</label>
+                  <input type="number" id="ast-codes-count" class="form-input" min="1" max="50" value="10" required>
+                </div>
+
+                <div style="flex:1.5; min-width:200px;">
+                  <label class="form-label" for="ast-codes-notes" style="font-size:0.8125rem;">ملاحظات / اسم المجموعة (اختياري)</label>
+                  <input type="text" id="ast-codes-notes" class="form-input" placeholder="مثال: طلاب سنتر الأمل - مجموعة السبت">
+                </div>
+
+                <div>
+                  <button type="submit" id="ast-submit-code-btn" class="btn btn-primary btn-glow" style="min-height:42px; font-weight:800;">
+                    ⚡ توليد الأكواد
+                  </button>
+                </div>
+              </div>
+
+              <!-- Generated Result Box -->
+              <div id="ast-generated-result-box" style="display:none; margin-top:1.25rem; background:#070C18; border:1px solid var(--border-cyan); border-radius:var(--radius-md); padding:1rem;">
+                <div style="font-size:0.875rem; color:#10B981; font-weight:800; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center;">
+                  <span>🎉 تم توليد الأكواد بنجاح! انسخها أو وزعها على الطلاب:</span>
+                  <button type="button" id="ast-copy-generated-btn" class="btn btn-secondary btn-sm">📋 نسخ الأكواد</button>
+                </div>
+                <div id="ast-generated-codes-list" style="font-family:var(--font-mono); font-size:1.05rem; color:#38BDF8; font-weight:bold; word-break:break-all; direction:ltr; text-align:left; background:rgba(0,0,0,0.5); padding:0.75rem; border-radius:4px; max-height:160px; overflow-y:auto;"></div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Codes Table Card with Specific Required Columns: Code, Type, Created At, Created By, Status, Used At, Student -->
           <div class="card" style="padding:0; overflow:hidden;">
             <div style="padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
-              <h3 style="margin:0; font-size:1.1rem; font-weight:800;">سجل أكواد الاشتراك المتاحة والمستخدمة (${codes.length})</h3>
+              <h3 style="margin:0; font-size:1.1rem; font-weight:800;">سجل أكواد الاشتراك الشهرية المنشأة (${codes.length})</h3>
               <input type="text" id="ast-codes-search" class="form-input" style="max-width:250px; padding:0.4rem 0.75rem; font-size:0.85rem;" placeholder="بحث في الأكواد...">
             </div>
 
@@ -1346,19 +1472,20 @@
               <table class="table" style="margin:0;">
                 <thead>
                   <tr>
-                    <th>الكود</th>
-                    <th>المدة المعتمدة</th>
-                    <th>الحالة</th>
-                    <th>مرات الاستخدام</th>
-                    <th>الملاحظات</th>
-                    <th>تاريخ الإنشاء</th>
+                    <th>Code (الكود)</th>
+                    <th>Type (النوع)</th>
+                    <th>Created At (تاريخ الإنشاء)</th>
+                    <th>Created By (أنشئ بواسطة)</th>
+                    <th>Status (الحالة)</th>
+                    <th>Used At (تاريخ الاستخدام)</th>
+                    <th>Student (الطالب المستفيد)</th>
                   </tr>
                 </thead>
                 <tbody id="ast-codes-table-body">
                   ${codes.length === 0 ? `
                     <tr>
-                      <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">
-                        لم تقم بتوليد أي أكواد بعد. اضغط على الزر أعلاه لتوليد أول كود اشتراك شهري.
+                      <td colspan="7" style="text-align:center; padding:3rem; color:var(--text-muted);">
+                        لم تقم بتوليد أي أكواد بعد. استخدم النموذج أعلاه لتوليد أكواد اشتراك شهرية.
                       </td>
                     </tr>
                   ` : codes.map(c => `
@@ -1367,8 +1494,10 @@
                         ${c.masked_code || c.code || 'CS-****'}
                       </td>
                       <td>
-                        <span class="badge badge-cyan">شهر واحد (30 يوم)</span>
+                        <span class="badge badge-cyan">شهري (30 يوم)</span>
                       </td>
+                      <td style="font-size:0.8rem; color:var(--text-subtle);">${(c.created_at || '').slice(0, 10) || '—'}</td>
+                      <td style="font-weight:600; color:var(--text-main); font-size:0.85rem;">${c.created_by_name || assistant.name || 'المساعد'}</td>
                       <td>
                         ${c.status === 'active' || c.status === 'ACTIVE' 
                           ? '<span class="badge badge-success">متاح للتفعيل</span>' 
@@ -1376,9 +1505,8 @@
                           ? '<span class="badge badge-neutral">تم الاستخدام</span>'
                           : '<span class="badge badge-danger">معطل</span>'}
                       </td>
-                      <td>${c.uses_count || 0} / ${c.max_uses || 1}</td>
-                      <td style="font-size:0.85rem; color:var(--text-muted);">${c.notes || '—'}</td>
-                      <td style="font-size:0.8rem; color:var(--text-subtle);">${(c.created_at || '').slice(0, 10) || '—'}</td>
+                      <td style="font-size:0.85rem; color:var(--text-muted);">${c.used_at || c.activated_at ? (c.used_at || c.activated_at).slice(0, 10) : '—'}</td>
+                      <td style="font-size:0.85rem; font-weight:600; color:var(--text-main);">${c.student || c.assigned_user_name || '—'}</td>
                     </tr>
                   `).join('')}
                 </tbody>

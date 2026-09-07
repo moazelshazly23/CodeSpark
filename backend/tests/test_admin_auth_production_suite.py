@@ -108,7 +108,7 @@ class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
         })
         self.assertEqual(res_old.status_code, 401)
 
-        # Reset back to default  for subsequent tests
+        # Reset back to default admin12345 for subsequent tests
         default_hash = hash_password(TEST_ADMIN_PASSWORD)
         with get_db() as conn:
             cursor = conn.cursor()

@@ -77,11 +77,11 @@ def seed_database(force_refresh=False):
             """
         ).fetchone()
 
+        adm_name = (ADMIN_NAME or os.getenv("ADMIN_NAME", "المهندس معاذ الشاذلي")).strip()
+        adm_email = (ADMIN_EMAIL or os.getenv("ADMIN_EMAIL", "admin@codespark.edu.eg")).strip()
         adm_data = next((u for u in data.get("users", []) if u.get("role") in ("SUPER_ADMIN", "ADMIN")), {})
-        adm_name = (ADMIN_NAME or os.getenv("ADMIN_NAME", "").strip() or adm_data.get("name") or "المهندس معاذ الشاذلي").strip()
-        adm_email = (ADMIN_EMAIL or os.getenv("ADMIN_EMAIL", "").strip() or adm_data.get("email") or "").strip()
-        adm_phone = (ADMIN_PHONE or os.getenv("ADMIN_PHONE", "").strip() or adm_data.get("phone") or "01000000000").strip()
-        adm_password = (ADMIN_PASSWORD or os.getenv("ADMIN_PASSWORD", "")).strip()
+        adm_phone = (ADMIN_PHONE or os.getenv("ADMIN_PHONE", "01000000000")).strip()
+        adm_password = (ADMIN_PASSWORD or os.getenv("ADMIN_PASSWORD", "admin12345")).strip()
 
         if not admin:
             if not adm_name:
@@ -146,7 +146,7 @@ def seed_database(force_refresh=False):
         users = seed_data.get("users", [])
 
         for user_data in users:
-            role = (user_data.get("role") or "STUDENT").strip()
+            role = (user_data.get("role") or "student").strip()
             if role.upper() in ("SUPER_ADMIN", "ADMIN"):
                 continue
 

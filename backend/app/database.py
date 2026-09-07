@@ -773,7 +773,36 @@ def init_db():
             created_at VARCHAR(64) NOT NULL,
             activated_at VARCHAR(64),
             expires_at VARCHAR(64),
-            disabled_at VARCHAR(64)
+            disabled_at VARCHAR(64),
+            created_by VARCHAR(64)
+        )
+        """)
+
+        # Auto-migrate subscription_codes if created_by is missing
+        sc_cols = [
+            ("created_by", "VARCHAR(64)")
+        ]
+        for col_name, col_def in sc_cols:
+            try:
+                if db_type == "postgres":
+                    cursor.execute(f"ALTER TABLE subscription_codes ADD COLUMN IF NOT EXISTS {col_name} {col_def}")
+                else:
+                    cursor.execute(f"ALTER TABLE subscription_codes ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
+
+        # 23. Exercise Completions Table
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS exercise_completions (
+            id VARCHAR(64) PRIMARY KEY,
+            student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            lesson_id VARCHAR(64) REFERENCES lessons(id) ON DELETE SET NULL,
+            question_id VARCHAR(64) REFERENCES questions(id) ON DELETE SET NULL,
+            code TEXT,
+            score INTEGER DEFAULT 10,
+            passed INTEGER DEFAULT 1,
+            completed_at VARCHAR(64) NOT NULL,
+            UNIQUE(student_id, lesson_id, question_id)
         )
         """)
 
@@ -815,6 +844,8 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_codes_status ON subscription_codes(status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_codes_user ON subscription_codes(assigned_user_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_codes_created ON subscription_codes(created_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sub_codes_creator ON subscription_codes(created_by)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ex_comp_student ON exercise_completions(student_id)")
 
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone)")

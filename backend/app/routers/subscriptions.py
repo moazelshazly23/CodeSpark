@@ -456,12 +456,12 @@ def generate_subscription_codes(
             INSERT INTO subscription_codes (
                 id, code_hash, code_prefix, masked_code, status,
                 subscription_type, duration_days, max_uses, uses_count,
-                assigned_user_id, notes, created_at, activated_at, expires_at, disabled_at
+                assigned_user_id, notes, created_at, activated_at, expires_at, disabled_at, created_by
             )
-            VALUES (?, ?, ?, ?, 'active', ?, ?, ?, 0, NULL, ?, ?, NULL, NULL, NULL)
+            VALUES (?, ?, ?, ?, 'active', ?, ?, ?, 0, NULL, ?, ?, NULL, NULL, NULL, ?)
             """, (
                 code_id, c_hash, code_prefix, masked,
-                sub_type, duration_days, max_uses, notes, now_str
+                sub_type, duration_days, max_uses, notes, now_str, admin["id"]
             ))
 
             generated_output.append({
@@ -474,7 +474,9 @@ def generate_subscription_codes(
                 "type_label": TYPE_LABELS.get(sub_type, "اشتراك"),
                 "duration_days": duration_days,
                 "max_uses": max_uses,
-                "created_at": now_str
+                "created_at": now_str,
+                "created_by": admin["id"],
+                "created_by_name": admin.get("name", "المشرف")
             })
 
         log_activity(
@@ -504,6 +506,7 @@ def generate_subscription_codes(
 def list_subscription_codes(
     status_filter: Optional[str] = Query(None, alias="status"),
     type_filter: Optional[str] = Query(None, alias="type"),
+    created_by_filter: Optional[str] = Query(None, alias="created_by"),
     search: Optional[str] = None,
     page: int = 1,
     limit: int = 20,
@@ -550,15 +553,25 @@ def list_subscription_codes(
         base_query = """
         SELECT sc.id, sc.code_prefix, sc.masked_code, sc.status, sc.subscription_type,
                sc.duration_days, sc.max_uses, sc.uses_count, sc.assigned_user_id,
-               sc.notes, sc.created_at, sc.activated_at, sc.expires_at, sc.disabled_at,
+               sc.notes, sc.created_at, sc.activated_at, sc.expires_at, sc.disabled_at, sc.created_by,
                u.name as assigned_user_name, u.phone as assigned_user_phone, u.email as assigned_user_email,
-               sp.grade as assigned_user_grade
+               sp.grade as assigned_user_grade,
+               creator.name as created_by_name, creator.role as created_by_role
         FROM subscription_codes sc
         LEFT JOIN users u ON sc.assigned_user_id = u.id
         LEFT JOIN student_profiles sp ON u.id = sp.user_id
+        LEFT JOIN users creator ON sc.created_by = creator.id
         """
         where_clauses = []
         params = []
+
+        # Strict scope for assistant vs admin
+        if admin.get("is_assistant") and not admin.get("is_super_admin"):
+            where_clauses.append("sc.created_by = ?")
+            params.append(admin["id"])
+        elif created_by_filter and created_by_filter != "all":
+            where_clauses.append("sc.created_by = ?")
+            params.append(created_by_filter)
 
         if type_filter and type_filter != "all":
             where_clauses.append("sc.subscription_type = ?")
@@ -602,6 +615,9 @@ def list_subscription_codes(
             eff_status = _compute_code_status(item, now_str)
             item["status"] = eff_status
             item["type_label"] = TYPE_LABELS.get(item["subscription_type"], "اشتراك")
+            item["created_by_name"] = item.get("created_by_name") or "المشرف العام"
+            item["student"] = item.get("assigned_user_name") or ("—" if eff_status == "active" else "مجهول")
+            item["used_at"] = item.get("activated_at") or "—"
             items.append(item)
 
         total_pages = math.ceil(filtered_count / limit) if filtered_count > 0 else 1
@@ -866,3 +882,34 @@ def redeem_subscription_code(req: SubscriptionRedeemRequest, student: dict = Dep
                 "expires_at": computed_expires_at
             }
         }
+
+# ==============================================================================
+# ASSISTANT-SCOPED SUBSCRIPTION ENDPOINTS
+# ==============================================================================
+
+@router.post("/api/assistant/subscriptions/generate")
+def assistant_generate_subscription_codes(
+    req: SubscriptionGenerateRequest,
+    assistant: dict = Depends(get_current_staff)
+):
+    """Assistant: Dedicated generation endpoint, strictly restricted to 1-Month."""
+    return generate_subscription_codes(req, admin=assistant)
+
+@router.get("/api/assistant/subscriptions")
+def assistant_list_subscription_codes(
+    status_filter: Optional[str] = Query(None, alias="status"),
+    search: Optional[str] = None,
+    page: int = 1,
+    limit: int = 50,
+    assistant: dict = Depends(get_current_staff)
+):
+    """Assistant: List only codes created by this assistant."""
+    return list_subscription_codes(
+        status_filter=status_filter,
+        type_filter="1_month",
+        created_by_filter=assistant["id"],
+        search=search,
+        page=page,
+        limit=limit,
+        admin=assistant
+    )

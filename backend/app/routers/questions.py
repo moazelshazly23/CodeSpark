@@ -2,7 +2,7 @@ import datetime
 from fastapi import APIRouter, HTTPException, status, Depends
 from typing import Optional, List, Dict, Any
 from ..database import get_db, log_activity
-from ..dependencies import get_current_admin, get_current_super_admin, get_current_staff, get_optional_user
+from ..dependencies import get_current_admin, get_current_super_admin, get_current_staff, get_optional_user, get_current_student
 from ..models import QuestionCreateRequest, QuestionUpdateRequest
 
 router = APIRouter(prefix="/api/questions", tags=["Questions Bank"])
@@ -11,9 +11,9 @@ opt_keys = ["A", "B", "C", "D", "E", "F"]
 
 
 @router.get("")
-def get_questions(unit_id: Optional[str] = None, lesson_id: Optional[str] = None, q_type: Optional[str] = None, current_user: Optional[dict] = Depends(get_optional_user)):
+def get_questions(unit_id: Optional[str] = None, lesson_id: Optional[str] = None, q_type: Optional[str] = None, difficulty: Optional[str] = None, search: Optional[str] = None, is_published: Optional[bool] = None, current_user: Optional[dict] = Depends(get_optional_user)):
     """Fetch questions bank with options. Redacts correct answers and explanations for students."""
-    is_admin = current_user and current_user.get("role") == "admin"
+    is_admin = current_user and (current_user.get("role") in ("admin", "ADMIN", "SUPER_ADMIN", "super_admin") or current_user.get("is_super_admin"))
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -23,15 +23,25 @@ def get_questions(unit_id: Optional[str] = None, lesson_id: Optional[str] = None
 
         if not is_admin:
             conds.append("(q.is_published = 1 OR q.published = 1)")
-        if unit_id:
+        if unit_id and unit_id != "all":
             conds.append("q.unit_id = ?")
             params.append(unit_id)
-        if lesson_id:
+        if lesson_id and lesson_id != "all":
             conds.append("q.lesson_id = ?")
             params.append(lesson_id)
-        if q_type:
+        if q_type and q_type != "all":
             conds.append("q.type = ?")
             params.append(q_type)
+        if difficulty and difficulty != "all":
+            conds.append("q.difficulty = ?")
+            params.append(difficulty)
+        if is_published is not None:
+            conds.append("(q.is_published = ? OR q.published = ?)")
+            params.extend([1 if is_published else 0, 1 if is_published else 0])
+        if search and search.strip():
+            s = f"%{search.strip()}%";
+            conds.append("(q.question LIKE ? OR q.explanation LIKE ? OR q.code_snippet LIKE ?)")
+            params.extend([s, s, s])
 
         if conds:
             query += " WHERE " + " AND ".join(conds)
@@ -76,7 +86,7 @@ def get_questions(unit_id: Optional[str] = None, lesson_id: Optional[str] = None
 @router.get("/{question_id}")
 def get_question_detail(question_id: str, current_user: Optional[dict] = Depends(get_optional_user)):
     """Fetch single question details. Redacts correct answers for students."""
-    is_admin = current_user and current_user.get("role") == "admin"
+    is_admin = current_user and (current_user.get("role") in ("admin", "ADMIN", "SUPER_ADMIN", "super_admin") or current_user.get("is_super_admin"))
 
     with get_db() as conn:
         cursor = conn.cursor()
@@ -329,4 +339,55 @@ def submit_quick_practice(
             "percentage": pct,
             "results": results,
             "message": "🎉 ممتاز! أحسنت إنجاز التدريب السريع!" if pct >= 80 else "جيد جدًا! راجع التفسيرات لتحسين أدائك."
+        }
+
+@router.post("/{question_id}/answer")
+@router.post("/{question_id}/solve")
+def answer_question(
+    question_id: str,
+    data: Dict[str, Any],
+    student: dict = Depends(get_current_student)
+):
+    """Student: Submit an answer to a question, verify correctness, and record exercise completion."""
+    selected = str(data.get("selected_option", data.get("answer", ""))).strip()
+    student_id = student["id"]
+    now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    now_ms = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM questions WHERE id = ?", (question_id,))
+        q_row = cursor.fetchone()
+        if not q_row:
+            raise HTTPException(status_code=404, detail="السؤال غير موجود")
+
+        q = dict(q_row)
+        correct_ans = str(q.get("correct_answer", "")).strip()
+        score_val = q.get("score", 10) or 10
+        is_correct = (selected == correct_ans)
+
+        # Record completion in exercise_completions
+        comp_id = f"comp_{student_id}_{question_id}_{now_ms}"
+        try:
+            cursor.execute("""
+            INSERT OR REPLACE INTO exercise_completions (
+                id, student_id, lesson_id, question_id, code, score, passed, completed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                comp_id, student_id, q.get("lesson_id"), question_id,
+                selected, score_val if is_correct else 0, 1 if is_correct else 0, now
+            ))
+        except Exception as e:
+            pass
+
+        if is_correct:
+            cursor.execute("UPDATE student_profiles SET xp = xp + ?, last_activity = ?, updated_at = ? WHERE user_id = ?", (score_val, now, now, student_id))
+
+        return {
+            "success": True,
+            "is_correct": is_correct,
+            "correct_answer": correct_ans,
+            "explanation": q.get("explanation", ""),
+            "score": score_val if is_correct else 0,
+            "message": "🎉 إجابة صحيحة وممتازة!" if is_correct else "💡 إجابة خاطئة. راجع التفسير والشرح النموذجي."
         }

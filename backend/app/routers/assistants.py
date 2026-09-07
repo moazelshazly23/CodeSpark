@@ -409,3 +409,13 @@ def delete_assistant(
             "success": True,
             "message": f"تم حذف حساب المساعد ({user_name}) بنجاح وبأمان"
         }
+
+# Dedicated Assistant Portal Router
+assistant_router = APIRouter(prefix="/api/assistant", tags=["Assistant Portal"])
+
+@assistant_router.get("/analytics")
+@assistant_router.get("/dashboard")
+def get_assistant_portal_analytics(assistant: dict = Depends(get_current_staff)):
+    """Assistant Portal: Real DB statistics scoped strictly to assistant role."""
+    from .students import get_assistant_dashboard_analytics
+    return get_assistant_dashboard_analytics(assistant=assistant)

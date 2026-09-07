@@ -114,22 +114,94 @@ def get_student_progress_summary(student: dict = Depends(get_current_student)):
                 "percentage": u_pct
             })
 
+        # 7. Real solved exercises count
+        cursor.execute("SELECT COUNT(DISTINCT question_id) as cnt FROM exercise_completions WHERE student_id = ? AND passed = 1", (student_id,))
+        ec_cnt = cursor.fetchone()["cnt"] or 0
+        cursor.execute("""
+        SELECT COUNT(DISTINCT lp.lesson_id) as cnt
+        FROM lesson_progress lp
+        JOIN lessons l ON lp.lesson_id = l.id
+        WHERE lp.student_id = ? AND lp.completed = 1 AND (l.exercise_title IS NOT NULL AND l.exercise_title != '')
+        """, (student_id,))
+        lex_cnt = cursor.fetchone()["cnt"] or 0
+        solved_exercises_count = ec_cnt + lex_cnt
+
+        # 8. Recent Lessons accessed
+        cursor.execute("""
+        SELECT l.id, l.title, l.duration, l.description, l.unit_id, u.title as unit_title,
+               COALESCE(lp.progress, 0) as progress, COALESCE(lp.completed, 0) as completed,
+               lp.updated_at
+        FROM lessons l
+        JOIN units u ON l.unit_id = u.id
+        LEFT JOIN lesson_progress lp ON l.id = lp.lesson_id AND lp.student_id = ?
+        WHERE l.is_published = 1
+        ORDER BY CASE WHEN lp.updated_at IS NOT NULL THEN 0 ELSE 1 END, lp.updated_at DESC, u.order_index ASC, l.order_index ASC
+        LIMIT 6
+        """, (student_id,))
+        recent_lessons = [dict(r) for r in cursor.fetchall()]
+
+        # 9. Recent activities
+        recent_activities = []
+        for att in exam_attempts[:4]:
+            recent_activities.append({
+                "type": "exam",
+                "title": f"اختبار: {att.get('exam_title', 'امتحان تقييمي')}",
+                "description": f"النتيجة: {att.get('percentage', 0)}% ({'ناجح ✅' if att.get('passed') else 'يحتاج مراجعة ⚠️'})",
+                "time": att.get("completed_at", now),
+                "badge": "badge-primary"
+            })
+        for qa in quiz_attempts[:4]:
+            recent_activities.append({
+                "type": "quiz",
+                "title": f"كويز: {qa.get('quiz_title', 'اختبار قصير')}",
+                "description": f"الدرجة: {qa.get('score', 0)} نقطة",
+                "time": qa.get("completed_at", now),
+                "badge": "badge-cyan"
+            })
+        cursor.execute("""
+        SELECT l.title, lp.completed_at
+        FROM lesson_progress lp
+        JOIN lessons l ON lp.lesson_id = l.id
+        WHERE lp.student_id = ? AND lp.completed = 1
+        ORDER BY lp.completed_at DESC LIMIT 4
+        """, (student_id,))
+        for cl in cursor.fetchall():
+            recent_activities.append({
+                "type": "lesson",
+                "title": f"إتمام درس: {cl['title']}",
+                "description": "تم إنهاء الدرس والتطبيق بنجاح",
+                "time": cl.get("completed_at") or now,
+                "badge": "badge-success"
+            })
+        recent_activities.sort(key=lambda x: str(x.get("time") or ""), reverse=True)
+        recent_activities = recent_activities[:6]
+
         return {
             "success": True,
             "progress": {
                 "studentId": student_id,
+                "studentName": student.get("name", ""),
+                "subscriptionStatus": student.get("subscription_status", "active"),
+                "subscriptionType": student.get("subscription_type", "1_month"),
+                "subscriptionStart": student.get("subscription_start"),
+                "subscriptionExpiresAt": student.get("subscription_expires_at"),
                 "totalLessonsCount": total_published_lessons,
+                "totalLessons": total_published_lessons,
                 "completedLessonsCount": completed_count,
                 "completedLessons": completed_lessons,
                 "completionPercentage": overall_progress_pct,
+                "overallProgress": overall_progress_pct,
+                "solvedExercisesCount": solved_exercises_count,
                 "examsCount": exams_count,
                 "avgScore": avg_score,
                 "examAttempts": exam_attempts,
                 "quizAttempts": quiz_attempts,
-                "learningHours": student.get("learning_hours", 14.5),
-                "streak": student.get("streak", 5),
-                "xp": student.get("xp", 840),
+                "learningHours": float(student.get("learning_hours") or 0.0),
+                "streak": int(student.get("streak") or 1),
+                "xp": int(student.get("xp") or 0),
                 "currentLesson": current_lesson,
+                "recentLessons": recent_lessons,
+                "recentActivities": recent_activities,
                 "unitProgress": unit_progress_list,
                 "lastActivity": student.get("last_activity", now)
             }

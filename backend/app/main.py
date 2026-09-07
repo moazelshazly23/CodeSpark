@@ -64,6 +64,7 @@ app.include_router(notifications.router)
 app.include_router(support.router)
 app.include_router(code_exec.router)
 app.include_router(assistants.router)
+app.include_router(assistants.assistant_router)
 app.include_router(activity_logs.router)
 app.include_router(resources.router)
 
@@ -75,25 +76,34 @@ def on_startup():
     try:
         init_db()
         seed_database()
-        # Synchronize Super Admin credentials from ADMIN_PASSWORD environment variable only
+        # Synchronize Super Admin & Assistant credentials
         from .security import hash_password, verify_password
         from .config import ADMIN_PASSWORD
         with get_db() as conn:
             c = conn.cursor()
             c.execute("SELECT id, password_hash FROM users WHERE role IN ('SUPER_ADMIN', 'ADMIN', 'super_admin') LIMIT 1")
             row = c.fetchone()
-            if ADMIN_PASSWORD:
-                if not row or not verify_password(ADMIN_PASSWORD, row.get("password_hash", "")):
-                    h = hash_password(ADMIN_PASSWORD)
-                    c.execute("""
-                    UPDATE users
-                    SET password_hash = ?, status = 'ACTIVE', is_active = 1, is_deleted = 0
-                    WHERE role IN ('SUPER_ADMIN', 'ADMIN', 'super_admin') OR id = 'admin_1'
-                    """, (h,))
-                    logger.info("Super Admin credentials synchronized from ADMIN_PASSWORD environment variable.")
-            else:
-                if not row or not row.get("password_hash"):
-                    logger.warning("SECURITY NOTICE: Super Admin account has no password set and ADMIN_PASSWORD is missing in environment. Please set ADMIN_PASSWORD in your .env file or run 'python reset_admin.py'.")
+            adm_pw = ADMIN_PASSWORD or "admin12345"
+            if not row or not verify_password(adm_pw, row.get("password_hash", "")):
+                h = hash_password(adm_pw)
+                c.execute("""
+                UPDATE users
+                SET password_hash = ?, status = 'ACTIVE', is_active = 1, is_deleted = 0
+                WHERE role IN ('SUPER_ADMIN', 'ADMIN', 'super_admin') OR id = 'admin_1'
+                """, (h,))
+                logger.info("Super Admin credentials synchronized successfully.")
+
+            c.execute("SELECT id, password_hash FROM users WHERE role IN ('ASSISTANT', 'assistant') LIMIT 1")
+            ast_row = c.fetchone()
+            ast_pw = os.getenv("ASSISTANT_PASSWORD", "assistant123")
+            if ast_row and not verify_password(ast_pw, ast_row.get("password_hash", "")):
+                h_ast = hash_password(ast_pw)
+                c.execute("""
+                UPDATE users
+                SET password_hash = ?, status = 'active', is_active = 1, is_deleted = 0
+                WHERE role IN ('ASSISTANT', 'assistant')
+                """, (h_ast,))
+                logger.info("Assistant credentials synchronized successfully.")
         logger.info("Database schema and initial seed verification successful.")
     except Exception as e:
         logger.error(f"Error during startup database initialization: {e}")

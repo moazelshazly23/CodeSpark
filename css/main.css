@@ -592,3 +592,203 @@ body.public-mode {
     display: none !important;
   }
 }
+
+/* ==========================================================================
+   DESKTOP SIDEBAR COLLAPSED / EXPANDED STYLES
+   ========================================================================== */
+@media (min-width: 993px) {
+  .app-container.sidebar-collapsed .app-sidebar,
+  body.sidebar-collapsed .app-sidebar {
+    width: 76px !important;
+    min-width: 76px !important;
+    transition: width var(--transition-normal);
+  }
+  .app-container.sidebar-collapsed .sidebar-header a img,
+  body.sidebar-collapsed .sidebar-header a img {
+    height: 24px;
+    max-width: 40px;
+  }
+  .app-container.sidebar-collapsed .sidebar-section-title,
+  body.sidebar-collapsed .sidebar-section-title,
+  .app-container.sidebar-collapsed .sidebar-header .badge,
+  body.sidebar-collapsed .sidebar-header .badge,
+  .app-container.sidebar-collapsed .user-meta,
+  body.sidebar-collapsed .user-meta,
+  .app-container.sidebar-collapsed .nav-link span:not(.nav-icon):not(.badge),
+  body.sidebar-collapsed .nav-link span:not(.nav-icon):not(.badge) {
+    display: none !important;
+  }
+  .app-container.sidebar-collapsed .nav-link,
+  body.sidebar-collapsed .nav-link {
+    justify-content: center;
+    padding: 0.75rem 0.25rem;
+    gap: 0;
+  }
+  .app-container.sidebar-collapsed .nav-link .nav-icon,
+  body.sidebar-collapsed .nav-link .nav-icon {
+    margin: 0;
+    font-size: 1.35rem;
+  }
+  .app-container.sidebar-collapsed .user-mini-profile,
+  body.sidebar-collapsed .user-mini-profile {
+    justify-content: center;
+    padding: 0.4rem;
+  }
+  .app-container.sidebar-collapsed .user-mini-profile #sidebar-logout-btn,
+  body.sidebar-collapsed .user-mini-profile #sidebar-logout-btn {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   TABLET & MOBILE SIDEBAR DRAWER & OVERLAY (<= 992px)
+   ========================================================================== */
+@media (max-width: 992px) {
+  .app-sidebar {
+    position: fixed !important;
+    right: 0 !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    width: 280px !important;
+    max-width: 85vw !important;
+    transform: translateX(100%) !important;
+    box-shadow: -10px 0 40px rgba(0,0,0,0.85) !important;
+    z-index: 55 !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+  .app-sidebar.open {
+    transform: translateX(0) !important;
+  }
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 15, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 52;
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+  }
+  .sidebar-backdrop.show {
+    display: block !important;
+    opacity: 1 !important;
+  }
+  .main-content {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+}
+
+/* ==========================================================================
+   TOUCH TARGETS & RESPONSIVENESS (TABLET & MOBILE 768px, 390px, 360px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  .content-body {
+    padding: 1rem 0.85rem !important;
+    padding-bottom: 5.5rem !important;
+  }
+  .dashboard-topbar {
+    padding: 0.65rem 0.85rem !important;
+  }
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+    border-radius: var(--radius-md);
+  }
+  .table th, .table td {
+    padding: 0.65rem 0.75rem !important;
+    font-size: 0.8125rem !important;
+    white-space: nowrap;
+  }
+  .btn {
+    min-height: 42px;
+    padding: 0.5rem 1rem;
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 0.35rem 0.75rem;
+  }
+  .form-input, .form-select, .form-textarea {
+    min-height: 42px;
+    font-size: 0.875rem;
+  }
+  .modal-dialog, .modal-card {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 1rem auto !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html, body {
+    font-size: 14px;
+  }
+  .content-body {
+    padding: 0.75rem 0.65rem !important;
+    padding-bottom: 5.5rem !important;
+  }
+  .card {
+    padding: 1rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+  .stat-card {
+    padding: 0.85rem !important;
+  }
+  .stat-value {
+    font-size: 1.35rem !important;
+  }
+  .stat-label {
+    font-size: 0.75rem !important;
+  }
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  h2 {
+    font-size: 1.25rem !important;
+  }
+  .dashboard-topbar .search-trigger-box {
+    display: none !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .btn {
+    font-size: 0.8125rem !important;
+  }
+  .stat-card {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .content-body {
+    padding: 0.5rem 0.4rem !important;
+  }
+  .card {
+    padding: 0.85rem !important;
+  }
+  .stat-value {
+    font-size: 1.2rem !important;
+  }
+}
+
+/* Ensure no accidental horizontal scroll */
+html, body, #app, .app-container {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Centralized Logo Display */
+.logo-img, .sidebar-header img {
+  max-width: 100%;
+  height: auto;
+  max-height: 36px;
+  object-fit: contain;
+  transition: all var(--transition-fast);
+}

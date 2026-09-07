@@ -333,37 +333,84 @@ def delete_student(student_id: str, admin: dict = Depends(get_current_super_admi
 # ==================== 2. ANALYTICS & RESULTS ====================
 
 @router.get("/analytics")
-def get_admin_dashboard_analytics(staff: dict = Depends(get_current_staff)):
-    """Admin: Dynamic KPI metrics, counts, score averages, and recent activity."""
+def get_admin_dashboard_analytics(admin: dict = Depends(get_current_super_admin)):
+    """Admin: Dynamic real database KPI metrics, counts, subscriptions, codes, and recent activity."""
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
     with get_db() as conn:
         cursor = conn.cursor()
 
-        cursor.execute("SELECT COUNT(*) as total, SUM(CASE WHEN status = \x27active\x27 OR is_active = 1 THEN 1 ELSE 0 END) as active FROM users WHERE role = \x27student\x27")
-        s_row = cursor.fetchone()
-        total_students = s_row["total"] or 0
-        active_students = s_row["active"] or 0
+        # 1. Total Students
+        cursor.execute("SELECT COUNT(*) as total FROM users WHERE LOWER(role) = 'student' AND (is_deleted = 0 OR is_deleted IS NULL)")
+        total_students = cursor.fetchone()["total"] or 0
 
+        # 2. Active Students & Expired Students
+        cursor.execute("""
+        SELECT COUNT(*) as active_cnt
+        FROM users u
+        LEFT JOIN student_profiles sp ON u.id = sp.user_id
+        WHERE LOWER(u.role) = 'student' AND (u.is_deleted = 0 OR u.is_deleted IS NULL)
+          AND (u.status = 'active' OR u.status = 'ACTIVE' OR u.is_active = 1)
+          AND (sp.subscription_status = 'active' OR sp.subscription_status = 'ACTIVE' OR sp.subscription_expires_at IS NULL OR sp.subscription_expires_at > ?)
+        """, (now_str,))
+        active_students = cursor.fetchone()["active_cnt"] or 0
+        expired_students = max(0, total_students - active_students)
+
+        # 3. Active Subscriptions & Expired Subscriptions
+        cursor.execute("""
+        SELECT 
+            SUM(CASE WHEN (subscription_status = 'active' OR subscription_status = 'ACTIVE') AND (subscription_expires_at IS NULL OR subscription_expires_at > ?) THEN 1 ELSE 0 END) as active_subs,
+            SUM(CASE WHEN subscription_status = 'expired' OR (subscription_expires_at IS NOT NULL AND subscription_expires_at <= ?) THEN 1 ELSE 0 END) as expired_subs
+        FROM student_profiles
+        """, (now_str, now_str))
+        subs_row = cursor.fetchone()
+        active_subscriptions = (subs_row["active_subs"] if subs_row else 0) or 0
+        expired_subscriptions = (subs_row["expired_subs"] if subs_row else 0) or 0
+
+        # 4. Total Assistants
+        cursor.execute("SELECT COUNT(*) as cnt FROM users WHERE LOWER(role) = 'assistant' AND (is_deleted = 0 OR is_deleted IS NULL)")
+        total_assistants = cursor.fetchone()["cnt"] or 0
+
+        # 5. Units, Lessons, Exercises, Questions, Exams
         cursor.execute("SELECT COUNT(*) as cnt FROM units")
-        units_count = cursor.fetchone()["cnt"]
+        units_count = cursor.fetchone()["cnt"] or 0
 
         cursor.execute("SELECT COUNT(*) as cnt FROM lessons")
-        lessons_count = cursor.fetchone()["cnt"]
+        lessons_count = cursor.fetchone()["cnt"] or 0
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM exercises")
+        exercises_count = cursor.fetchone()["cnt"] or 0
 
         cursor.execute("SELECT COUNT(*) as cnt FROM questions")
-        questions_count = cursor.fetchone()["cnt"]
+        questions_count = cursor.fetchone()["cnt"] or 0
 
         cursor.execute("SELECT COUNT(*) as cnt FROM exams")
-        exams_count = cursor.fetchone()["cnt"]
+        exams_count = cursor.fetchone()["cnt"] or 0
 
+        # 6. Total Codes, Used Codes, Unused Codes
+        cursor.execute("SELECT COUNT(*) as cnt FROM subscription_codes")
+        total_codes = cursor.fetchone()["cnt"] or 0
+
+        cursor.execute("SELECT COUNT(*) as cnt FROM subscription_codes WHERE uses_count >= max_uses OR status = 'used'")
+        used_codes = cursor.fetchone()["cnt"] or 0
+
+        cursor.execute("""
+        SELECT COUNT(*) as cnt FROM subscription_codes 
+        WHERE (status = 'active' OR status IS NULL) AND (disabled_at IS NULL)
+          AND (uses_count < max_uses) AND (expires_at IS NULL OR expires_at > ?)
+        """, (now_str,))
+        unused_codes = cursor.fetchone()["cnt"] or 0
+
+        # 7. Average score & completion rate
         cursor.execute("SELECT AVG(percentage) as avg_s FROM exam_attempts")
         avg_score_row = cursor.fetchone()
-        avg_score = round(avg_score_row["avg_s"]) if avg_score_row["avg_s"] is not None else 86
+        avg_score = round(avg_score_row["avg_s"]) if (avg_score_row and avg_score_row["avg_s"] is not None) else 0
 
         cursor.execute("SELECT COUNT(*) as total_completions FROM lesson_progress WHERE completed = 1")
         total_completions = cursor.fetchone()["total_completions"] or 0
         potential_total = (total_students * lessons_count) if (total_students * lessons_count) > 0 else 1
         completion_rate = round(total_completions / potential_total * 100)
 
+        # 8. Recent Activity
         cursor.execute("""
         SELECT ea.id, ea.percentage, ea.score, ea.total_score, ea.correct_count, ea.total_count, ea.completed_at, ea.time_spent_seconds, ea.passed,
                u.name as student_name, u.avatar as student_avatar, sp.grade as student_grade, e.title as exam_title
@@ -375,28 +422,91 @@ def get_admin_dashboard_analytics(staff: dict = Depends(get_current_staff)):
         """)
         recent_exams = [dict(r) for r in cursor.fetchall()]
 
-        # Weekly Activity Distribution Simulation for Chart
-        activity_distribution = [14, 22, 35, 28, 42, 48, 38]
+        activity_distribution = [total_completions, active_students, len(recent_exams), exercises_count, questions_count, used_codes, total_students]
 
         return {
             "success": True,
             "analytics": {
                 "totalStudents": total_students,
                 "activeStudents": active_students,
+                "expiredStudents": expired_students,
+                "activeSubscriptions": active_subscriptions,
+                "expiredSubscriptions": expired_subscriptions,
+                "totalAssistants": total_assistants,
                 "unitsCount": units_count,
-            "totalUnits": units_count,
-            "totalLessons": lessons_count,
-            "totalQuestions": questions_count,
-            "totalExams": exams_count,
+                "totalUnits": units_count,
                 "lessonsCount": lessons_count,
+                "totalLessons": lessons_count,
+                "exercisesCount": exercises_count,
+                "totalExercises": exercises_count,
                 "questionsCount": questions_count,
+                "totalQuestions": questions_count,
                 "examsCount": exams_count,
+                "totalExams": exams_count,
+                "totalCodes": total_codes,
+                "usedCodes": used_codes,
+                "unusedCodes": unused_codes,
                 "avgScore": avg_score,
                 "completionRate": completion_rate,
                 "recentActivity": recent_exams,
                 "activityDistribution": activity_distribution
             }
         }
+
+@router.get("/assistant/analytics")
+@router.get("/api/assistant/analytics")
+def get_assistant_dashboard_analytics(assistant: dict = Depends(get_current_staff)):
+    """Assistant: Scoped statistics for the teaching assistant."""
+    assistant_id = assistant["id"]
+    now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    with get_db() as conn:
+        cursor = conn.cursor()
+
+        # 1. Total codes created by this assistant
+        cursor.execute("SELECT COUNT(*) as total FROM subscription_codes WHERE created_by = ?", (assistant_id,))
+        total_codes = cursor.fetchone()["total"] or 0
+
+        # 2. Used codes
+        cursor.execute("SELECT COUNT(*) as used FROM subscription_codes WHERE created_by = ? AND (uses_count >= max_uses OR status = 'used')", (assistant_id,))
+        used_codes = cursor.fetchone()["used"] or 0
+
+        # 3. Unused codes
+        cursor.execute("""
+        SELECT COUNT(*) as unused FROM subscription_codes
+        WHERE created_by = ? AND (status = 'active' OR status IS NULL) AND disabled_at IS NULL
+          AND uses_count < max_uses AND (expires_at IS NULL OR expires_at > ?)
+        """, (assistant_id, now_str))
+        unused_codes = cursor.fetchone()["unused"] or 0
+
+        # 4. Recent codes list
+        cursor.execute("""
+        SELECT sc.id, sc.code_prefix, sc.masked_code, sc.status, sc.subscription_type,
+               sc.duration_days, sc.max_uses, sc.uses_count, sc.created_at, sc.activated_at,
+               u.name as student_name, u.phone as student_phone,
+               assistant.name as created_by_name
+        FROM subscription_codes sc
+        LEFT JOIN users u ON sc.assigned_user_id = u.id
+        LEFT JOIN users assistant ON sc.created_by = assistant.id
+        WHERE sc.created_by = ?
+        ORDER BY sc.created_at DESC LIMIT 15
+        """, (assistant_id,))
+        recent_codes = [dict(r) for r in cursor.fetchall()]
+
+        # 5. Open tickets
+        cursor.execute("SELECT COUNT(*) as cnt FROM support_tickets WHERE status = 'open'")
+        open_tickets = cursor.fetchone()["cnt"] or 0
+
+        return {
+            "success": True,
+            "analytics": {
+                "totalCodes": total_codes,
+                "usedCodes": used_codes,
+                "unusedCodes": unused_codes,
+                "openTickets": open_tickets,
+                "recentCodes": recent_codes
+            }
+        }
+
 
 @router.get("/results")
 def get_admin_results(

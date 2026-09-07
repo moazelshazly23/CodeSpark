@@ -46,10 +46,18 @@
 
       const totalStudents = stats.totalStudents || 0;
       const activeStudents = stats.activeStudents || 0;
-      const unitsCount = stats.unitsCount || 0;
-      const lessonsCount = stats.lessonsCount || 0;
-      const questionsCount = stats.questionsCount || 0;
-      const examsCount = stats.examsCount || 0;
+      const expiredStudents = stats.expiredStudents !== undefined ? stats.expiredStudents : Math.max(0, totalStudents - activeStudents);
+      const activeSubscriptions = stats.activeSubscriptions !== undefined ? stats.activeSubscriptions : activeStudents;
+      const expiredSubscriptions = stats.expiredSubscriptions !== undefined ? stats.expiredSubscriptions : expiredStudents;
+      const totalAssistants = stats.totalAssistants || 0;
+      const unitsCount = stats.unitsCount || stats.totalUnits || 0;
+      const lessonsCount = stats.lessonsCount || stats.totalLessons || 0;
+      const exercisesCount = stats.exercisesCount || stats.totalExercises || 0;
+      const questionsCount = stats.questionsCount || stats.totalQuestions || 0;
+      const totalCodes = stats.totalCodes || 0;
+      const usedCodes = stats.usedCodes || 0;
+      const unusedCodes = stats.unusedCodes || 0;
+      const examsCount = stats.examsCount || stats.totalExams || 0;
       const avgScore = stats.avgScore || 0;
       const recentActivity = stats.recentActivity || [];
 
@@ -67,37 +75,114 @@
             </div>
           </div>
 
-          <!-- KPI Metrics Row -->
-          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1.25rem; margin-bottom:2rem;">
-            <div class="stat-card">
-              <div class="stat-icon-wrapper stat-icon-cyan">${Icons.users()}</div>
-              <div>
-                <div class="stat-value">${totalStudents}</div>
-                <div class="stat-label">إجمالي الطلاب (${activeStudents} نشط)</div>
+          <!-- Section 1: Students & Subscriptions Real Metrics -->
+          <div style="margin-bottom:1.5rem;">
+            <div style="font-size:0.875rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+              <span>👥</span> إحصائيات الطلاب والاشتراكات
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:1.25rem;">
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-cyan">${Icons.users()}</div>
+                <div>
+                  <div class="stat-value">${totalStudents}</div>
+                  <div class="stat-label">إجمالي الطلاب المسجلين</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-green">${Icons.check ? Icons.check() : '🟢'}</div>
+                <div>
+                  <div class="stat-value" style="color:var(--success);">${activeStudents}</div>
+                  <div class="stat-label">الطلاب النشطون</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-danger">⚠️</div>
+                <div>
+                  <div class="stat-value" style="color:var(--danger);">${expiredStudents}</div>
+                  <div class="stat-label">الطلاب المنتهية اشتراكاتهم</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-blue">🔑</div>
+                <div>
+                  <div class="stat-value">${activeSubscriptions}</div>
+                  <div class="stat-label">الاشتراكات النشطة</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-amber">⏳</div>
+                <div>
+                  <div class="stat-value">${expiredSubscriptions}</div>
+                  <div class="stat-label">الاشتراكات المنتهية</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-purple">👨‍🏫</div>
+                <div>
+                  <div class="stat-value">${totalAssistants}</div>
+                  <div class="stat-label">عدد المساعدين التعليميين</div>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="stat-card">
-              <div class="stat-icon-wrapper stat-icon-blue">${Icons.book()}</div>
-              <div>
-                <div class="stat-value">${unitsCount} وحدات</div>
-                <div class="stat-label">${lessonsCount} درسًا في المنهج</div>
-              </div>
+          <!-- Section 2: Academic Content & Codes Real Metrics -->
+          <div style="margin-bottom:2rem;">
+            <div style="font-size:0.875rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.5rem;">
+              <span>📚</span> إحصائيات المحتوى والتمارين والأكواد
             </div>
-
-            <div class="stat-card">
-              <div class="stat-icon-wrapper stat-icon-purple">${Icons.helpCircle()}</div>
-              <div>
-                <div class="stat-value">${questionsCount} أسئلة</div>
-                <div class="stat-label">${examsCount} نماذج اختبارات</div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:1.25rem;">
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-blue">${Icons.book()}</div>
+                <div>
+                  <div class="stat-value">${lessonsCount} درسًا</div>
+                  <div class="stat-label">عدد الدروس (${unitsCount} وحدات)</div>
+                </div>
               </div>
-            </div>
 
-            <div class="stat-card">
-              <div class="stat-icon-wrapper stat-icon-green">${Icons.award()}</div>
-              <div>
-                <div class="stat-value">${avgScore}%</div>
-                <div class="stat-label">متوسط درجات الطلاب</div>
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-cyan">${Icons.terminal ? Icons.terminal() : '💻'}</div>
+                <div>
+                  <div class="stat-value">${exercisesCount} تمرينًا</div>
+                  <div class="stat-label">عدد التمارين والتدريبات</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-purple">${Icons.helpCircle()}</div>
+                <div>
+                  <div class="stat-value">${questionsCount} سؤالاً</div>
+                  <div class="stat-label">عدد الأسئلة في البنك</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-amber">🎫</div>
+                <div>
+                  <div class="stat-value">${totalCodes}</div>
+                  <div class="stat-label">إجمالي الأكواد المنشأة</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-green">✓</div>
+                <div>
+                  <div class="stat-value" style="color:var(--success);">${usedCodes}</div>
+                  <div class="stat-label">الأكواد المستخدمة</div>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-icon-wrapper stat-icon-cyan">✨</div>
+                <div>
+                  <div class="stat-value" style="color:var(--cyan);">${unusedCodes}</div>
+                  <div class="stat-label">الأكواد غير المستخدمة</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1592,37 +1677,46 @@
     // ==========================================
     // 4. QUESTIONS BANK MANAGEMENT
     // ==========================================
+    // ==========================================
+    // 5. EXERCISES & QUESTIONS BANK MANAGEMENT
+    // ==========================================
     async renderQuestions() {
       let questions = [];
       let units = [];
+      let lessons = [];
       try {
-        [questions, units] = await Promise.all([
+        [questions, units, lessons] = await Promise.all([
           window.AdminService.getQuestions(),
-          window.AdminService.getUnits()
+          window.AdminService.getUnits(),
+          window.AdminService.getLessons ? window.AdminService.getLessons() : ((window.CodeSparkDB && window.CodeSparkDB.getLessons()) || [])
         ]);
       } catch (err) {
         console.warn('Error loading questions:', err);
       }
 
+      // Cache units and lessons on AdminViews for dynamic modal chaining
+      this._unitsCache = units;
+      this._lessonsCache = lessons;
+
       return `
         <div class="content-body">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
             <div>
-              <div class="badge badge-purple" style="margin-bottom:0.35rem;">❓ بنك الأسئلة والتقييم</div>
-              <h1 style="font-size:1.875rem; font-weight:800; margin:0;">بنك أسئلة مادة البرمجة</h1>
-              <p style="color:var(--text-muted); font-size:0.9375rem;">إدارة الأسئلة، تحديد الإجابات الصحيحة وشرح الحلول النموذجية المقررة.</p>
+              <div class="badge badge-purple" style="margin-bottom:0.35rem;">🧩 التمارين والتدريبات</div>
+              <h1 style="font-size:1.875rem; font-weight:800; margin:0;">إدارة التمارين والتدريبات (بنك الأسئلة)</h1>
+              <p style="color:var(--text-muted); font-size:0.9375rem;">إضافة وتعديل وحذف أسئلة الاختيار من متعدد وربطها بالدروس والوحدات وتحديد الإجابات النموذجية.</p>
             </div>
 
-            <button id="add-question-btn" class="btn btn-primary">
+            <button id="add-question-btn" class="btn btn-primary" style="display:flex; align-items:center; gap:0.5rem; font-weight:700;">
               ${Icons.plus()} إضافة سؤال جديد
             </button>
           </div>
 
           <!-- Filters Bar -->
           <div class="card" style="margin-bottom:1.5rem; padding:1rem 1.25rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
-            <div style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:250px;">
+            <div style="display:flex; align-items:center; gap:0.75rem; flex:1; min-width:240px;">
               <span style="color:var(--text-muted);">${Icons.search()}</span>
-              <input type="text" id="search-q-input" class="form-input" placeholder="ابحث في نص السؤال أو الشرح..." style="border:none; background:transparent;">
+              <input type="text" id="search-q-input" class="form-input" placeholder="بحث عن سؤال أو الشرح..." style="border:none; background:transparent; width:100%;">
             </div>
 
             <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
@@ -1631,32 +1725,68 @@
                 ${units.map(u => `<option value="${u.id}">${u.title}</option>`).join('')}
               </select>
 
+              <select id="filter-q-lesson" class="form-select" style="width:auto;">
+                <option value="">جميع الدروس</option>
+                ${lessons.map(l => `<option value="${l.id}">${l.title}</option>`).join('')}
+              </select>
+
               <select id="filter-q-type" class="form-select" style="width:auto;">
                 <option value="">جميع الأنواع</option>
                 <option value="mcq">اختيار من متعدد (MCQ)</option>
                 <option value="true_false">صح وخطأ (T/F)</option>
-                <option value="code_output">تتبع مخرجات الكود</option>
-                <option value="code_completion">إكمال الكود</option>
+                <option value="code_output">تتبع مخرجات بايثون</option>
               </select>
 
-              <select id="filter-q-diff" class="form-select" style="width:auto;">
-                <option value="">جميع مستويات الصعوبة</option>
-                <option value="easy">سهل</option>
-                <option value="medium">متوسط</option>
-                <option value="hard">صعب</option>
+              <select id="filter-q-status" class="form-select" style="width:auto;">
+                <option value="">جميع الحالات</option>
+                <option value="published">منشور</option>
+                <option value="draft">مسودة</option>
               </select>
             </div>
           </div>
 
-          <div style="display:flex; flex-direction:column; gap:1.25rem;" id="questions-list-container">
-            ${this.renderQuestionsList(questions)}
+          <!-- Questions Table View -->
+          <div class="card" style="padding:0; overflow:hidden; margin-bottom:2rem;">
+            <div class="table-responsive">
+              <table class="table" style="margin:0;">
+                <thead>
+                  <tr>
+                    <th style="min-width:260px;">السؤال</th>
+                    <th>النوع</th>
+                    <th>الدرس / الوحدة</th>
+                    <th>الدرجة</th>
+                    <th>تاريخ الإضافة</th>
+                    <th style="text-align:center; min-width:180px;">الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="questions-table-body">
+                  ${this.renderQuestionsTableRows(questions)}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <!-- Add/Edit Question Modal -->
-          <div class="modal-overlay" id="question-modal">
-            <div class="modal-card" style="max-width:700px;">
+          <!-- 1. Question View Details Modal -->
+          <div class="modal-overlay" id="question-view-modal">
+            <div class="modal-card" style="max-width:650px;">
               <div class="modal-header">
-                <h3 id="question-modal-title" style="font-size:1.125rem; font-weight:800; margin:0;">إضافة سؤال جديد</h3>
+                <h3 style="font-size:1.15rem; font-weight:800; margin:0;">تفاصيل السؤال النموذجي</h3>
+                <button class="btn btn-ghost btn-icon-sm close-modal-btn">${Icons.x()}</button>
+              </div>
+              <div class="modal-body" id="question-view-body" style="padding:1.5rem;">
+                <!-- Dynamically populated via JS -->
+              </div>
+              <div class="modal-footer">
+                <button class="btn btn-secondary close-modal-btn">إغلاق</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Add / Edit Question Modal -->
+          <div class="modal-overlay" id="question-modal">
+            <div class="modal-card" style="max-width:720px;">
+              <div class="modal-header">
+                <h3 id="question-modal-title" style="font-size:1.15rem; font-weight:800; margin:0;">إضافة سؤال جديد</h3>
                 <button class="btn btn-ghost btn-icon-sm close-modal-btn">${Icons.x()}</button>
               </div>
               <div class="modal-body">
@@ -1667,44 +1797,81 @@
                     <div class="form-group">
                       <label class="form-label" for="q-unit-select">الوحدة التابع لها *</label>
                       <select id="q-unit-select" class="form-select" required>
+                        <option value="">اختر الوحدة</option>
                         ${units.map(u => `<option value="${u.id}">${u.title}</option>`).join('')}
                       </select>
                     </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="q-lesson-select">الدرس المرتبط *</label>
+                      <select id="q-lesson-select" class="form-select">
+                        <option value="">اختر الدرس (اختياري)</option>
+                        ${lessons.map(l => `<option value="${l.id}">${l.title}</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;" class="form-grid">
                     <div class="form-group">
                       <label class="form-label" for="q-type-select">نوع السؤال</label>
                       <select id="q-type-select" class="form-select">
-                        <option value="mcq">اختيار من متعدد</option>
-                        <option value="true_false">صح وخطأ</option>
-                        <option value="code_output">تتبع مخرجات بايثون</option>
-                        <option value="code_completion">إكمال الكود</option>
+                        <option value="mcq">اختيار من متعدد (Multiple Choice)</option>
+                        <option value="true_false">صح وخطأ (True/False)</option>
+                        <option value="code_output">تتبع مخرجات كود بايثون</option>
                       </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="q-score">درجة السؤال *</label>
+                      <input type="number" id="q-score" class="form-input" min="1" max="50" value="10" required>
                     </div>
                   </div>
 
                   <div class="form-group">
                     <label class="form-label" for="q-text">نص السؤال *</label>
-                    <textarea id="q-text" class="form-textarea" rows="3" placeholder="اكتب نص السؤال هنا..." required></textarea>
+                    <textarea id="q-text" class="form-textarea" rows="3" placeholder="مثال: ما ناتج تنفيذ الكود التالي؟ أو ما ناتج 5 + 3 ؟" required></textarea>
                   </div>
 
                   <div class="form-group">
                     <label class="form-label" for="q-code-snippet">كود بايثون المرفق مع السؤال (اختياري)</label>
-                    <textarea id="q-code-snippet" class="form-textarea code-font ltr" rows="3" placeholder="# كود بايثون المرتبط بالسؤال"></textarea>
+                    <textarea id="q-code-snippet" class="form-textarea code-font ltr" rows="3" placeholder="# كود بايثون مرتبط بالسؤال"></textarea>
                   </div>
 
-                  <div class="form-group">
-                    <label class="form-label" for="q-options">الخيارات (افصل بين الخيارات بسطر جديد) *</label>
-                    <textarea id="q-options" class="form-textarea" rows="4" placeholder="الخيار الأول&#10;الخيار الثاني&#10;الخيار الثالث&#10;الخيار الرابع" required></textarea>
+                  <!-- Multiple Choice Options Box -->
+                  <div class="form-group" style="background:rgba(14,22,38,0.5); padding:1rem; border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+                    <label class="form-label" style="font-weight:800; color:var(--text-main); margin-bottom:0.5rem; display:flex; justify-content:space-between;">
+                      <span>الاختيارات والإجابة الصحيحة *</span>
+                      <small style="color:var(--cyan);">حدد الإجابة الصحيحة بجانب الاختيار</small>
+                    </label>
+
+                    <div style="display:flex; flex-direction:column; gap:0.6rem;" id="q-options-container">
+                      <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <input type="radio" name="q_correct_option" value="0" checked id="opt_radio_0">
+                        <span style="font-weight:700; color:var(--cyan); min-width:24px;">A)</span>
+                        <input type="text" id="q-opt-0" class="form-input" placeholder="الخيار الأول (A)" required>
+                      </div>
+
+                      <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <input type="radio" name="q_correct_option" value="1" id="opt_radio_1">
+                        <span style="font-weight:700; color:var(--cyan); min-width:24px;">B)</span>
+                        <input type="text" id="q-opt-1" class="form-input" placeholder="الخيار الثاني (B)" required>
+                      </div>
+
+                      <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <input type="radio" name="q_correct_option" value="2" id="opt_radio_2">
+                        <span style="font-weight:700; color:var(--cyan); min-width:24px;">C)</span>
+                        <input type="text" id="q-opt-2" class="form-input" placeholder="الخيار الثالث (C)">
+                      </div>
+
+                      <div style="display:flex; align-items:center; gap:0.6rem;">
+                        <input type="radio" name="q_correct_option" value="3" id="opt_radio_3">
+                        <span style="font-weight:700; color:var(--cyan); min-width:24px;">D)</span>
+                        <input type="text" id="q-opt-3" class="form-input" placeholder="الخيار الرابع (D)">
+                      </div>
+                    </div>
                   </div>
 
-                  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:1rem;" class="form-grid">
-                    <div class="form-group">
-                      <label class="form-label" for="q-correct">رقم الخيار الصحيح (1, 2, 3...) *</label>
-                      <input type="number" id="q-correct" class="form-input" min="1" max="6" value="1" required>
-                    </div>
-                    <div class="form-group">
-                      <label class="form-label" for="q-score">درجة السؤال</label>
-                      <input type="number" id="q-score" class="form-input" min="1" max="20" value="10" required>
-                    </div>
+                  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;" class="form-grid">
                     <div class="form-group">
                       <label class="form-label" for="q-diff-select">مستوى الصعوبة</label>
                       <select id="q-diff-select" class="form-select">
@@ -1713,11 +1880,19 @@
                         <option value="hard">صعب</option>
                       </select>
                     </div>
+
+                    <div class="form-group">
+                      <label class="form-label" for="q-status-select">حالة النشر</label>
+                      <select id="q-status-select" class="form-select">
+                        <option value="1" selected>منشور (متاح للطلاب فورًا)</option>
+                        <option value="0">مسودة (غير ظاهر للطلاب)</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div class="form-group">
-                    <label class="form-label" for="q-explanation">الشرح والتعليل النموذجي</label>
-                    <textarea id="q-explanation" class="form-textarea" rows="2" placeholder="توضيح سبب صحة الإجابة للطالب بعد الاختبار..."></textarea>
+                    <label class="form-label" for="q-explanation">الشرح / التفسير النموذجي للحل</label>
+                    <textarea id="q-explanation" class="form-textarea" rows="2" placeholder="توضيح سبب صحة الإجابة ليظهر للطالب بعد الحل..."></textarea>
                   </div>
                 </form>
               </div>
@@ -1732,117 +1907,155 @@
       `;
     },
 
-    renderQuestionsList(questions) {
+    renderQuestionsTableRows(questions) {
       if (!questions || questions.length === 0) {
         return `
-          <div class="empty-state card">
-            <div class="empty-icon">❓</div>
-            <h3 class="empty-title">لا توجد أسئلة تطابق معايير البحث</h3>
-            <p class="empty-desc">يمكنك إضافة سؤال جديد إلى بنك الأسئلة أو تغيير معايير التصفية.</p>
-          </div>
+          <tr>
+            <td colspan="6" style="text-align:center; padding:3rem; color:var(--text-muted);">
+              لا توجد أسئلة تطابق معايير البحث والفلترة. اضغط على "إضافة سؤال جديد" لإنشاء سؤال.
+            </td>
+          </tr>
         `;
       }
 
       return questions.map((q, idx) => {
-        const typeLabel = q.type === 'mcq' ? 'اختيار من متعدد' : (q.type === 'true_false' || q.type === 'tf' ? 'صح وخطأ' : (q.type === 'code_output' ? 'تتبع كود' : 'إكمال كود'));
-        const diffLabel = q.difficulty === 'easy' ? 'سهل' : (q.difficulty === 'hard' ? 'صعب' : 'متوسط');
-        const correctIdx = typeof q.correctAnswer === 'number' ? q.correctAnswer : (parseInt(q.correct_answer, 10) || 0);
+        const typeMap = {
+          mcq: 'اختيار من متعدد',
+          true_false: 'صح وخطأ',
+          tf: 'صح وخطأ',
+          code_output: 'تتبع كود'
+        };
+        const typeLabel = typeMap[q.type] || 'اختيار من متعدد';
+        const lessonOrUnit = q.lesson_title || q.unit_title || 'عام';
+        const isPub = q.isPublished !== false && q.is_published !== 0;
+        const dateStr = (q.created_at || '').slice(0, 10) || '—';
 
         return `
-          <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-              <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                <span class="badge badge-primary">سؤال ${idx + 1}</span>
-                <span class="badge badge-neutral">${typeLabel}</span>
-                <span class="badge badge-cyan">${diffLabel}</span>
-                <span class="badge badge-warning" style="font-family:var(--font-sans);">${q.score || 10} درجات</span>
-                ${q.unit_title ? `<span class="badge badge-purple">${q.unit_title}</span>` : ''}
+          <tr data-id="${q.id}">
+            <td>
+              <div style="font-weight:700; color:var(--text-main); margin-bottom:0.25rem;">
+                ${q.question || q.question_text || 'بدون نص'}
               </div>
-              <div style="display:flex; gap:0.35rem;">
-                <button class="btn btn-secondary btn-icon-sm edit-q-btn" data-id="${q.id}" title="تعديل السؤال">
-                  ${Icons.edit()}
+              <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.75rem;">
+                ${isPub ? '<span class="badge badge-success" style="font-size:0.65rem;">منشور</span>' : '<span class="badge badge-neutral" style="font-size:0.65rem;">مسودة</span>'}
+                ${(q.code_snippet || q.codeSnippet) ? '<span class="badge badge-cyan" style="font-size:0.65rem;">كود برمجي</span>' : ''}
+              </div>
+            </td>
+            <td>
+              <span class="badge badge-purple">${typeLabel}</span>
+            </td>
+            <td style="font-size:0.85rem; color:var(--text-muted);">
+              ${lessonOrUnit}
+            </td>
+            <td>
+              <span class="number-font" style="font-weight:700; color:var(--warning);">${q.score || 10}</span> درجات
+            </td>
+            <td style="font-size:0.8rem; color:var(--text-subtle);">
+              ${dateStr}
+            </td>
+            <td style="text-align:center;">
+              <div style="display:inline-flex; gap:0.35rem;">
+                <button class="btn btn-ghost btn-sm view-q-btn" data-id="${q.id}" title="عرض السؤال" style="padding:0.3rem 0.6rem; font-size:0.8rem;">
+                  👁️ عرض
                 </button>
-                <button class="btn btn-danger btn-icon-sm delete-q-btn" data-id="${q.id}" title="حذف">
-                  ${Icons.trash()}
+                <button class="btn btn-secondary btn-sm edit-q-btn" data-id="${q.id}" title="تعديل السؤال" style="padding:0.3rem 0.6rem; font-size:0.8rem;">
+                  ${Icons.edit()} تعديل
+                </button>
+                <button class="btn btn-danger btn-sm delete-q-btn" data-id="${q.id}" title="حذف السؤال" style="padding:0.3rem 0.6rem; font-size:0.8rem;">
+                  ${Icons.trash()} حذف
                 </button>
               </div>
-            </div>
-
-            <h4 style="font-size:1rem; font-weight:700; color:var(--text-main); margin-bottom:0.75rem; line-height:1.6; white-space:pre-line;">${q.question || q.question_text}</h4>
-            
-            ${q.code_snippet || q.codeSnippet ? `
-              <pre class="code-block ltr" style="margin-bottom:0.75rem; padding:0.75rem; border-radius:var(--radius-sm); font-size:0.875rem;"><code>${q.code_snippet || q.codeSnippet}</code></pre>
-            ` : ''}
-
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:0.5rem; margin-bottom:0.75rem;">
-              ${(q.options || []).map((opt, oIdx) => `
-                <div style="padding:0.5rem 0.75rem; border-radius:var(--radius-sm); font-size:0.8125rem; background:var(--bg-surface-elevated); ${oIdx === correctIdx ? 'border:1px solid var(--success); color:#FFFFFF;' : 'color:var(--text-muted);'}">
-                  ${oIdx === correctIdx ? '✓ ' : ''}${opt}
-                </div>
-              `).join('')}
-            </div>
-
-            ${q.explanation ? `
-              <div style="font-size:0.8125rem; color:var(--text-muted); background:var(--bg-surface-elevated); padding:0.5rem 0.75rem; border-radius:var(--radius-sm);">
-                <strong style="color:var(--cyan);">الشرح النموذجي:</strong> ${q.explanation}
-              </div>
-            ` : ''}
-          </div>
+            </td>
+          </tr>
         `;
       }).join('');
     },
 
     initQuestionsEvents() {
-      // Add Question Button
+      // 1. Add Question Button
       document.getElementById('add-question-btn')?.addEventListener('click', () => {
-        document.getElementById('question-modal-title').textContent = 'إضافة سؤال جديد';
+        document.getElementById('question-modal-title').textContent = 'إضافة سؤال جديد إلى التمارين';
         document.getElementById('question-modal-id').value = '';
         document.getElementById('question-form').reset();
+        document.getElementById('q-score').value = 10;
+        const r0 = document.getElementById('opt_radio_0');
+        if (r0) r0.checked = true;
         UI.openModal('question-modal');
       });
 
-      // Save Question
+      // 2. Dynamic unit to lesson filter in Add/Edit modal
+      const modalUnitSelect = document.getElementById('q-unit-select');
+      const modalLessonSelect = document.getElementById('q-lesson-select');
+      modalUnitSelect?.addEventListener('change', () => {
+        const uId = modalUnitSelect.value;
+        const allLessons = this._lessonsCache || [];
+        const filtered = uId ? allLessons.filter(l => l.unit_id === uId || l.unitId === uId) : allLessons;
+        if (modalLessonSelect) {
+          modalLessonSelect.innerHTML = '<option value="">اختر الدرس (اختياري)</option>' + 
+            filtered.map(l => `<option value="${l.id}">${l.title}</option>`).join('');
+        }
+      });
+
+      // 3. Save / Update Question
       document.getElementById('save-q-btn')?.addEventListener('click', async (e) => {
         e.preventDefault();
+        const saveBtn = document.getElementById('save-q-btn');
         const id = document.getElementById('question-modal-id').value;
         const unitId = document.getElementById('q-unit-select').value;
+        const lessonId = document.getElementById('q-lesson-select')?.value || null;
         const qType = document.getElementById('q-type-select').value;
         const qText = document.getElementById('q-text').value.trim();
         const codeSnippet = document.getElementById('q-code-snippet').value.trim();
-        const optionsRaw = document.getElementById('q-options').value.trim();
-        const correct = parseInt(document.getElementById('q-correct').value, 10) - 1;
         const score = parseInt(document.getElementById('q-score').value, 10) || 10;
         const diff = document.getElementById('q-diff-select').value;
+        const isPublished = document.getElementById('q-status-select')?.value === '1';
         const exp = document.getElementById('q-explanation').value.trim();
 
-        if (!qText || !optionsRaw) {
-          UI.showToast('يرجى كتابة نص السؤال والخيارات', 'error');
+        // Collect options
+        const opts = [];
+        for (let i = 0; i < 4; i++) {
+          const val = document.getElementById(`q-opt-${i}`)?.value?.trim();
+          if (val) opts.push(val);
+        }
+
+        if (!qText) {
+          UI.showToast('نص السؤال مطلوب', 'error');
           return;
         }
 
-        const opts = optionsRaw.split('\n').map(o => o.trim()).filter(Boolean);
         if (opts.length < 2) {
-          UI.showToast('يجب إدخال خيارين على الأقل', 'error');
+          UI.showToast('يجب إدخال خيارين على الأقل لسؤال الاختيار من متعدد', 'error');
           return;
         }
+
+        // Get selected radio index
+        const selectedRadio = document.querySelector('input[name="q_correct_option"]:checked');
+        let correctIdx = selectedRadio ? parseInt(selectedRadio.value, 10) : 0;
+        if (correctIdx >= opts.length) correctIdx = 0;
 
         const payload = {
-          unit_id: unitId,
+          unit_id: unitId || null,
+          lesson_id: lessonId || null,
           type: qType,
           question: qText,
           code_snippet: codeSnippet,
           options: opts,
-          correct_answer: String(correct),
+          correct_answer: String(correctIdx),
           score: score,
           difficulty: diff,
+          is_published: isPublished,
+          published: isPublished,
           explanation: exp
         };
 
         try {
+          saveBtn.disabled = true;
+          saveBtn.innerHTML = 'جاري الحفظ... ⏳';
+
           if (!id) {
             const res = await window.AdminService.createQuestion(payload);
             UI.closeModal('question-modal');
-            UI.showToast(res.message || 'تمت إضافة السؤال إلى بنك الأسئلة ⚡', 'success');
+            UI.showToast(res.message || 'تمت إضافة السؤال إلى بنك الأسئلة والتمارين بنجاح ⚡', 'success');
           } else {
             const res = await window.AdminService.updateQuestion(id, payload);
             UI.closeModal('question-modal');
@@ -1850,34 +2063,42 @@
           }
 
           const updated = await window.AdminService.getQuestions();
-          document.getElementById('questions-list-container').innerHTML = window.AdminViews.renderQuestionsList(updated);
+          const tbody = document.getElementById('questions-table-body');
+          if (tbody) tbody.innerHTML = window.AdminViews.renderQuestionsTableRows(updated);
           window.AdminViews.bindQuestionActions();
         } catch (err) {
           UI.showToast(err.message || 'حدث خطأ أثناء حفظ السؤال', 'error');
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = 'حفظ السؤال ⚡';
         }
       });
 
-      // Filter Questions
+      // 4. Filter Questions
       const searchInput = document.getElementById('search-q-input');
       const unitSelect = document.getElementById('filter-q-unit');
+      const lessonSelect = document.getElementById('filter-q-lesson');
       const typeSelect = document.getElementById('filter-q-type');
-      const diffSelect = document.getElementById('filter-q-diff');
+      const statusSelect = document.getElementById('filter-q-status');
 
       let debounceTimer = null;
       const applyFilter = async () => {
         const q = searchInput?.value.trim();
         const u = unitSelect?.value;
+        const l = lessonSelect?.value;
         const t = typeSelect?.value;
-        const d = diffSelect?.value;
+        const st = statusSelect?.value;
 
         try {
           const results = await window.AdminService.getQuestions({
             search: q || undefined,
             unit_id: u || undefined,
+            lesson_id: l || undefined,
             q_type: t || undefined,
-            difficulty: d || undefined
+            is_published: st === 'published' ? true : (st === 'draft' ? false : undefined)
           });
-          document.getElementById('questions-list-container').innerHTML = window.AdminViews.renderQuestionsList(results);
+          const tbody = document.getElementById('questions-table-body');
+          if (tbody) tbody.innerHTML = window.AdminViews.renderQuestionsTableRows(results);
           window.AdminViews.bindQuestionActions();
         } catch (err) {
           console.error('Failed to filter questions:', err);
@@ -1889,18 +2110,84 @@
         debounceTimer = setTimeout(applyFilter, 300);
       });
       unitSelect?.addEventListener('change', applyFilter);
+      lessonSelect?.addEventListener('change', applyFilter);
       typeSelect?.addEventListener('change', applyFilter);
-      diffSelect?.addEventListener('change', applyFilter);
+      statusSelect?.addEventListener('change', applyFilter);
 
       this.bindQuestionActions();
 
-      document.querySelectorAll('.close-modal-btn').forEach(b => {
-        b.addEventListener('click', () => UI.closeModal('question-modal'));
-      });
+      if (typeof document !== 'undefined' && document.querySelectorAll) {
+        document.querySelectorAll('.close-modal-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            UI.closeModal('question-modal');
+            UI.closeModal('question-view-modal');
+          });
+        });
+      }
     },
 
     bindQuestionActions() {
-      // Edit Question
+      if (typeof document === 'undefined' || !document.querySelectorAll) return;
+
+      // 1. View Question Details
+      document.querySelectorAll('.view-q-btn').forEach(b => {
+        b.addEventListener('click', async (e) => {
+          const qId = e.currentTarget.getAttribute('data-id');
+          try {
+            const q = await window.AdminService.getQuestion(qId);
+            const viewBody = document.getElementById('question-view-body');
+            if (viewBody) {
+              const optKeys = ['A', 'B', 'C', 'D', 'E', 'F'];
+              const corrIdx = typeof q.correctAnswer === 'number' ? q.correctAnswer : (parseInt(q.correct_answer, 10) || 0);
+
+              viewBody.innerHTML = `
+                <div style="margin-bottom:1rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; flex-wrap:wrap; gap:0.5rem;">
+                    <span class="badge badge-purple">${q.type === 'mcq' ? 'اختيار من متعدد' : (q.type === 'true_false' ? 'صح وخطأ' : 'تتبع كود')}</span>
+                    <span class="badge badge-warning">${q.score || 10} درجات</span>
+                  </div>
+                  <h4 style="font-size:1.15rem; font-weight:800; color:var(--text-main); margin-bottom:0.75rem; line-height:1.5;">
+                    ${q.question || q.question_text}
+                  </h4>
+                  ${(q.code_snippet || q.codeSnippet) ? `
+                    <pre class="code-block ltr" style="padding:1rem; border-radius:var(--radius-md); margin-bottom:1rem; font-size:0.9rem;"><code>${q.code_snippet || q.codeSnippet}</code></pre>
+                  ` : ''}
+                </div>
+
+                <div style="margin-bottom:1.25rem;">
+                  <div style="font-weight:700; font-size:0.875rem; color:var(--text-muted); margin-bottom:0.5rem;">الخيارات:</div>
+                  <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                    ${(q.options || []).map((opt, idx) => {
+                      const isCorrect = (idx === corrIdx);
+                      return `
+                        <div style="padding:0.75rem 1rem; border-radius:var(--radius-md); font-size:0.9rem; display:flex; align-items:center; justify-content:space-between; ${isCorrect ? 'background:rgba(16,185,129,0.15); border:1.5px solid var(--success); color:#FFFFFF;' : 'background:rgba(255,255,255,0.03); border:1px solid var(--border-subtle); color:var(--text-muted);'}">
+                          <div>
+                            <strong style="color:var(--cyan); margin-left:0.5rem;">${optKeys[idx] || (idx + 1)})</strong>
+                            <span>${opt}</span>
+                          </div>
+                          ${isCorrect ? '<span style="color:var(--success); font-weight:800; font-size:0.85rem;">✓ الإجابة الصحيحة</span>' : ''}
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+
+                ${q.explanation ? `
+                  <div style="background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.25); border-radius:var(--radius-md); padding:0.85rem 1rem;">
+                    <strong style="color:var(--cyan); display:block; margin-bottom:0.25rem;">💡 الشرح والتعليل النموذجي:</strong>
+                    <div style="font-size:0.875rem; color:var(--text-main); line-height:1.5;">${q.explanation}</div>
+                  </div>
+                ` : ''}
+              `;
+            }
+            UI.openModal('question-view-modal');
+          } catch (err) {
+            UI.showToast('تعذر تحميل تفاصيل السؤال', 'error');
+          }
+        });
+      });
+
+      // 2. Edit Question
       document.querySelectorAll('.edit-q-btn').forEach(b => {
         b.addEventListener('click', async (e) => {
           const qId = e.currentTarget.getAttribute('data-id');
@@ -1909,15 +2196,26 @@
             document.getElementById('question-modal-title').textContent = 'تعديل السؤال';
             document.getElementById('question-modal-id').value = q.id;
             document.getElementById('q-unit-select').value = q.unit_id || q.unitId || '';
+            document.getElementById('q-lesson-select').value = q.lesson_id || q.lessonId || '';
             document.getElementById('q-type-select').value = q.type || 'mcq';
             document.getElementById('q-text').value = q.question || q.question_text || '';
             document.getElementById('q-code-snippet').value = q.code_snippet || q.codeSnippet || '';
-            document.getElementById('q-options').value = (q.options || []).join('\n');
-            const corr = typeof q.correctAnswer === 'number' ? q.correctAnswer : (parseInt(q.correct_answer, 10) || 0);
-            document.getElementById('q-correct').value = corr + 1;
             document.getElementById('q-score').value = q.score || 10;
             document.getElementById('q-diff-select').value = q.difficulty || 'medium';
+            document.getElementById('q-status-select').value = (q.isPublished !== false && q.is_published !== 0) ? '1' : '0';
             document.getElementById('q-explanation').value = q.explanation || '';
+
+            // Populate options
+            const opts = q.options || [];
+            for (let i = 0; i < 4; i++) {
+              const el = document.getElementById(`q-opt-${i}`);
+              if (el) el.value = opts[i] || '';
+            }
+
+            const corr = typeof q.correctAnswer === 'number' ? q.correctAnswer : (parseInt(q.correct_answer, 10) || 0);
+            const radioEl = document.getElementById(`opt_radio_${corr}`);
+            if (radioEl) radioEl.checked = true;
+
             UI.openModal('question-modal');
           } catch (err) {
             UI.showToast('تعذر تحميل بيانات السؤال', 'error');
@@ -1925,16 +2223,17 @@
         });
       });
 
-      // Delete Question
+      // 3. Delete Question with Confirmation
       document.querySelectorAll('.delete-q-btn').forEach(b => {
         b.addEventListener('click', async (e) => {
           const qId = e.currentTarget.getAttribute('data-id');
-          if (confirm('هل أنت متأكد من حذف هذا السؤال من بنك الأسئلة؟')) {
+          if (confirm('هل أنت متأكد من حذف هذا السؤال نهائيًا من بنك الأسئلة والتمارين؟')) {
             try {
               const res = await window.AdminService.deleteQuestion(qId);
               UI.showToast(res.message || 'تم حذف السؤال بنجاح', 'info');
               const updated = await window.AdminService.getQuestions();
-              document.getElementById('questions-list-container').innerHTML = window.AdminViews.renderQuestionsList(updated);
+              const tbody = document.getElementById('questions-table-body');
+              if (tbody) tbody.innerHTML = window.AdminViews.renderQuestionsTableRows(updated);
               window.AdminViews.bindQuestionActions();
             } catch (err) {
               UI.showToast(err.message || 'فشل حذف السؤال', 'error');
@@ -1944,9 +2243,6 @@
       });
     },
 
-    // ==========================================
-    // 5. EXAMS MANAGEMENT & EXAM BUILDER
-    // ==========================================
     async renderExams() {
       let exams = [];
       let units = [];

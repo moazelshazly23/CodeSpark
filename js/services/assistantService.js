@@ -4,8 +4,17 @@
   window.AssistantService = {
     // 1. Dashboard Metrics
     async getDashboardStats() {
-      const res = await window.CodeSparkAPI.get("/admin/analytics");
-      return res.analytics || {};
+      try {
+        const res = await window.CodeSparkAPI.get("/assistant/analytics");
+        return res.analytics || {};
+      } catch (err) {
+        try {
+          const res = await window.CodeSparkAPI.get("/admin/analytics");
+          return res.analytics || {};
+        } catch (e) {
+          return {};
+        }
+      }
     },
 
     // 2. Code Generation & Execution
@@ -91,8 +100,13 @@
 
     // 8. Subscription Codes (Strictly 1-Month / 30 Days ONLY)
     async getSubscriptionCodes(filters = {}) {
-      const res = await window.CodeSparkAPI.get("/admin/subscriptions", filters);
-      return res || { codes: [] };
+      try {
+        const res = await window.CodeSparkAPI.get("/assistant/subscriptions", filters);
+        return res || { codes: [] };
+      } catch (e) {
+        const res = await window.CodeSparkAPI.get("/admin/subscriptions", filters);
+        return res || { codes: [] };
+      }
     },
 
     async generateMonthlyCodes(count = 1, notes = "") {
