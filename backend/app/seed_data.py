@@ -597,32 +597,43 @@ def seed_database(force_refresh=False):
                 ),
             )
 
-            if ex_title:
-                ex_id = f"ex_{lesson_id}"
-                db.execute(
-                    """
-                    INSERT OR REPLACE INTO exercises (
-                        id, lesson_id, title, description, type, difficulty,
-                        starter_code, solution_code, test_cases,
-                        published, is_published, created_at, updated_at
-                    )
-                    VALUES (?, ?, ?, ?, 'code', 'medium', ?, ?, ?, ?, ?, ?, ?)
-                    """,
-                    (
-                        ex_id,
-                        lesson_id,
-                        ex_title,
-                        ex_desc,
-                        ex_starter,
-                        ex_solution,
-                        ex_tc_json,
-                        is_pub,
-                        is_pub,
-                        now,
-                        now,
-                    ),
+        if ex_title:
+            ex_id = f"ex_{lesson_id}"
+            db.execute(
+                """
+                INSERT INTO exercises (
+                    id, lesson_id, title, description, type, difficulty,
+                    starter_code, solution_code, test_cases,
+                    published, is_published, created_at, updated_at
                 )
-
+                VALUES (?, ?, ?, ?, 'code', 'medium', ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT (id) DO UPDATE SET
+                    lesson_id = EXCLUDED.lesson_id,
+                    title = EXCLUDED.title,
+                    description = EXCLUDED.description,
+                    type = EXCLUDED.type,
+                    difficulty = EXCLUDED.difficulty,
+                    starter_code = EXCLUDED.starter_code,
+                    solution_code = EXCLUDED.solution_code,
+                    test_cases = EXCLUDED.test_cases,
+                    published = EXCLUDED.published,
+                    is_published = EXCLUDED.is_published,
+                    updated_at = EXCLUDED.updated_at
+                """,
+                (
+                    ex_id,
+                    lesson_id,
+                    ex_title,
+                    ex_desc,
+                    ex_starter,
+                    ex_solution,
+                    ex_tc_json,
+                    is_pub,
+                    is_pub,
+                    now,
+                    now,
+                ),
+            )
         # ============================================================
         # 7. QUESTIONS & QUESTION_OPTIONS
         # ============================================================
