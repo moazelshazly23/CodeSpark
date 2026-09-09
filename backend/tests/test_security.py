@@ -49,7 +49,7 @@ class CodeSparkSecurityRegressionTests(unittest.TestCase):
     def setUpClass(cls):
         apply_test_credentials_env()
         init_db()
-        seed_database(force_refresh=True)
+        seed_database(force_refresh=False)
         cls.client = TestClient(app)
 
         # Create two distinct test students

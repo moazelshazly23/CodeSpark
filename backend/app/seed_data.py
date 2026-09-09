@@ -1533,4 +1533,4 @@ def _seed_subscription_offers(db, now: str):
 
 
 if __name__ == "__main__":
-    seed_database(force_refresh=True)
+    seed_database(force_refresh=False)

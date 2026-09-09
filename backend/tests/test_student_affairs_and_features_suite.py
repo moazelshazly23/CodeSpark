@@ -12,7 +12,7 @@ class CodeSparkStudentAffairsAndFeaturesTestSuite(unittest.TestCase):
     def setUpClass(cls):
         apply_test_credentials_env()
         init_db()
-        seed_database(force_refresh=True)
+        seed_database(force_refresh=False)
         cls.client = TestClient(app)
 
     def test_01_student_affairs_search_and_filtering(self):

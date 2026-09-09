@@ -32,7 +32,7 @@ class PlatformUpgradeComprehensiveTestSuite(unittest.TestCase):
     def setUpClass(cls):
         apply_test_credentials_env()
         init_db()
-        seed_database(force_refresh=True)
+        seed_database(force_refresh=False)
         cls.client = TestClient(app)
 
         # 1. Super Admin Authentication
