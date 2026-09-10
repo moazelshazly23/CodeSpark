@@ -217,7 +217,23 @@ def delete_unit(unit_id: str, admin: dict = Depends(get_current_admin)):
     """Admin: Delete unit and cascade associated lessons/questions."""
     with get_db() as conn:
         cursor = conn.cursor()
+        cursor.execute("SELECT id, title FROM units WHERE id = ?", (unit_id,))
+        u_row = cursor.fetchone()
+        u_title = u_row.get("title", "") if u_row else unit_id
+        cursor.execute("DELETE FROM questions WHERE unit_id = ?", (unit_id,))
+        cursor.execute("DELETE FROM lessons WHERE unit_id = ?", (unit_id,))
         cursor.execute("DELETE FROM units WHERE id = ?", (unit_id,))
+        log_activity(
+            user_id=admin.get("id"),
+            user_name=admin.get("name"),
+            user_role=admin.get("role"),
+            action="DELETE_UNIT",
+            target_type="UNIT",
+            target_id=unit_id,
+            target_name=u_title,
+            conn=conn
+        )
+        logger.info(f"Unit permanently deleted: {unit_id} ({u_title})")
         return {"success": True, "message": "تم حذف الوحدة ومحتوياتها بنجاح"}
 
 # ==============================================================================
@@ -611,6 +627,18 @@ def delete_lesson(lesson_id: str, staff_user: dict = Depends(get_current_staff))
         cursor.execute("SELECT COUNT(*) as cnt FROM lessons WHERE unit_id = ?", (unit_id,))
         cnt = cursor.fetchone()["cnt"]
         cursor.execute("UPDATE units SET total_lessons = ?, updated_at = ? WHERE id = ?", (cnt, now, unit_id))
+
+        log_activity(
+            user_id=staff_user.get("id"),
+            user_name=staff_user.get("name"),
+            user_role=staff_user.get("role"),
+            action="DELETE_LESSON",
+            target_type="LESSON",
+            target_id=lesson_id,
+            target_name=lesson_title,
+            conn=conn
+        )
+        logger.info(f"Lesson permanently deleted from database: {lesson_id} ({lesson_title})")
 
         return {"success": True, "message": "تم حذف الدرس بنجاح"}
 

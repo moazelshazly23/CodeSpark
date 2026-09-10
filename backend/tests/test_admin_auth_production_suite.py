@@ -13,7 +13,7 @@ class CodeSparkAdminProductionAuthTestSuite(unittest.TestCase):
     def setUpClass(cls):
         apply_test_credentials_env()
         init_db()
-        seed_database(force_refresh=False)
+        seed_database(force_refresh=True)
         cls.client = TestClient(app)
 
     def setUp(self):

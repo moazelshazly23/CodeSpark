@@ -55,20 +55,11 @@ SECRET_KEY = _raw_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days default
 
-# Database configuration: PostgreSQL in production or local SQLite
+# Database configuration: Persistent database path (PostgreSQL in production or persistent local SQLite)
 _project_db = str(Path(__file__).resolve().parent.parent / "codespark_production.db")
-if os.path.exists("/tmp"):
-    _default_db = "/tmp/codespark_production.db"
-    # If project db exists in project folder but not in /tmp, copy it over to preserve initial seed & admin account
-    if os.path.exists(_project_db) and not os.path.exists(_default_db):
-        try:
-            import shutil
-            shutil.copyfile(_project_db, _default_db)
-        except Exception:
-            pass
-else:
-    _default_db = _project_db
+_default_db = _project_db
 
+# CRITICAL: Always use persistent database location inside backend directory, NEVER ephemeral /tmp directory
 DATABASE_PATH = os.getenv("DATABASE_PATH", _default_db)
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATABASE_PATH}")
 DATABASE_POOL_SIZE = int(os.getenv("DATABASE_POOL_SIZE", "10"))

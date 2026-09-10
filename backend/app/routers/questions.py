@@ -370,15 +370,9 @@ def answer_question(
         comp_id = f"comp_{student_id}_{question_id}_{now_ms}"
         try:
             cursor.execute("""
-            INSERT INTO exercise_completions (
+            INSERT OR REPLACE INTO exercise_completions (
                 id, student_id, lesson_id, question_id, code, score, passed, completed_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (student_id, lesson_id, question_id) DO UPDATE SET
-                code = EXCLUDED.code,
-                score = EXCLUDED.score,
-                passed = EXCLUDED.passed,
-                completed_at = EXCLUDED.completed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 comp_id, student_id, q.get("lesson_id"), question_id,
                 selected, score_val if is_correct else 0, 1 if is_correct else 0, now

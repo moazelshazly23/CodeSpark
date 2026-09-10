@@ -67,44 +67,55 @@ app.include_router(assistants.router)
 app.include_router(assistants.assistant_router)
 app.include_router(activity_logs.router)
 app.include_router(resources.router)
+app.include_router(code_exec.playground_router)
 
 @app.on_event("startup")
 def on_startup():
-    """Ensure database schema is initialized and seed data is available."""
+    """Ensure database schema is initialized and seed data is safely verified."""
     db_engine = get_db_type()
     logger.info(f"Starting Code Spark Backend [Environment: {ENVIRONMENT}, Database Engine: {db_engine.upper()}]")
     try:
         init_db()
         seed_database()
-        # Synchronize Super Admin & Assistant credentials
-        from .security import hash_password, verify_password
-        from .config import ADMIN_PASSWORD
+        
+        # Verify Super Admin & Assistant exist without resetting their passwords or credentials
+        from .security import hash_password
+        from .config import ADMIN_NAME, ADMIN_EMAIL, ADMIN_PHONE, ADMIN_PASSWORD
+        import datetime
+        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
         with get_db() as conn:
             c = conn.cursor()
-            c.execute("SELECT id, password_hash FROM users WHERE role IN ('SUPER_ADMIN', 'ADMIN', 'super_admin') LIMIT 1")
+            c.execute("SELECT id, email, password_hash FROM users WHERE role IN ('SUPER_ADMIN', 'ADMIN', 'super_admin') LIMIT 1")
             row = c.fetchone()
-            adm_pw = ADMIN_PASSWORD or "admin12345"
-            if not row or not verify_password(adm_pw, row.get("password_hash", "")):
+            if not row:
+                adm_name = (ADMIN_NAME or "المهندس معاذ الشاذلي").strip()
+                adm_email = (ADMIN_EMAIL or "admin@codespark.edu.eg").strip()
+                adm_phone = (ADMIN_PHONE or "01000000000").strip()
+                adm_pw = (ADMIN_PASSWORD or "admin12345").strip()
                 h = hash_password(adm_pw)
                 c.execute("""
-                UPDATE users
-                SET password_hash = ?, status = 'ACTIVE', is_active = 1, is_deleted = 0
-                WHERE role IN ('SUPER_ADMIN', 'ADMIN', 'super_admin') OR id = 'admin_1'
-                """, (h,))
-                logger.info("Super Admin credentials synchronized successfully.")
+                    INSERT INTO users (id, name, email, phone, password_hash, role, avatar, is_active, status, created_at, updated_at)
+                    VALUES ('admin_1', ?, ?, ?, ?, 'SUPER_ADMIN', 'مع', 1, 'active', ?, ?)
+                """, (adm_name, adm_email, adm_phone, h, now, now))
+                logger.info(f"Initial Super Admin account created: {adm_email}")
+            else:
+                logger.info("Persistent Super Admin account verified in database (credentials strictly preserved).")
 
-            c.execute("SELECT id, password_hash FROM users WHERE role IN ('ASSISTANT', 'assistant') LIMIT 1")
+            c.execute("SELECT id, email, password_hash FROM users WHERE role IN ('ASSISTANT', 'assistant') LIMIT 1")
             ast_row = c.fetchone()
-            ast_pw = os.getenv("ASSISTANT_PASSWORD", "assistant123")
-            if ast_row and not verify_password(ast_pw, ast_row.get("password_hash", "")):
+            if not ast_row:
+                ast_pw = os.getenv("ASSISTANT_PASSWORD", "assistant123").strip()
+                ast_email = os.getenv("ASSISTANT_EMAIL", "assistant@codespark.edu.eg").strip()
                 h_ast = hash_password(ast_pw)
                 c.execute("""
-                UPDATE users
-                SET password_hash = ?, status = 'active', is_active = 1, is_deleted = 0
-                WHERE role IN ('ASSISTANT', 'assistant')
-                """, (h_ast,))
-                logger.info("Assistant credentials synchronized successfully.")
-        logger.info("Database schema and initial seed verification successful.")
+                    INSERT INTO users (id, name, email, phone, password_hash, role, avatar, is_active, status, is_deleted, created_by, created_at, updated_at)
+                    VALUES ('assistant_demo', 'Assistant Demo', ?, '01088887777', ?, 'ASSISTANT', 'مس', 1, 'active', 0, 'admin_1', ?, ?)
+                """, (ast_email, h_ast, now, now))
+                logger.info("Initial Assistant account created.")
+            else:
+                logger.info("Persistent Assistant account verified in database (credentials strictly preserved).")
+
+        logger.info("Database schema and initial verification completed successfully.")
     except Exception as e:
         logger.error(f"Error during startup database initialization: {e}")
 

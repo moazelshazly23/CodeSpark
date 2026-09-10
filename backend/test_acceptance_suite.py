@@ -25,7 +25,7 @@ class CodeSparkProductionAcceptanceTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Initialize database with clean demo seed data."""
-        seed_database(force_refresh=False)
+        seed_database(force_refresh=True)
         cls.client = TestClient(app)
 
     # --------------------------------------------------------------------------

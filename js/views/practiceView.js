@@ -272,6 +272,9 @@ button {
               <button id="mode-web-btn" class="btn btn-sm ${this.currentMode === 'web' ? 'btn-primary' : 'btn-ghost'}" style="font-weight:700;">
                 🌐 الويب (HTML / CSS / JS)
               </button>
+              <button id="mode-cyber-btn" class="btn btn-sm ${this.currentMode === 'cyber' ? 'btn-primary' : 'btn-ghost'}" style="font-weight:700;">
+                🛡️ معمل الأمن السيبراني (Cyber Lab)
+              </button>
             </div>
           </div>
 
@@ -523,6 +526,70 @@ button {
             </div>
           </div>
 
+
+          <!-- ==================== SECTION 3: CYBER SECURITY LAB ==================== -->
+          <div id="cyber-playground-section" style="${this.currentMode === 'cyber' ? 'display:block;' : 'display:none;'}">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
+              <div style="display:flex; align-items:center; gap:0.75rem;">
+                <span class="badge badge-success" style="font-size:0.75rem;">● معمل آمن معزول (Educational Sandbox)</span>
+                <span style="font-size:0.8rem; color:var(--text-muted); font-family:monospace;">codespark-linux-sandbox v6.1</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <button id="cyber-reset-session-btn" class="btn btn-secondary btn-sm">
+                  🔄 إعادة تعيين المعمل
+                </button>
+                <button id="cyber-clear-btn" class="btn btn-ghost btn-sm">
+                  🧹 مسح الشاشة
+                </button>
+              </div>
+            </div>
+
+            <!-- Terminal Card -->
+            <div class="editor-wrapper" style="margin-top:0; border-color:#334155; background:#050914; box-shadow:0 12px 30px rgba(0,0,0,0.6);">
+              <div class="editor-toolbar" style="background:#090F1E; border-bottom:1px solid #1E293B;">
+                <div class="editor-title">
+                  <div class="editor-dots">
+                    <span class="editor-dot red"></span>
+                    <span class="editor-dot yellow"></span>
+                    <span class="editor-dot green"></span>
+                  </div>
+                  <span style="color:#38BDF8; font-family:monospace; font-weight:700;">student@codespark-lab: ~ (bash)</span>
+                </div>
+                <div style="font-size:0.75rem; color:#64748B;">اكتب <span style="color:#38BDF8; font-family:monospace;">help</span> لمعرفة الأوامر</div>
+              </div>
+
+              <!-- Terminal Output Display -->
+              <div id="cyber-terminal-screen" style="min-height:360px; max-height:480px; overflow-y:auto; background:#050914; padding:1.25rem; font-family:'Courier New', monospace; font-size:0.9rem; line-height:1.6; color:#E2E8F0; direction:ltr; text-align:left;">
+                <div style="color:#00F0FF; margin-bottom:0.75rem;">=== Welcome to Code Spark Cyber Security Training Lab ===</div>
+                <div style="color:#94A3B8; margin-bottom:0.5rem;">Type 'help' for available commands, or click any suggested command below.</div>
+                <div id="cyber-terminal-history"></div>
+              </div>
+
+              <!-- Command Input Bar -->
+              <div style="background:#090F1E; border-top:1px solid #1E293B; padding:0.75rem 1rem; display:flex; align-items:center; gap:0.75rem;">
+                <span id="cyber-prompt-indicator" style="color:#10B981; font-family:monospace; font-weight:800; font-size:1rem; user-select:none;">student@codespark-lab:~$</span>
+                <input type="text" id="cyber-cmd-input" class="form-input" placeholder="اكتب الأمر هنا (مثال: ls -l, cat /training/hashes.txt, netstat -tuln)..." style="direction:ltr; font-family:monospace; flex:1; background:#050914; border-color:#334155; color:#38BDF8; font-size:0.95rem;" autocomplete="off" spellcheck="false" />
+                <button id="cyber-run-cmd-btn" class="btn btn-primary btn-sm" style="font-weight:700; padding:0.5rem 1.25rem; box-shadow:0 0 15px rgba(6,182,212,0.4);">
+                  تشغيل الأمر ▶
+                </button>
+              </div>
+            </div>
+
+            <!-- Suggested Commands & Educational Concepts -->
+            <div style="margin-top:1.5rem; background:rgba(15,23,42,0.6); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.25rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+                <div style="font-weight:800; font-size:1rem; color:var(--cyan); display:flex; align-items:center; gap:0.5rem;">
+                  💡 أوامر مقترحة ومفاهيم تعليمية جاهزة للتجربة:
+                </div>
+                <span style="font-size:0.75rem; color:var(--text-muted);">انقر على أي أمر لتطبيقه وفهم آليته</span>
+              </div>
+
+              <div id="cyber-suggested-commands-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:0.75rem;">
+                <!-- Populated dynamically via JS -->
+              </div>
+            </div>
+          </div>
+
         </div>
       `;
     },
@@ -531,19 +598,19 @@ button {
       // 1. Mode Switching
       const pyModeBtn = document.getElementById('mode-python-btn');
       const webModeBtn = document.getElementById('mode-web-btn');
+      const cyberModeBtn = document.getElementById('mode-cyber-btn');
       const pySec = document.getElementById('python-playground-section');
       const webSec = document.getElementById('web-playground-section');
+      const cyberSec = document.getElementById('cyber-playground-section');
 
       const switchMode = (mode) => {
         this.currentMode = mode;
         if (pySec) pySec.style.display = (mode === 'python' ? 'block' : 'none');
         if (webSec) webSec.style.display = (mode === 'web' ? 'block' : 'none');
-        if (pyModeBtn) {
-          pyModeBtn.className = `btn btn-sm ${mode === 'python' ? 'btn-primary' : 'btn-ghost'}`;
-        }
-        if (webModeBtn) {
-          webModeBtn.className = `btn btn-sm ${mode === 'web' ? 'btn-primary' : 'btn-ghost'}`;
-        }
+        if (cyberSec) cyberSec.style.display = (mode === 'cyber' ? 'block' : 'none');
+        if (pyModeBtn) pyModeBtn.className = `btn btn-sm ${mode === 'python' ? 'btn-primary' : 'btn-ghost'}`;
+        if (webModeBtn) webModeBtn.className = `btn btn-sm ${mode === 'web' ? 'btn-primary' : 'btn-ghost'}`;
+        if (cyberModeBtn) cyberModeBtn.className = `btn btn-sm ${mode === 'cyber' ? 'btn-primary' : 'btn-ghost'}`;
         if (mode === 'web') {
           updateWebPreview();
         }
@@ -551,6 +618,146 @@ button {
 
       pyModeBtn?.addEventListener('click', () => switchMode('python'));
       webModeBtn?.addEventListener('click', () => switchMode('web'));
+      cyberModeBtn?.addEventListener('click', () => switchMode('cyber'));
+
+      // Web Preview Responsive Size Switchers
+      const previewFrame = document.getElementById('web-preview-frame');
+      document.getElementById('web-preview-desktop-btn')?.addEventListener('click', () => {
+        if (previewFrame) previewFrame.style.width = '100%';
+      });
+      document.getElementById('web-preview-tablet-btn')?.addEventListener('click', () => {
+        if (previewFrame) {
+          previewFrame.style.width = '768px';
+          previewFrame.style.margin = '0 auto';
+        }
+      });
+      document.getElementById('web-preview-mobile-btn')?.addEventListener('click', () => {
+        if (previewFrame) {
+          previewFrame.style.width = '375px';
+          previewFrame.style.margin = '0 auto';
+        }
+      });
+
+      // Cyber Security Terminal Logic
+      const cyberInput = document.getElementById('cyber-cmd-input');
+      const cyberRunBtn = document.getElementById('cyber-run-cmd-btn');
+      const cyberHistory = document.getElementById('cyber-terminal-history');
+      const cyberScreen = document.getElementById('cyber-terminal-screen');
+      const cyberClearBtn = document.getElementById('cyber-clear-btn');
+      const cyberResetBtn = document.getElementById('cyber-reset-session-btn');
+      const cyberPrompt = document.getElementById('cyber-prompt-indicator');
+
+      let cmdHistoryList = [];
+      let historyIndex = -1;
+
+      const appendTerminalEntry = (cmd, output, isError = false) => {
+        if (!cyberHistory) return;
+        const entry = document.createElement('div');
+        entry.style.marginBottom = '0.75rem';
+        const cwd = cyberPrompt ? cyberPrompt.textContent.split(':')[1]?.replace('$', '').trim() || '~' : '~';
+        entry.innerHTML = `
+          <div style="color:#10B981; font-weight:700;">student@codespark-lab:${cwd}$ <span style="color:#38BDF8;">${escapeHtml(cmd)}</span></div>
+          <div style="color:${isError ? '#F87171' : '#E2E8F0'}; white-space:pre-wrap; margin-top:0.25rem;">${escapeHtml(output)}</div>
+        `;
+        cyberHistory.appendChild(entry);
+        if (cyberScreen) cyberScreen.scrollTop = cyberScreen.scrollHeight;
+      };
+
+      const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      };
+
+      const executeCyberCommand = async () => {
+        if (!cyberInput) return;
+        const cmd = cyberInput.value.trim();
+        if (!cmd) return;
+        cmdHistoryList.push(cmd);
+        historyIndex = cmdHistoryList.length;
+        cyberInput.value = '';
+
+        if (cmd.toLowerCase() === 'clear') {
+          if (cyberHistory) cyberHistory.innerHTML = '';
+          return;
+        }
+
+        try {
+          const res = await window.CodeSparkAPI.post('/playground/cyber/execute', { command: cmd });
+          if (res.cwd && cyberPrompt) {
+            cyberPrompt.textContent = `student@codespark-lab:${res.cwd}$`;
+          }
+          appendTerminalEntry(cmd, res.output, !res.success);
+        } catch (err) {
+          appendTerminalEntry(cmd, 'خطأ في الاتصال بالمعمل: ' + err.message, true);
+        }
+      };
+
+      cyberRunBtn?.addEventListener('click', executeCyberCommand);
+      cyberInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          executeCyberCommand();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          if (historyIndex > 0) {
+            historyIndex--;
+            cyberInput.value = cmdHistoryList[historyIndex] || '';
+          }
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (historyIndex < cmdHistoryList.length - 1) {
+            historyIndex++;
+            cyberInput.value = cmdHistoryList[historyIndex] || '';
+          } else {
+            historyIndex = cmdHistoryList.length;
+            cyberInput.value = '';
+          }
+        }
+      });
+
+      cyberClearBtn?.addEventListener('click', () => {
+        if (cyberHistory) cyberHistory.innerHTML = '';
+      });
+
+      cyberResetBtn?.addEventListener('click', async () => {
+        try {
+          await window.CodeSparkAPI.post('/playground/cyber/reset', {});
+          if (cyberHistory) cyberHistory.innerHTML = '';
+          if (cyberPrompt) cyberPrompt.textContent = 'student@codespark-lab:~$';
+          appendTerminalEntry('reset', '✓ تم إعادة تعيين بيئة معمل الأمن السيبراني بنجاح.');
+        } catch (e) {
+          console.warn('Reset error:', e);
+        }
+      });
+
+      // Load suggested cyber commands
+      const loadSuggestedCommands = async () => {
+        const grid = document.getElementById('cyber-suggested-commands-grid');
+        if (!grid) return;
+        try {
+          const res = await window.CodeSparkAPI.get('/playground/cyber/commands');
+          const commands = res.commands || [];
+          grid.innerHTML = commands.map(c => `
+            <div class="card" style="background:#090F1E; border:1px solid #1E293B; padding:0.75rem; border-radius:8px; cursor:pointer; transition:all 0.2s;" onclick="
+              const input = document.getElementById('cyber-cmd-input');
+              if (input) { input.value = '${c.command}'; input.focus(); }
+            ">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                <span style="font-size:0.7rem; color:#38BDF8; font-weight:700;">${c.category}</span>
+                <span class="badge badge-neutral" style="font-size:0.65rem;">${c.syntax}</span>
+              </div>
+              <div style="font-size:0.85rem; font-weight:700; color:#F8FAFC; margin-bottom:0.25rem;">${c.title}</div>
+              <div style="font-size:0.75rem; color:#94A3B8; margin-bottom:0.5rem;">${c.description}</div>
+              <div style="background:#050914; padding:0.35rem 0.5rem; border-radius:4px; font-family:monospace; font-size:0.8rem; color:#10B981; direction:ltr; text-align:left;">$ ${c.example}</div>
+            </div>
+          `).join('');
+        } catch (e) {
+          console.warn('Failed to fetch suggested commands:', e);
+        }
+      };
+      loadSuggestedCommands();
+
 
       // 2. Python Playground Setup
       const textarea = document.getElementById('playground-textarea');

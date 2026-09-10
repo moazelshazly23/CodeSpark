@@ -349,8 +349,8 @@
               </a>
 
               <!-- 5. 📝 محرر بايثون التفاعلي -->
-              <a href="#practice" class="nav-link ${path === '#practice' ? 'active' : ''}">
-                <span class="nav-icon">${Icons.code()}</span> 💻 جرّب الكود
+              <a href="#playground" class="nav-link ${path === '#playground' || path === '#practice' ? 'active' : ''}">
+                <span class="nav-icon">${Icons.terminal ? Icons.terminal() : '💻'}</span> معمل البرمجة 🚀
               </a>
 
               <!-- 5b. 📚 الملفات التعليمية PDF -->

@@ -225,6 +225,71 @@ class UniversalConnection:
         return cur.execute(query, params)
 
 
+
+_PERSISTENT_PROJECT_DB = os.path.abspath(DATABASE_PATH)
+_OPERATIONAL_SQLITE_PATH = None
+_NEED_FILE_SYNC = False
+
+def get_sqlite_operational_path() -> str:
+    global _OPERATIONAL_SQLITE_PATH, _NEED_FILE_SYNC
+    if _OPERATIONAL_SQLITE_PATH is not None:
+        return _OPERATIONAL_SQLITE_PATH
+
+    db_url = os.getenv("DATABASE_URL", DATABASE_URL)
+    raw_path = DATABASE_PATH
+    if db_url.startswith("sqlite:///"):
+        raw_path = db_url.replace("sqlite:///", "")
+    elif db_url.startswith("sqlite://"):
+        raw_path = db_url.replace("sqlite://", "")
+
+    abs_target = os.path.abspath(raw_path)
+    test_path = abs_target + ".locktest"
+    can_lock = False
+    try:
+        os.makedirs(os.path.dirname(abs_target), exist_ok=True)
+        t_conn = sqlite3.connect(test_path, timeout=1.0)
+        t_conn.execute("CREATE TABLE _test (id INT)")
+        t_conn.commit()
+        t_conn.close()
+        os.remove(test_path)
+        can_lock = True
+    except Exception:
+        can_lock = False
+        try:
+            if os.path.exists(test_path):
+                os.remove(test_path)
+        except Exception:
+            pass
+
+    if can_lock:
+        _OPERATIONAL_SQLITE_PATH = abs_target
+        _NEED_FILE_SYNC = False
+    else:
+        # 9p network share detected: use high-speed local filesystem with immediate flush to persistent storage
+        local_dir = "/home/spark" if os.path.exists("/home/spark") else "/tmp"
+        _OPERATIONAL_SQLITE_PATH = os.path.join(local_dir, "codespark_production.db")
+        _NEED_FILE_SYNC = True
+        if os.path.exists(abs_target):
+            import shutil
+            try:
+                # Hydrate operational db from latest persistent project file
+                if not os.path.exists(_OPERATIONAL_SQLITE_PATH) or os.path.getmtime(abs_target) >= os.path.getmtime(_OPERATIONAL_SQLITE_PATH):
+                    shutil.copyfile(abs_target, _OPERATIONAL_SQLITE_PATH)
+            except Exception as e:
+                logger.warning(f"Hydration warning: {e}")
+
+    return _OPERATIONAL_SQLITE_PATH
+
+def sync_sqlite_to_project_file():
+    """Flush operational database changes back to persistent project storage."""
+    if _NEED_FILE_SYNC and _OPERATIONAL_SQLITE_PATH and os.path.exists(_OPERATIONAL_SQLITE_PATH):
+        try:
+            import shutil
+            shutil.copyfile(_OPERATIONAL_SQLITE_PATH, _PERSISTENT_PROJECT_DB)
+        except Exception as e:
+            logger.warning(f"Error syncing SQLite to project file: {e}")
+
+
 class ConnectionPool:
     """Thread-safe Connection Pool for high-concurrency production deployments."""
     def __init__(self, max_connections: int = 20):
@@ -255,19 +320,14 @@ class ConnectionPool:
                 )
                 return conn, "postgres"
         else:
-            # SQLite connection
-            db_path = DATABASE_PATH
-            if db_url.startswith("sqlite:///"):
-                db_path = db_url.replace("sqlite:///", "")
-            elif db_url.startswith("sqlite://"):
-                db_path = db_url.replace("sqlite://", "")
-            
+            # SQLite connection with persistent project synchronization
+            db_path = get_sqlite_operational_path()
             os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
             conn = sqlite3.connect(db_path, timeout=30.0, check_same_thread=False)
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA foreign_keys = ON")
-            conn.execute("PRAGMA journal_mode = DELETE")
-            return conn, "sqlite"
+            conn.execute("PRAGMA journal_mode = WAL")
+            return conn, "sqlite" 
 
     def acquire(self) -> UniversalConnection:
         try:
@@ -322,12 +382,14 @@ def get_db_connection() -> UniversalConnection:
 def get_db() -> Generator[UniversalConnection, None, None]:
     """
     Context manager for safe transactional database operations.
-    Automatically commits on success and rolls back on exception.
+    Automatically commits on success, flushes to persistent project storage, and rolls back on exception.
     """
     conn = get_db_connection()
     try:
         yield conn
         conn.commit()
+        if conn.db_type == "sqlite":
+            sync_sqlite_to_project_file()
     except Exception as e:
         conn.rollback()
         logger.error(f"Database transaction failed, rolled back: {e}")
@@ -1077,6 +1139,26 @@ def init_db():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_files_unit ON content_files(unit_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_files_lesson ON content_files(lesson_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_content_files_order ON content_files(display_order)")
+
+        # 33. Code Playground Examples Table (Python, Web Dev, Cyber Security)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS playground_examples (
+            id VARCHAR(64) PRIMARY KEY,
+            type VARCHAR(32) NOT NULL,
+            category VARCHAR(64) NOT NULL,
+            title VARCHAR(255) NOT NULL,
+            description TEXT,
+            difficulty VARCHAR(32) NOT NULL DEFAULT beginner,
+            instructions TEXT,
+            initial_code TEXT NOT NULL,
+            expected_output TEXT,
+            is_published INTEGER NOT NULL DEFAULT 1,
+            order_index INTEGER NOT NULL DEFAULT 1,
+            created_at VARCHAR(64) NOT NULL,
+            updated_at VARCHAR(64) NOT NULL
+        )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_playground_examples_type_pub ON playground_examples(type, is_published, order_index)")
 
 
 if __name__ == "__main__":

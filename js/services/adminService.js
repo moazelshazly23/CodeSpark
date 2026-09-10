@@ -2,6 +2,33 @@
 // Direct HTTP Bridge between Admin UI and FastAPI Backend Endpoints
 (function() {
   window.AdminService = {
+    // ==================== CODE PLAYGROUND MANAGEMENT ====================
+    async getPlaygroundExamples(type = null) {
+      try {
+        const res = await window.CodeSparkAPI.get('/playground/admin/examples', type ? { type } : null);
+        return res.examples || [];
+      } catch (e) {
+        console.warn('Failed to load playground examples:', e);
+        return [];
+      }
+    },
+
+    async createPlaygroundExample(data) {
+      return await window.CodeSparkAPI.post('/playground/admin/examples', data);
+    },
+
+    async updatePlaygroundExample(id, data) {
+      return await window.CodeSparkAPI.put(`/playground/admin/examples/${id}`, data);
+    },
+
+    async deletePlaygroundExample(id) {
+      return await window.CodeSparkAPI.delete(`/playground/admin/examples/${id}`);
+    },
+
+    async togglePlaygroundExamplePublish(id) {
+      return await window.CodeSparkAPI.patch(`/playground/admin/examples/${id}/publish`);
+    },
+
     // 1. Dashboard & Analytics
     async getDashboardStats() {
       const res = await window.CodeSparkAPI.get("/admin/analytics");

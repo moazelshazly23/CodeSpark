@@ -165,47 +165,62 @@ def login(req: LoginRequest, request: Request = None):
 
     raw_pw = req.password.strip()
     candidate_emails = [lower_ident]
-    if lower_ident in ("admin@codespark.com", "admin@codespark.edu.eg", "superadmin.official@codespark.edu.eg", "admin", "administrator", "super_admin", "moazmahmoudelshazly@gmail.com", "admin@gmail.com"):
-        candidate_emails.extend(["admin@codespark.edu.eg", "admin@codespark.com", "superadmin.official@codespark.edu.eg", "moazmahmoudelshazly@gmail.com"])
-    elif lower_ident in ("assistant@codespark.edu.eg", "assistant@codespark.com", "assistant"):
-        candidate_emails.extend(["assistant@codespark.edu.eg", "assistant@codespark.com"])
-    elif lower_ident == "student@codespark.com":
-        candidate_emails.append("ahmed@codespark.edu.eg")
-    elif lower_ident == "instructor@codespark.com":
-        candidate_emails.append("admin@codespark.edu.eg")
-
-    candidate_phones = [raw_ident]
-    if norm_phone and norm_phone != raw_ident:
-        candidate_phones.append(norm_phone)
-    if raw_ident in ("01000000000", "01099998888"):
-        candidate_phones.extend(["01000000000", "01099998888"])
+    is_admin_alias = lower_ident in ("admin", "administrator", "super_admin", "superadmin")
+    is_assistant_alias = lower_ident in ("assistant", "assistant_demo")
 
     with get_db() as conn:
         cursor = conn.cursor()
-        email_ph = ", ".join(["?" for _ in candidate_emails])
-        phone_ph = ", ".join(["?" for _ in candidate_phones])
-        cursor.execute(f"""
-        SELECT u.*, sp.grade, sp.section, sp.parent_phone, sp.subscription_code,
-               sp.subscription_status, sp.subscription_start, sp.subscription_expires_at,
-               sp.subscription_duration_days, sp.subscription_type,
-               sp.streak, sp.xp, sp.learning_hours, sp.last_activity, sp.last_lesson_id
-        FROM users u
-        LEFT JOIN student_profiles sp ON u.id = sp.user_id
-        WHERE (LOWER(u.email) IN ({email_ph}) OR u.phone IN ({phone_ph}))
-        LIMIT 1
-        """, list(candidate_emails) + list(candidate_phones))
-        user = cursor.fetchone()
+        if is_admin_alias:
+            cursor.execute("""
+            SELECT u.*, sp.grade, sp.section, sp.parent_phone, sp.subscription_code,
+                   sp.subscription_status, sp.subscription_start, sp.subscription_expires_at,
+                   sp.subscription_duration_days, sp.subscription_type,
+                   sp.streak, sp.xp, sp.learning_hours, sp.last_activity, sp.last_lesson_id
+            FROM users u
+            LEFT JOIN student_profiles sp ON u.id = sp.user_id
+            WHERE u.role IN ('SUPER_ADMIN', 'ADMIN', 'super_admin')
+              AND u.is_active = 1
+              AND (u.is_deleted = 0 OR u.is_deleted IS NULL)
+            LIMIT 1
+            """)
+            user = cursor.fetchone()
+        elif is_assistant_alias:
+            cursor.execute("""
+            SELECT u.*, sp.grade, sp.section, sp.parent_phone, sp.subscription_code,
+                   sp.subscription_status, sp.subscription_start, sp.subscription_expires_at,
+                   sp.subscription_duration_days, sp.subscription_type,
+                   sp.streak, sp.xp, sp.learning_hours, sp.last_activity, sp.last_lesson_id
+            FROM users u
+            LEFT JOIN student_profiles sp ON u.id = sp.user_id
+            WHERE u.role IN ('ASSISTANT', 'assistant')
+              AND u.is_active = 1
+              AND (u.is_deleted = 0 OR u.is_deleted IS NULL)
+            LIMIT 1
+            """)
+            user = cursor.fetchone()
+        else:
+            candidate_phones = [raw_ident]
+            if norm_phone and norm_phone != raw_ident:
+                candidate_phones.append(norm_phone)
+
+            email_ph = ", ".join(["?" for _ in candidate_emails])
+            phone_ph = ", ".join(["?" for _ in candidate_phones])
+            cursor.execute(f"""
+            SELECT u.*, sp.grade, sp.section, sp.parent_phone, sp.subscription_code,
+                   sp.subscription_status, sp.subscription_start, sp.subscription_expires_at,
+                   sp.subscription_duration_days, sp.subscription_type,
+                   sp.streak, sp.xp, sp.learning_hours, sp.last_activity, sp.last_lesson_id
+            FROM users u
+            LEFT JOIN student_profiles sp ON u.id = sp.user_id
+            WHERE (LOWER(u.email) IN ({email_ph}) OR u.phone IN ({phone_ph}))
+            LIMIT 1
+            """, list(candidate_emails) + list(candidate_phones))
+            user = cursor.fetchone()
         
         is_valid_pw = False
         if user and user.get("password_hash"):
+            # Strictly verify cryptographic password hash with PBKDF2 without backdoors
             is_valid_pw = verify_password(req.password, user["password_hash"]) or verify_password(raw_pw, user["password_hash"])
-            # Fallback convenient passwords for admin and assistant
-            if not is_valid_pw and user.get("role") in ("SUPER_ADMIN", "ADMIN", "super_admin"):
-                if raw_pw in ("admin12345", "admin123", "admin", "123456", "admin@123", "admin2026"):
-                    is_valid_pw = True
-            if not is_valid_pw and user.get("role") in ("ASSISTANT", "assistant"):
-                if raw_pw in ("assistant123", "assistant12345", "assistant", "123456"):
-                    is_valid_pw = True
 
         if not user or not is_valid_pw:
             raise HTTPException(

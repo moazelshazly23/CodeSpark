@@ -5035,5 +5035,160 @@
 
       attachRowEvents();
     }
+
+    // ==================== ADMIN CODE PLAYGROUND MANAGEMENT ====================
+    renderPlayground(user) {
+      return `
+        <div class="content-body">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+            <div>
+              <div class="badge badge-cyan" style="margin-bottom:0.35rem;">لوحة التحكم الأكاديمية</div>
+              <h1 style="font-size:1.75rem; font-weight:800; margin:0;">إدارة معمل البرمجة (Code Playground)</h1>
+              <p style="color:var(--text-muted); font-size:0.875rem; margin-top:0.25rem;">
+                إدارة الأمثلة والنماذج التدريبية لأقسام بايثون، وتطوير الويب، ومعمل الأمن السيبراني.
+              </p>
+            </div>
+            <button id="add-example-btn" class="btn btn-primary" style="font-weight:700;">
+              ➕ إضافة مثال برمجي جديد
+            </button>
+          </div>
+
+          <!-- Type Filter Tabs -->
+          <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem; flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary pg-filter-btn active" data-type="all">الكل</button>
+            <button class="btn btn-sm btn-ghost pg-filter-btn" data-type="python">🐍 بايثون</button>
+            <button class="btn btn-sm btn-ghost pg-filter-btn" data-type="web">🌐 تطوير الويب</button>
+            <button class="btn btn-sm btn-ghost pg-filter-btn" data-type="cyber_security">🛡️ الأمن السيبراني</button>
+          </div>
+
+          <!-- Examples Table Card -->
+          <div class="card card-glass" style="padding:0; overflow:hidden;">
+            <div style="overflow-x:auto;">
+              <table class="table" style="width:100%; border-collapse:collapse;">
+                <thead>
+                  <tr style="background:#090F1E; border-bottom:1px solid var(--border-subtle); text-align:right;">
+                    <th style="padding:1rem;">العنوان</th>
+                    <th style="padding:1rem;">القسم</th>
+                    <th style="padding:1rem;">التصنيف</th>
+                    <th style="padding:1rem;">الصعوبة</th>
+                    <th style="padding:1rem;">الحالة</th>
+                    <th style="padding:1rem; text-align:center;">إجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="pg-examples-tbody">
+                  <tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">جاري تحميل الأمثلة البرمجية...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      `;
+    },
+
+    async initPlaygroundEvents(user) {
+      const tbody = document.getElementById('pg-examples-tbody');
+      let currentFilter = 'all';
+      let allExamples = [];
+
+      const loadExamples = async () => {
+        try {
+          allExamples = await window.AdminService.getPlaygroundExamples();
+          renderTable();
+        } catch (e) {
+          if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--red);">فشل تحميل الأمثلة البرمجية</td></tr>';
+        }
+      };
+
+      const renderTable = () => {
+        if (!tbody) return;
+        const filtered = currentFilter === 'all' ? allExamples : allExamples.filter(x => x.type === currentFilter);
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">لا توجد أمثلة مسجلة في هذا القسم</td></tr>';
+          return;
+        }
+
+        const typeLabels = { python: '🐍 بايثون', web: '🌐 الويب', cyber_security: '🛡️ أمن سيبراني' };
+        const diffLabels = { beginner: 'مبتدئ', intermediate: 'متوسط', advanced: 'متقدم' };
+
+        tbody.innerHTML = filtered.map(eg => `
+          <tr style="border-bottom:1px solid var(--border-subtle);">
+            <td style="padding:1rem; font-weight:700;">${eg.title}</td>
+            <td style="padding:1rem;"><span class="badge badge-neutral">${typeLabels[eg.type] || eg.type}</span></td>
+            <td style="padding:1rem; color:var(--text-muted);">${eg.category}</td>
+            <td style="padding:1rem;"><span class="badge badge-cyan">${diffLabels[eg.difficulty] || eg.difficulty}</span></td>
+            <td style="padding:1rem;">
+              <span class="badge ${eg.is_published ? 'badge-success' : 'badge-neutral'}">
+                ${eg.is_published ? 'منشور' : 'مسودة'}
+              </span>
+            </td>
+            <td style="padding:1rem; text-align:center;">
+              <div style="display:flex; justify-content:center; gap:0.5rem;">
+                <button class="btn btn-ghost btn-sm pg-toggle-btn" data-id="${eg.id}" title="تبديل النشر">
+                  ${eg.is_published ? 'إخفاء' : 'نشر'}
+                </button>
+                <button class="btn btn-danger btn-sm pg-delete-btn" data-id="${eg.id}" data-title="${encodeURIComponent(eg.title)}" title="حذف نهائي">
+                  حذف 🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        // Attach buttons
+        tbody.querySelectorAll('.pg-toggle-btn').forEach(b => {
+          b.addEventListener('click', async () => {
+            const id = b.getAttribute('data-id');
+            await window.AdminService.togglePlaygroundExamplePublish(id);
+            loadExamples();
+          });
+        });
+
+        tbody.querySelectorAll('.pg-delete-btn').forEach(b => {
+          b.addEventListener('click', async () => {
+            const id = b.getAttribute('data-id');
+            const title = decodeURIComponent(b.getAttribute('data-title') || '');
+            if (confirm(`هل أنت متأكد من حذف المثال البرمجي "${title}" نهائياً من قاعدة البيانات؟`)) {
+              await window.AdminService.deletePlaygroundExample(id);
+              loadExamples();
+            }
+          });
+        });
+      };
+
+      document.querySelectorAll('.pg-filter-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          document.querySelectorAll('.pg-filter-btn').forEach(x => { x.classList.remove('btn-primary'); x.classList.add('btn-ghost'); });
+          b.classList.remove('btn-ghost');
+          b.classList.add('btn-primary');
+          currentFilter = b.getAttribute('data-type');
+          renderTable();
+        });
+      });
+
+      document.getElementById('add-example-btn')?.addEventListener('click', async () => {
+        const title = prompt('أدخل عنوان المثال البرمجي:');
+        if (!title) return;
+        const type = prompt('اختر النوع (python أو web أو cyber_security):', 'python') || 'python';
+        const category = prompt('التصنيف (مثال: basics, loops, networking, crypto):', 'basics') || 'basics';
+        const code = prompt('الكود أو الأمر الأولي للمثال:');
+        if (!code) return;
+
+        try {
+          await window.AdminService.createPlaygroundExample({
+            title,
+            type,
+            category,
+            initial_code: code,
+            difficulty: 'beginner',
+            is_published: true
+          });
+          loadExamples();
+        } catch (e) {
+          alert('فشل إضافة المثال: ' + e.message);
+        }
+      });
+
+      loadExamples();
+    },
   };
 })();
