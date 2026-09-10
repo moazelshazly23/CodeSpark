@@ -117,7 +117,8 @@ def on_startup():
 
         logger.info("Database schema and initial verification completed successfully.")
     except Exception as e:
-        logger.error(f"Error during startup database initialization: {e}")
+        logger.critical(f"CRITICAL FATAL ERROR: Database initialization failed during startup: {e}")
+        raise RuntimeError(f"Database initialization failed: {e}") from e
 
 @app.get("/api/health")
 @app.get("/health")

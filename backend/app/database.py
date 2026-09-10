@@ -1148,7 +1148,7 @@ def init_db():
             category VARCHAR(64) NOT NULL,
             title VARCHAR(255) NOT NULL,
             description TEXT,
-            difficulty VARCHAR(32) NOT NULL DEFAULT beginner,
+            difficulty VARCHAR(32) NOT NULL DEFAULT 'beginner',
             instructions TEXT,
             initial_code TEXT NOT NULL,
             expected_output TEXT,
