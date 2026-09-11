@@ -2032,12 +2032,13 @@ def seed_playground_examples_if_empty(db, now: str):
     for eg in examples:
         try:
             db.execute("""
-            INSERT OR IGNORE INTO playground_examples (
+            INSERT INTO playground_examples (
                 id, type, category, title, description, difficulty,
                 instructions, initial_code, expected_output,
                 is_published, order_index, created_at, updated_at
             )
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)
+            ON CONFLICT (id) DO NOTHING
             """, (
                 eg["id"],
                 eg["type"],

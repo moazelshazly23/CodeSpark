@@ -366,19 +366,25 @@ def answer_question(
         score_val = q.get("score", 10) or 10
         is_correct = (selected == correct_ans)
 
-        # Record completion in exercise_completions
+        # Record completion in exercise_completions using portable select-or-update
         comp_id = f"comp_{student_id}_{question_id}_{now_ms}"
         try:
-            cursor.execute("""
-            INSERT OR REPLACE INTO exercise_completions (
-                id, student_id, lesson_id, question_id, code, score, passed, completed_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                comp_id, student_id, q.get("lesson_id"), question_id,
-                selected, score_val if is_correct else 0, 1 if is_correct else 0, now
-            ))
+            cursor.execute("SELECT id FROM exercise_completions WHERE student_id = ? AND question_id = ? LIMIT 1", (student_id, question_id))
+            existing_comp = cursor.fetchone()
+            if existing_comp:
+                cursor.execute("""
+                    UPDATE exercise_completions
+                    SET code = ?, score = ?, passed = ?, completed_at = ?
+                    WHERE student_id = ? AND question_id = ?
+                """, (selected, score_val if is_correct else 0, 1 if is_correct else 0, now, student_id, question_id))
+            else:
+                cursor.execute("""
+                    INSERT INTO exercise_completions (
+                        id, student_id, lesson_id, question_id, code, score, passed, completed_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (comp_id, student_id, q.get("lesson_id"), question_id, selected, score_val if is_correct else 0, 1 if is_correct else 0, now))
         except Exception as e:
-            pass
+            logger.warning(f"Failed to record exercise completion: {e}")
 
         if is_correct:
             cursor.execute("UPDATE student_profiles SET xp = xp + ?, last_activity = ?, updated_at = ? WHERE user_id = ?", (score_val, now, now, student_id))

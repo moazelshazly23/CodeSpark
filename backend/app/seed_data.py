@@ -64,9 +64,18 @@ def seed_database(force_refresh=False):
                     l_cnt = l_row.get("cnt", 0) if isinstance(l_row, dict) else (l_row[0] if l_row else 0)
                     if u_cnt > 0 or l_cnt > 0:
                         is_seeded = True
-                        db.execute("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES ('initial_seed_completed', 'true', ?)", (now,))
+                        db.execute("INSERT INTO system_settings (key, value, updated_at) VALUES ('initial_seed_completed', 'true', ?) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at", (now,))
             except Exception as e:
-                print(f"Check seed status warning: {e}")
+                # Log the actual database query error
+                import logging
+                logging.getLogger("codespark.seed").warning(f"Database seed status check encountered error: {e}")
+                # Re-verify if connection is truly alive by checking a simple ping
+                try:
+                    chk = db.execute("SELECT 1 as alive").fetchone()
+                    if not chk:
+                        raise RuntimeError(f"Database connection unresponsive during startup check: {e}")
+                except Exception as ping_err:
+                    raise RuntimeError(f"Fatal database connectivity failure on startup: {ping_err}") from e
 
             if is_seeded:
                 # Seed is already complete. Protect all production data:
@@ -254,7 +263,7 @@ def seed_database(force_refresh=False):
 
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO student_profiles (
+                    INSERT INTO student_profiles (
                         id,
                         user_id,
                         grade,
@@ -630,7 +639,7 @@ def seed_database(force_refresh=False):
                 ex_id = f"ex_{lesson_id}"
                 db.execute(
                     """
-                    INSERT OR REPLACE INTO exercises (
+                    INSERT INTO exercises (
                         id, lesson_id, title, description, type, difficulty,
                         starter_code, solution_code, test_cases,
                         published, is_published, created_at, updated_at
@@ -884,8 +893,9 @@ def seed_database(force_refresh=False):
                 for idx, qid in enumerate(q_ids):
                     db.execute(
                         """
-                        INSERT OR IGNORE INTO quiz_questions (quiz_id, question_id, order_index)
+                        INSERT INTO quiz_questions (quiz_id, question_id, order_index)
                         VALUES (?, ?, ?)
+                        ON CONFLICT (quiz_id, question_id) DO NOTHING
                         """,
                         (quiz_id, qid, idx),
                     )
@@ -964,8 +974,9 @@ def seed_database(force_refresh=False):
                 eq_id = f"eq_{e_id}_{qid}"
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO exam_questions (id, exam_id, question_id, order_index)
+                    INSERT INTO exam_questions (id, exam_id, question_id, order_index)
                     VALUES (?, ?, ?, ?)
+                    ON CONFLICT (exam_id, question_id) DO NOTHING
                     """,
                     (eq_id, e_id, qid, idx),
                 )
@@ -1136,7 +1147,7 @@ def seed_database(force_refresh=False):
                 lp_id = f"lp_{student_id}_{lesson_id}"
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO lesson_progress (
+                    INSERT INTO lesson_progress (
                         id,
                         student_id,
                         lesson_id,
@@ -1148,6 +1159,7 @@ def seed_database(force_refresh=False):
                         updated_at
                     )
                     VALUES (?, ?, ?, 100, 1, 0, ?, ?, ?)
+                    ON CONFLICT (student_id, lesson_id) DO NOTHING
                     """,
                     (lp_id, student_id, lesson_id, now, now, now),
                 )
@@ -1176,7 +1188,7 @@ def seed_database(force_refresh=False):
 
                 db.execute(
                     """
-                    INSERT OR IGNORE INTO exam_attempts (
+                    INSERT INTO exam_attempts (
                         id,
                         exam_id,
                         student_id,
@@ -1193,6 +1205,7 @@ def seed_database(force_refresh=False):
                         completed_at
                     )
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT (id) DO NOTHING
                     """,
                     (
                         att_id,
@@ -1229,8 +1242,9 @@ def seed_database(force_refresh=False):
         for s_k, s_v in default_settings:
             db.execute(
                 """
-                INSERT OR IGNORE INTO system_settings (key, value, updated_at)
+                INSERT INTO system_settings (key, value, updated_at)
                 VALUES (?, ?, ?)
+                ON CONFLICT (key) DO NOTHING
                 """,
                 (s_k, s_v, now),
             )
@@ -1506,8 +1520,9 @@ def _seed_subscription_offers(db, now: str):
     # Mark initial seed as completed in system_settings
     try:
         db.execute("""
-        INSERT OR REPLACE INTO system_settings (key, value, updated_at)
+        INSERT INTO system_settings (key, value, updated_at)
         VALUES ('initial_seed_completed', 'true', ?)
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at
         """, (now,))
     except Exception as e:
         print(f"Error marking initial_seed_completed: {e}")

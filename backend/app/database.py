@@ -81,7 +81,25 @@ class UniversalCursor:
         self._cursor = raw_cursor
         self.db_type = db_type
 
+
+    def _normalize_query_for_postgres(self, query: str) -> str:
+        """Translate SQLite dialect anomalies (INSERT OR REPLACE / INSERT OR IGNORE) to standard PostgreSQL ON CONFLICT."""
+        q_clean = query.strip()
+        if re.match(r"^INSERT\s+OR\s+IGNORE\s+INTO\s+", q_clean, re.IGNORECASE):
+            q_clean = re.sub(r"^INSERT\s+OR\s+IGNORE\s+INTO\s+", "INSERT INTO ", q_clean, flags=re.IGNORECASE)
+            if "ON CONFLICT" not in q_clean.upper():
+                q_clean = q_clean.rstrip("; \t\r\n") + " ON CONFLICT DO NOTHING"
+            return q_clean
+        if re.match(r"^INSERT\s+OR\s+REPLACE\s+INTO\s+system_settings\s+", q_clean, re.IGNORECASE):
+            q_clean = re.sub(r"^INSERT\s+OR\s+REPLACE\s+INTO\s+", "INSERT INTO ", q_clean, flags=re.IGNORECASE)
+            if "ON CONFLICT" not in q_clean.upper():
+                q_clean = q_clean.rstrip("; \t\r\n") + " ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at"
+            return q_clean
+        return query
+
     def execute(self, query: str, params: Optional[Union[Sequence[Any], Dict[str, Any]]] = None) -> 'UniversalCursor':
+        if self.db_type == 'postgres':
+            query = self._normalize_query_for_postgres(query)
         if self.db_type == "sqlite":
             if params is None:
                 self._cursor.execute(query)
