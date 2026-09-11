@@ -5034,7 +5034,7 @@
       };
 
       attachRowEvents();
-    }
+    },
 
     // ==================== ADMIN CODE PLAYGROUND MANAGEMENT ====================
     renderPlayground(user) {
