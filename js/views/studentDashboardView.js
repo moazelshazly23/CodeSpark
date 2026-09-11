@@ -118,22 +118,7 @@
                   مرحبًا بك، <span class="sparkle-text">${fullName}</span> 👋
                 </h1>
                 
-                <p style="color:var(--text-muted); font-size:1rem; max-width:650px; line-height:1.6; margin-bottom:1.5rem;">
-                  مستعد لمواصلة رحلتك في عالم البرمجة؟ استعد لاكتساب مهارات تقنية حقيقية وإتقان لغة بايثون خطوة بخطوة ومتابعة تقدمك وحل التمارين التفاعلية.
-                </p>
-
-                <!-- Current Course Learning Progress Strip -->
-                <div style="background:rgba(7, 11, 20, 0.65); border:1px solid var(--border-card); border-radius:var(--radius-lg); padding:1.15rem 1.5rem; max-width:560px; margin-bottom:1.25rem;">
-                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-                    <div style="font-weight:700; font-size:0.9375rem; color:var(--text-main); display:flex; align-items:center; gap:0.5rem;">
-                      <span class="spark-dot"></span> أكمل تعلم Python - نسبة إنجاز المنهج:
-                    </div>
-                    <span id="dash-progress-pct" class="number-font" style="font-weight:800; color:var(--cyan); font-size:1.1rem;">${overallProgress}%</span>
-                  </div>
-                  <div class="progress-container progress-container-lg">
-                    <div id="dash-hero-progress-bar" class="progress-bar-fill animated-progress-fill" data-progress="${overallProgress}" style="width: ${overallProgress}%;"></div>
-                  </div>
-                </div>
+                
 
                 <div style="display:flex; gap:0.85rem; flex-wrap:wrap;">
                   <a href="#lesson/${inProgressLesson.id}" class="btn btn-primary btn-lg" style="box-shadow:0 0 20px rgba(6,182,212,0.4);">

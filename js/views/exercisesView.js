@@ -18,7 +18,6 @@
             <div>
               <div class="badge badge-purple" style="margin-bottom:0.35rem;">🧩 التمارين والتدريبات التفاعلية</div>
               <h1 style="font-size:1.875rem; font-weight:900; margin:0;">بنك التمارين والأسئلة المعتمدة</h1>
-              <p style="color:var(--text-muted); font-size:0.9375rem;">تطبيقات عملية وأسئلة اختيار من متعدد مرتبطة بالدروس لتثبيت المفاهيم والتأكد من إتقان لغة بايثون.</p>
             </div>
 
             <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
