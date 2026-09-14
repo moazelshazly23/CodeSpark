@@ -57,20 +57,6 @@ CREATE TABLE IF NOT EXISTS subscription_codes (
     expires_at TEXT
 );
 
-CREATE TABLE IF NOT EXISTS subscription_plans (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    duration_months INTEGER NOT NULL CHECK (duration_months >= 1),
-    price REAL NOT NULL CHECK (price >= 0),
-    is_active INTEGER NOT NULL DEFAULT 1,
-    order_index INTEGER NOT NULL DEFAULT 0,
-    features_json TEXT DEFAULT '[]',
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_sub_plans_active ON subscription_plans(is_active, order_index);
-
 CREATE TABLE IF NOT EXISTS subscriptions (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -449,64 +435,8 @@ class RelationalDatabaseEngine:
             self._bootstrap_defaults()
 
     def _bootstrap_defaults(self):
-        # 1. Ensure columns in subscription_requests exist
-        try:
-            conn = self._get_connection()
-            if getattr(self, 'is_postgres', False):
-                cur = conn.cursor()
-                cur.execute("""
-                    ALTER TABLE subscription_requests ADD COLUMN IF NOT EXISTS plan_id VARCHAR(64);
-                    ALTER TABLE subscription_requests ADD COLUMN IF NOT EXISTS duration_months INTEGER;
-                    ALTER TABLE subscription_requests ADD COLUMN IF NOT EXISTS payment_number VARCHAR(32);
-                """)
-                conn.commit()
-            else:
-                cols = [r[1] for r in conn.execute("PRAGMA table_info(subscription_requests);").fetchall()]
-                if "plan_id" not in cols:
-                    conn.execute("ALTER TABLE subscription_requests ADD COLUMN plan_id TEXT;")
-                if "duration_months" not in cols:
-                    conn.execute("ALTER TABLE subscription_requests ADD COLUMN duration_months INTEGER;")
-                if "payment_number" not in cols:
-                    conn.execute("ALTER TABLE subscription_requests ADD COLUMN payment_number TEXT;")
-                conn.commit()
-        except Exception:
-            pass
-
-        # 2. Seed 11 Real Subscription Plans (1 to 11 months)
-        try:
-            plan_count = self.fetch_val("SELECT COUNT(*) FROM subscription_plans") or 0
-            if plan_count == 0:
-                default_plans = [
-                    ("plan_1m", "اشتراك شهري (شهر واحد)", 1, 100.0, 1),
-                    ("plan_2m", "اشتراك شهرين (2 أشهر)", 2, 190.0, 2),
-                    ("plan_3m", "اشتراك فصلي (3 أشهر)", 3, 270.0, 3),
-                    ("plan_4m", "اشتراك 4 أشهر", 4, 350.0, 4),
-                    ("plan_5m", "اشتراك 5 أشهر", 5, 425.0, 5),
-                    ("plan_6m", "اشتراك نصف سنوي (6 أشهر)", 6, 500.0, 6),
-                    ("plan_7m", "اشتراك 7 أشهر", 7, 570.0, 7),
-                    ("plan_8m", "اشتراك 8 أشهر", 8, 640.0, 8),
-                    ("plan_9m", "اشتراك 9 أشهر", 9, 700.0, 9),
-                    ("plan_10m", "اشتراك 10 أشهر", 10, 760.0, 10),
-                    ("plan_11m", "اشتراك 11 شهر", 11, 820.0, 11),
-                ]
-                now = now_iso()
-                for pid, pname, pmonths, pprice, porder in default_plans:
-                    self.insert("subscription_plans", {
-                        "id": pid,
-                        "name": pname,
-                        "duration_months": pmonths,
-                        "price": pprice,
-                        "is_active": 1,
-                        "order_index": porder,
-                        "features_json": json.dumps(["فتح كافة الدروس والامتحانات", "محرر الأكواد مع المساعد الذكي", "شهادة إتمام المسار"]),
-                        "created_at": now,
-                        "updated_at": now
-                    })
-        except Exception as e:
-            print("Plans bootstrap notice:", e)
-
-        # 3. Platform Settings (including default transfer number +20159159038)
-        row = self.fetch_one("SELECT key, value_json FROM platform_settings WHERE key = 'general'")
+        # Insert default platform settings if not present
+        row = self.fetch_one("SELECT key FROM platform_settings WHERE key = 'general'")
         if not row:
             settings_data = {
                 "platform_name": "Code Spark",
@@ -517,30 +447,12 @@ class RelationalDatabaseEngine:
                 "background_dark": "#070B14",
                 "allow_registration": True,
                 "default_exam_duration_mins": 45,
-                "code_playground_enabled": True,
-                "payment_phone": "+20159159038",
-                "instapay_phone": "+20159159038",
-                "contact_phone": "+201559159038",
-                "instapay_link": "https://ipn.eg/S/moazasem/instapay/27DsGj"
+                "code_playground_enabled": True
             }
             self.execute(
                 "INSERT INTO platform_settings (key, value_json, description, updated_at) VALUES (?, ?, ?, ?)",
                 ("general", json.dumps(settings_data, ensure_ascii=False), "الإعدادات العامة للمنصة", now_iso())
             )
-        else:
-            try:
-                curr = json.loads(row["value_json"])
-                if "payment_phone" not in curr or curr.get("payment_phone") == "+201552696208":
-                    curr["payment_phone"] = "+20159159038"
-                    curr["instapay_phone"] = "+20159159038"
-                    self.execute(
-                        "UPDATE platform_settings SET value_json = ?, updated_at = ? WHERE key = 'general'",
-                        (json.dumps(curr, ensure_ascii=False), now_iso())
-                    )
-            except Exception:
-                pass
-
-
 
     @contextmanager
     def transaction(self):
