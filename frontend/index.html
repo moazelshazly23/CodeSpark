@@ -54,7 +54,7 @@
         </form>
         <div style="margin-top:1.25rem;text-align:center;font-size:0.9rem;border-top:1px solid var(--color-border);padding-top:1rem;">
           <span style="color:var(--color-text-muted);">طالب جديد بدون حساب؟ </span>
-          <a href="#" id="show-register-link" style="color:var(--color-primary);font-weight:700;text-decoration:none;">إنشاء حساب طالب مجاناً</a>
+          <a href="javascript:void(0)" id="show-register-link" onclick="document.getElementById('login-card').style.display='none';document.getElementById('register-card').style.display='block';return false;" style="color:var(--color-primary);font-weight:700;text-decoration:none;">إنشاء حساب طالب مجاناً</a>
         </div>
       </div>
 
@@ -87,7 +87,7 @@
         </form>
         <div style="margin-top:1.25rem;text-align:center;font-size:0.9rem;border-top:1px solid var(--color-border);padding-top:1rem;">
           <span style="color:var(--color-text-muted);">لديك حساب بالفعل؟ </span>
-          <a href="#" id="show-login-link" style="color:var(--color-primary);font-weight:700;text-decoration:none;">تسجيل الدخول</a>
+          <a href="javascript:void(0)" id="show-login-link" onclick="document.getElementById('register-card').style.display='none';document.getElementById('login-card').style.display='block';return false;" style="color:var(--color-primary);font-weight:700;text-decoration:none;">تسجيل الدخول</a>
         </div>
       </div>
 
