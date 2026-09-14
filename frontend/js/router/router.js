@@ -28,36 +28,29 @@ export class Router {
     const path = hash.replace(/^#/, '') || '/';
     const mainContent = document.getElementById('content-container') || document.getElementById('main-content');
     
+    const appShell = document.getElementById('app-shell');
+    const authShell = document.getElementById('auth-shell');
+
     // Auth-only vs Public Pages
     const isPublic = path === '/login' || path === '/register';
     const isAuthed = AuthService.isAuthenticated();
 
-    if (!isAuthed && !isPublic) {
-      window.location.hash = '#/login';
-      return;
-    }
-
-    if (isAuthed && isPublic) {
-      const user = AuthService.getUser();
-      window.location.hash = (user?.role === 'admin' || user?.role === 'assistant') ? '#/admin/dashboard' : '#/student/dashboard';
-      return;
-    }
-
-    if (path === '/') {
-      const user = AuthService.getUser();
-      window.location.hash = (user?.role === 'admin' || user?.role === 'assistant') ? '#/admin/dashboard' : '#/student/dashboard';
-      return;
-    }
-
-    // Toggle navigation UI visibility based on auth state
-    const appShell = document.getElementById('app-shell');
-    const authShell = document.getElementById('auth-shell');
-    if (isPublic) {
+    // Toggle navigation UI visibility based on auth state IMMEDIATELY
+    if (isAuthed) {
+      if (authShell) authShell.style.display = 'none';
+      if (appShell) appShell.style.display = 'flex';
+      if (isPublic || path === '/') {
+        const user = AuthService.getUser();
+        window.location.hash = (user?.role === 'admin' || user?.role === 'assistant') ? '#/admin/dashboard' : '#/student/dashboard';
+        return;
+      }
+    } else {
       if (appShell) appShell.style.display = 'none';
       if (authShell) authShell.style.display = 'flex';
-    } else {
-      if (appShell) appShell.style.display = 'flex';
-      if (authShell) authShell.style.display = 'none';
+      if (!isPublic && path !== '/') {
+        window.location.hash = '#/login';
+        return;
+      }
     }
 
     // Match route

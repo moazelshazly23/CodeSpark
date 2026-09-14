@@ -1692,4 +1692,407 @@ students.forEach((name, idx) => {
     }
   }
 
+
+  /* ===================================================================
+     8. SUBSCRIPTION & ACTIVATION PAGE (STUDENT)
+  =================================================================== */
+  static async renderSubscriptionPage(container) {
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
+          <span>💳</span> الاشتراك وتفعيل الحساب الأكاديمي
+        </h2>
+        <p style="color:var(--color-text-muted);">طرق السداد المعتمدة وتفعيل الوصول الشامل للمناهج والامتحانات</p>
+      </div>
+
+      <!-- Current Subscription Status Card -->
+      <div id="sub-page-status-card" class="card" style="margin-bottom:1.5rem;">
+        <div class="skeleton" style="height:80px;"></div>
+      </div>
+
+      <!-- Official Payment & Transfer Methods Card -->
+      <div class="card" style="margin-bottom:1.5rem;border-right:4px solid var(--color-cyan-accent);">
+        <h3 style="font-size:1.25rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+          <span>⚡</span> بيانات الدفع والتحويل الرسمية المعتمدة
+        </h3>
+        <p style="color:var(--color-text-muted);font-size:0.95rem;line-height:1.6;margin-bottom:1.25rem;">
+          يمكنك تفعيل الاشتراك الفصلي أو السنوي عن طريق التحويل المباشر عبر تطبيق <strong>InstaPay</strong> أو المحافظ الإلكترونية، ثم تقديم طلب التفعيل أدناه ليتم اعتماده فوراً.
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;">
+          <!-- InstaPay Transfer Card -->
+          <div style="background:var(--color-bg-surface);padding:1rem;border-radius:var(--radius-md);border:1px solid var(--color-border);">
+            <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.3rem;">رقم التحويل عبر InstaPay / المحافظ:</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+              <span id="official-instapay-num" style="font-family:var(--font-mono);font-size:1.2rem;font-weight:800;color:var(--color-cyan-accent);">+201552696208</span>
+              <button id="copy-instapay-btn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;">نسخ</button>
+            </div>
+          </div>
+
+          <!-- InstaPay Direct Link Card -->
+          <div style="background:var(--color-bg-surface);padding:1rem;border-radius:var(--radius-md);border:1px solid var(--color-border);">
+            <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.3rem;">الرابط المباشر لتطبيق InstaPay:</div>
+            <a id="official-instapay-link" href="https://ipn.eg/S/moazasem/instapay/27DsGj" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="display:inline-flex;width:100%;justify-content:center;font-weight:700;margin-top:0.2rem;">
+              تحويل عبر InstaPay مباشرة 🚀
+            </a>
+          </div>
+
+          <!-- Official Contact / WhatsApp Card -->
+          <div style="background:var(--color-bg-surface);padding:1rem;border-radius:var(--radius-md);border:1px solid var(--color-border);">
+            <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.3rem;">رقم التواصل وتأكيد التفعيل (واتساب / هاتف):</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
+              <span id="official-contact-num" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:#10B981;">+201559159038</span>
+              <a href="https://wa.me/201559159038" target="_blank" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;color:#10B981;">واتساب 💬</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Request Form & Activation Code Dual Grid -->
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:1.5rem;" class="sub-dual-grid">
+        
+        <!-- Activation Request Form -->
+        <div class="card">
+          <h3 style="font-size:1.2rem;font-weight:800;color:var(--color-text-main);margin-bottom:1rem;display:flex;align-items:center;gap:0.4rem;">
+            <span>📝</span> تقديم طلب تفعيل الاشتراك بعد التحويل
+          </h3>
+          <form id="form-submit-sub-req">
+            <div class="form-group">
+              <label class="form-label">رقم الهاتف المحول منه (أو رقم محفظتك)</label>
+              <input type="text" id="sub-req-phone" class="form-input" required placeholder="01552696208">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">الباقة المطلوبة</label>
+                <select id="sub-req-pkg" class="form-input">
+                  <option value="اشتراك فصلي (3 أشهر)">اشتراك فصلي (3 أشهر)</option>
+                  <option value="اشتراك سنوي شامل (12 شهر)">اشتراك سنوي شامل (12 شهر)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">المبلغ المحول (ج.م)</label>
+                <input type="number" id="sub-req-amt" class="form-input" placeholder="مثال: 250" min="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم العملية أو اسم الحساب المحول منه (Reference)</label>
+              <input type="text" id="sub-req-ref" class="form-input" required placeholder="مثال: رقم الحوالة في انستاباي أو اسم صاحب الحساب">
+            </div>
+            <div class="form-group">
+              <label class="form-label">تاريخ التحويل</label>
+              <input type="date" id="sub-req-date" class="form-input" value="${new Date().toISOString().substring(0, 10)}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">ملاحظات إضافية (اختياري)</label>
+              <textarea id="sub-req-notes" class="form-input" rows="2" placeholder="أي تفاصيل ترغب في إضافتها للإدارة..."></textarea>
+            </div>
+            <button type="submit" id="btn-sub-req-submit" class="btn btn-primary" style="width:100%;font-weight:700;padding:0.75rem;">
+              إرسال طلب التفعيل للإدارة 🚀
+            </button>
+          </form>
+        </div>
+
+        <!-- Quick Code Activation Box -->
+        <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
+          <div>
+            <h3 style="font-size:1.15rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;">
+              <span>🔑</span> هل تمتلك كود اشتراك مطبوع؟
+            </h3>
+            <p style="color:var(--color-text-muted);font-size:0.88rem;line-height:1.6;margin-bottom:1rem;">
+              إذا حصلت على كود تفعيل مسبق الدفع (مثل <code>CS-SPARK-2026</code>)، يمكنك إدخاله هنا وتفعيل حسابك بشكل فوري ولحظي دون انتظار مراجعة التحويل.
+            </p>
+            <div class="form-group">
+              <input type="text" id="quick-input-code" class="form-input" placeholder="CS-XXXX-XXXX" style="text-transform:uppercase;font-family:var(--font-mono);font-size:1.05rem;letter-spacing:1px;text-align:center;">
+            </div>
+            <button id="btn-quick-activate" class="btn btn-secondary" style="width:100%;font-weight:700;">
+              تفعيل بالكود فوراً ✨
+            </button>
+          </div>
+
+          <div style="margin-top:1.5rem;padding:1rem;background:var(--color-bg-surface);border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:0.82rem;color:var(--color-text-dim);">
+            🛡️ <strong>ضمان الخدمة:</strong> تتم مراجعة الطلبات واعتمادها خلال دقائق من الإدارة. في حال واجهتك أي مشكلة، تواصل مباشرة مع الدعم الفني على الواتساب.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pending Requests List -->
+      <div id="sub-requests-history" style="margin-top:1.5rem;"></div>
+    `;
+
+    // Fetch and bind status
+    async function refreshSubStatus() {
+      try {
+        const [stat, myReqs] = await Promise.all([
+          ApiClient.get('/subscriptions/my-status'),
+          ApiClient.get('/subscriptions/requests/my').catch(() => [])
+        ]);
+
+        const statCard = document.getElementById('sub-page-status-card');
+        if (stat.is_subscribed) {
+          statCard.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+              <div>
+                <span class="badge badge-public" style="font-size:0.9rem;padding:0.4rem 0.8rem;">حساب مشترك نشط ✅</span>
+                <h3 style="font-weight:800;color:var(--color-text-main);margin-top:0.4rem;">اشتراكك مفعل وساري المفعول</h3>
+                <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">تاريخ الانتهاء: ${stat.subscription?.expires_at ? stat.subscription.expires_at.substring(0, 10) : 'مدى الحياة'}</p>
+              </div>
+              <a href="#/student/courses" class="btn btn-primary btn-sm">استعراض المناهج والدروس 📚</a>
+            </div>
+          `;
+        } else {
+          statCard.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+              <div>
+                <span class="badge badge-subscribers" style="font-size:0.9rem;padding:0.4rem 0.8rem;">خطة تجريبية مجانية</span>
+                <h3 style="font-weight:800;color:var(--color-text-main);margin-top:0.4rem;">قم بالاشتراك لفتح كافة الدروس والامتحانات والمذكرات</h3>
+                <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">سدد الرسوم عبر InstaPay وقدّم طلبك أدناه لتفعيل حسابك فوراً.</p>
+              </div>
+            </div>
+          `;
+        }
+
+        // History
+        const histDiv = document.getElementById('sub-requests-history');
+        if (myReqs && myReqs.length > 0) {
+          histDiv.innerHTML = `
+            <div class="card">
+              <h3 style="font-weight:800;font-size:1.1rem;color:var(--color-text-main);margin-bottom:0.75rem;">سجل طلبات التفعيل السابقة:</h3>
+              <div class="table-container">
+                <table class="table" style="width:100%;">
+                  <thead>
+                    <tr>
+                      <th>الباقة</th>
+                      <th>رقم المرجع</th>
+                      <th>تاريخ الإرسال</th>
+                      <th>الحالة</th>
+                      <th>ملاحظات الإدارة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${myReqs.map(r => `
+                      <tr>
+                        <td><strong>${r.package_name}</strong></td>
+                        <td style="font-family:var(--font-mono);">${r.payment_reference}</td>
+                        <td>${r.created_at ? r.created_at.substring(0, 10) : ''}</td>
+                        <td>
+                          <span class="badge ${r.status === 'APPROVED' ? 'badge-public' : (r.status === 'PENDING' ? 'badge-subscribers' : 'badge-danger')}">
+                            ${r.status === 'APPROVED' ? 'معتمد ومفعل ✅' : (r.status === 'PENDING' ? 'قيد المراجعة ⏳' : 'مرفوض ❌')}
+                          </span>
+                        </td>
+                        <td style="font-size:0.85rem;color:var(--color-text-muted);">${r.rejection_reason || '—'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    await refreshSubStatus();
+
+    // Copy InstaPay number
+    document.getElementById('copy-instapay-btn')?.addEventListener('click', () => {
+      const num = document.getElementById('official-instapay-num').textContent.trim();
+      navigator.clipboard.writeText(num);
+      Toast.success(`تم نسخ رقم التحويل: ${num}`);
+    });
+
+    // Submit Request
+    document.getElementById('form-submit-sub-req')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const submitBtn = document.getElementById('btn-sub-req-submit');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'جاري إرسال الطلب...';
+
+      try {
+        const payload = {
+          phone: document.getElementById('sub-req-phone').value.trim(),
+          package_name: document.getElementById('sub-req-pkg').value,
+          amount: parseFloat(document.getElementById('sub-req-amt').value) || 0.0,
+          payment_reference: document.getElementById('sub-req-ref').value.trim(),
+          transfer_date: document.getElementById('sub-req-date').value,
+          admin_notes: document.getElementById('sub-req-notes').value.trim()
+        };
+
+        const res = await ApiClient.post('/subscriptions/requests', payload);
+        Toast.success(res.message || 'تم إرسال طلب التفعيل بنجاح! سيتم اعتماده قريباً');
+        document.getElementById('form-submit-sub-req').reset();
+        await refreshSubStatus();
+      } catch (err) {
+        Toast.error(err.message || 'تعذر إرسال الطلب');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'إرسال طلب التفعيل للإدارة 🚀';
+      }
+    });
+
+    // Quick Code Activate
+    document.getElementById('btn-quick-activate')?.addEventListener('click', async () => {
+      const code = document.getElementById('quick-input-code').value.trim().toUpperCase();
+      if (!code) {
+        Toast.warning('يرجى كتابة كود الاشتراك أولاً');
+        return;
+      }
+      try {
+        const res = await ApiClient.post('/subscriptions/activate', { code });
+        Toast.success(res.message || 'تم تفعيل الاشتراك بنجاح! 🎉');
+        await refreshSubStatus();
+        window.dispatchEvent(new Event('hashchange'));
+      } catch (err) {
+        Toast.error(err.message || 'كود غير صالح');
+      }
+    });
+  }
+
+  /* ===================================================================
+     9. ACCOUNT SETTINGS (STUDENT / ASSISTANT / ADMIN)
+  =================================================================== */
+  static async renderSettings(container) {
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
+          <span>⚙️</span> إعدادات الحساب والأمان
+        </h2>
+        <p style="color:var(--color-text-muted);">إدارة البيانات الشخصية وتغيير كلمة المرور وتأمين حسابك</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;" class="settings-grid">
+        
+        <!-- Profile Info Card -->
+        <div class="card">
+          <h3 style="font-size:1.2rem;font-weight:800;color:var(--color-text-main);margin-bottom:1rem;display:flex;align-items:center;gap:0.4rem;">
+            <span>👤</span> تعديل البيانات الشخصية
+          </h3>
+          <form id="form-settings-profile">
+            <div class="form-group">
+              <label class="form-label">الاسم بالكامل</label>
+              <input type="text" id="set-fullname" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">اسم المستخدم (غير قابل للتعديل)</label>
+              <input type="text" id="set-username" class="form-input" disabled style="opacity:0.7;cursor:not-allowed;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">البريد الإلكتروني</label>
+              <input type="email" id="set-email" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الهاتف</label>
+              <input type="text" id="set-phone" class="form-input" placeholder="+201000000000">
+            </div>
+            <button type="submit" id="btn-save-profile" class="btn btn-primary" style="width:100%;font-weight:700;">
+              حفظ التعديلات الشخصية ✨
+            </button>
+          </form>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="card">
+          <h3 style="font-size:1.2rem;font-weight:800;color:var(--color-text-main);margin-bottom:1rem;display:flex;align-items:center;gap:0.4rem;">
+            <span>🔒</span> تغيير كلمة المرور
+          </h3>
+          <form id="form-settings-password">
+            <div class="form-group">
+              <label class="form-label">كلمة المرور الحالية</label>
+              <input type="password" id="set-old-pass" class="form-input" required placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label class="form-label">كلمة المرور الجديدة</label>
+              <input type="password" id="set-new-pass" class="form-input" required minlength="6" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label class="form-label">تأكيد كلمة المرور الجديدة</label>
+              <input type="password" id="set-conf-pass" class="form-input" required minlength="6" placeholder="••••••••">
+            </div>
+            <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:1rem;">
+              يجب أن تحتوي كلمة المرور على 6 خانات على الأقل لضمان أمان حسابك الأكاديمي.
+            </div>
+            <button type="submit" id="btn-save-password" class="btn btn-secondary" style="width:100%;font-weight:700;">
+              تحديث كلمة المرور 🔐
+            </button>
+          </form>
+        </div>
+
+      </div>
+    `;
+
+    try {
+      const me = await ApiClient.get('/users/me');
+      document.getElementById('set-fullname').value = me.full_name || '';
+      document.getElementById('set-username').value = me.username || '';
+      document.getElementById('set-email').value = me.email || '';
+      document.getElementById('set-phone').value = me.phone || '';
+    } catch (err) {
+      console.error(err);
+    }
+
+    // Update Profile
+    document.getElementById('form-settings-profile')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save-profile');
+      btn.disabled = true;
+      btn.textContent = 'جاري الحفظ...';
+
+      try {
+        const payload = {
+          full_name: document.getElementById('set-fullname').value.trim(),
+          email: document.getElementById('set-email').value.trim(),
+          phone: document.getElementById('set-phone').value.trim()
+        };
+        const res = await ApiClient.put('/users/profile', payload);
+        Toast.success(res.message || 'تم تحديث البيانات بنجاح');
+        // Update cached user in AuthService
+        const u = AuthService.getUser();
+        if (u) {
+          u.full_name = payload.full_name;
+          u.email = payload.email;
+          localStorage.setItem('codespark_user', JSON.stringify(u));
+        }
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'حفظ التعديلات الشخصية ✨';
+      }
+    });
+
+    // Change Password
+    document.getElementById('form-settings-password')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const oldP = document.getElementById('set-old-pass').value;
+      const newP = document.getElementById('set-new-pass').value;
+      const confP = document.getElementById('set-conf-pass').value;
+
+      if (newP !== confP) {
+        Toast.error('كلمة المرور الجديدة وتأكيدها غير متطابقين');
+        return;
+      }
+
+      const btn = document.getElementById('btn-save-password');
+      btn.disabled = true;
+      btn.textContent = 'جاري التحديث...';
+
+      try {
+        const res = await ApiClient.post('/users/change-password', {
+          current_password: oldP,
+          new_password: newP,
+          confirm_password: confP
+        });
+        Toast.success(res.message || 'تم تغيير كلمة المرور بنجاح');
+        document.getElementById('form-settings-password').reset();
+      } catch (err) {
+        Toast.error(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'تحديث كلمة المرور 🔐';
+      }
+    });
+  }
+
 }

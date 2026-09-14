@@ -32,11 +32,17 @@ Router.register('/exercises', (c) => StudentPages.renderPlayground(c));
 Router.register('/student/exams', (c) => StudentPages.renderExams(c));
 Router.register('/exams', (c) => StudentPages.renderExams(c));
 
+Router.register('/student/subscription', (c) => StudentPages.renderSubscriptionPage(c));
+Router.register('/subscription', (c) => StudentPages.renderSubscriptionPage(c));
+
 Router.register('/student/support', (c) => StudentPages.renderSupport(c));
 Router.register('/support', (c) => StudentPages.renderSupport(c));
 
 Router.register('/student/profile', (c) => StudentPages.renderProfile(c));
 Router.register('/profile', (c) => StudentPages.renderProfile(c));
+
+Router.register('/student/settings', (c) => StudentPages.renderSettings(c));
+Router.register('/settings', (c) => StudentPages.renderSettings(c));
 
 Router.register('/student/notifications', (c) => StudentPages.renderDashboard(c));
 Router.register('/student/progress', (c) => StudentPages.renderDashboard(c));
@@ -51,11 +57,12 @@ Router.register('/admin/lessons', (c) => AdminPages.renderLessons(c), ['admin', 
 Router.register('/admin/questions', (c) => AdminPages.renderQuestionBank(c), ['admin', 'assistant']);
 Router.register('/admin/exams', (c) => AdminPages.renderExams(c), ['admin', 'assistant']);
 Router.register('/admin/announcements', (c) => AdminPages.renderAnnouncements(c), ['admin', 'assistant']);
+Router.register('/admin/subscription-requests', (c) => AdminPages.renderSubscriptionRequests(c), ['admin', 'assistant']);
+Router.register('/admin/subscriptions', (c) => AdminPages.renderSubscriptions(c), ['admin', 'assistant']);
 Router.register('/admin/students', (c) => AdminPages.renderStudents(c), ['admin', 'assistant']);
 Router.register('/admin/assistants', (c) => AdminPages.renderAssistants(c), ['admin']);
-Router.register('/admin/subscriptions', (c) => AdminPages.renderSubscriptions(c), ['admin', 'assistant']);
+Router.register('/admin/settings', (c) => AdminPages.renderSettings(c), ['admin', 'assistant']);
 
-// -----------------------------------------------------------------------------
 // 2. Dynamic Navigation UI Builder (Role & Permissions Aware)
 // -----------------------------------------------------------------------------
 function updateNavigationUI() {
@@ -108,6 +115,7 @@ function updateNavigationUI() {
     navEl.innerHTML = `
       <div class="nav-section-label">لوحة الإدارة الشاملة</div>
       <a href="#/admin/dashboard" class="nav-item">📊 لوحة الإحصائيات</a>
+      <a href="#/admin/subscription-requests" class="nav-item">💳 طلبات الاشتراكات</a>
       <a href="#/admin/subscriptions" class="nav-item">🔑 أكواد الاشتراكات</a>
       <a href="#/admin/students" class="nav-item">👥 إدارة الطلاب</a>
       <a href="#/admin/assistants" class="nav-item">🛡️ المساعدين والصلاحيات</a>
@@ -121,22 +129,26 @@ function updateNavigationUI() {
       
       <div class="nav-section-label">أدوات إضافية</div>
       <a href="#/student/playground" class="nav-item">💻 محرر الأكواد</a>
+      <a href="#/admin/settings" class="nav-item">⚙️ إعدادات الحساب والأمان</a>
       <a href="#/student/support" class="nav-item">💬 تذاكر الدعم الفني</a>
     `;
   } else if (user.role === 'assistant') {
     const perms = user.permissions || [];
     let items = '<div class="nav-section-label">لوحة المساعد التعليمي</div>';
     items += '<a href="#/admin/dashboard" class="nav-item">📊 نظرة عامة</a>';
-    if (perms.includes('students.read')) items += '<a href="#/admin/students" class="nav-item">👥 قائمة الطلاب</a>';
-    if (perms.includes('subscriptions.view')) items += '<a href="#/admin/subscriptions" class="nav-item">🔑 أكواد الاشتراكات</a>';
     items += '<div class="nav-section-label">إدارة المحتوى والأنشطة</div>';
     items += '<a href="#/admin/courses" class="nav-item">📚 المناهج والكورسات</a>';
     items += '<a href="#/admin/lessons" class="nav-item">🎬 إدارة الدروس والفيديوهات</a>';
     items += '<a href="#/admin/questions" class="nav-item">📝 بنك الأسئلة</a>';
     items += '<a href="#/admin/exams" class="nav-item">🎯 الامتحانات والتصحيح</a>';
     items += '<a href="#/admin/announcements" class="nav-item">📢 نشر الإعلانات</a>';
-    if (perms.includes('support.manage')) items += '<a href="#/student/support" class="nav-item">💬 تذاكر الدعم</a>';
+    items += '<div class="nav-section-label">الاشتراكات والطلاب</div>';
+    items += '<a href="#/admin/subscription-requests" class="nav-item">💳 طلبات الاشتراكات</a>';
+    if (perms.includes('subscriptions.view')) items += '<a href="#/admin/subscriptions" class="nav-item">🔑 أكواد الاشتراكات</a>';
+    if (perms.includes('students.read')) items += '<a href="#/admin/students" class="nav-item">👥 قائمة الطلاب</a>';
     items += '<a href="#/student/playground" class="nav-item">💻 محرر الأكواد</a>';
+    items += '<a href="#/admin/settings" class="nav-item">⚙️ إعدادات الحساب</a>';
+    if (perms.includes('support.manage')) items += '<a href="#/student/support" class="nav-item">💬 تذاكر الدعم</a>';
     navEl.innerHTML = items;
   } else {
     // Student
@@ -147,9 +159,11 @@ function updateNavigationUI() {
       <a href="#/student/playground" class="nav-item">💻 محرر الأكواد التفاعلي</a>
       <a href="#/student/exams" class="nav-item">🎯 الامتحانات الدورية</a>
       
-      <div class="nav-section-label">الحساب والدعم</div>
+      <div class="nav-section-label">الحساب والاشتراك</div>
+      <a href="#/student/subscription" class="nav-item">💳 الاشتراك والتفعيل</a>
       <a href="#/student/support" class="nav-item">💬 تذاكر الدعم الفني</a>
-      <a href="#/student/profile" class="nav-item">👤 الملف الشخصي والاشتراك</a>
+      <a href="#/student/profile" class="nav-item">👤 الملف الشخصي</a>
+      <a href="#/student/settings" class="nav-item">⚙️ إعدادات الحساب والأمان</a>
     `;
   }
 }
@@ -307,7 +321,7 @@ function setupSubscriptionModal() {
 // -----------------------------------------------------------------------------
 // 5. App Bootstrap
 // -----------------------------------------------------------------------------
-document.addEventListener('DOMContentLoaded', () => {
+function bootstrapApp() {
   setupAuthForms();
   setupSubscriptionModal();
 
@@ -339,4 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
     updateNavigationUI();
   }
   Router.init();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootstrapApp);
+} else {
+  bootstrapApp();
+}

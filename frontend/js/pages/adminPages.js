@@ -1738,4 +1738,171 @@ export class AdminPages {
     }
   }
 
+
+  /* ===================================================================
+     10. SUBSCRIPTION REQUESTS MANAGEMENT (ADMIN & ASSISTANTS)
+  =================================================================== */
+  static async renderSubscriptionRequests(container) {
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
+            <span>💳</span> مراجعة واعتماد طلبات تفعيل الاشتراكات
+          </h2>
+          <p style="color:var(--color-text-muted);">متابعة تحويلات InstaPay واعتماد تفعيل حسابات الطلاب فورياً</p>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <a href="#/admin/subscriptions" class="btn btn-secondary btn-sm">🔑 أكواد الاشتراكات</a>
+        </div>
+      </div>
+
+      <!-- Status Filter Tabs -->
+      <div class="card" style="margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;padding:0.75rem 1rem;">
+        <select id="filter-sub-req-status" class="form-input" style="width:auto;min-width:180px;">
+          <option value="">جميع الحالات</option>
+          <option value="PENDING" selected>قيد المراجعة والانتظار (Pending) ⏳</option>
+          <option value="APPROVED">المعتمدة والمفعلة (Approved) ✅</option>
+          <option value="REJECTED">المرفوضة (Rejected) ❌</option>
+        </select>
+        <input type="text" id="filter-sub-req-search" class="form-input" placeholder="بحث باسم الطالب أو الهاتف أو رقم المرجع..." style="flex:1;min-width:220px;">
+      </div>
+
+      <div class="card">
+        <div class="table-container">
+          <table class="table" style="width:100%;">
+            <thead>
+              <tr>
+                <th>الطالب</th>
+                <th>الهاتف</th>
+                <th>الباقة والمبلغ</th>
+                <th>رقم العملية / المرجع</th>
+                <th>تاريخ التحويل</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="sub-req-table-body">
+              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    async function loadRequests() {
+      const status = document.getElementById('filter-sub-req-status')?.value || '';
+      const search = document.getElementById('filter-sub-req-search')?.value.toLowerCase().trim() || '';
+
+      let url = '/subscriptions/requests';
+      if (status) url += `?status_filter=${status}`;
+
+      try {
+        const requests = await ApiClient.get(url);
+        const tbody = document.getElementById('sub-req-table-body');
+
+        let filtered = requests || [];
+        if (search) {
+          filtered = filtered.filter(r => 
+            (r.student_name && r.student_name.toLowerCase().includes(search)) ||
+            (r.student_email && r.student_email.toLowerCase().includes(search)) ||
+            (r.phone && r.phone.includes(search)) ||
+            (r.payment_reference && r.payment_reference.toLowerCase().includes(search))
+          );
+        }
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد طلبات تطابق الفلتر المحدد.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(r => `
+          <tr>
+            <td>
+              <strong style="color:var(--color-text-main);">${r.student_name || 'طالب'}</strong>
+              <div style="font-size:0.75rem;color:var(--color-text-muted);">${r.student_email}</div>
+            </td>
+            <td style="font-family:var(--font-mono);">${r.phone || '—'}</td>
+            <td>
+              <span style="font-weight:700;color:var(--color-primary);">${r.package_name}</span>
+              ${r.amount ? `<div style="font-size:0.75rem;color:#10B981;">${r.amount} ج.م</div>` : ''}
+            </td>
+            <td>
+              <code style="font-family:var(--font-mono);color:var(--color-cyan-accent);background:var(--color-bg-surface);padding:2px 6px;border-radius:4px;">${r.payment_reference}</code>
+              ${r.admin_notes ? `<div style="font-size:0.75rem;color:var(--color-text-dim);">ملاحظة: ${r.admin_notes}</div>` : ''}
+            </td>
+            <td>${r.transfer_date || r.created_at?.substring(0, 10)}</td>
+            <td>
+              <span class="badge ${r.status === 'APPROVED' ? 'badge-public' : (r.status === 'PENDING' ? 'badge-subscribers' : 'badge-danger')}">
+                ${r.status === 'APPROVED' ? 'معتمد ومفعل ✅' : (r.status === 'PENDING' ? 'قيد الانتظار ⏳' : 'مرفوض ❌')}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+                ${r.status === 'PENDING' ? `
+                  <button class="btn btn-primary btn-sm approve-req-btn" data-id="${r.id}" style="padding:2px 8px;font-size:0.75rem;font-weight:700;">اعتماد ✅</button>
+                  <button class="btn btn-danger btn-sm reject-req-btn" data-id="${r.id}" style="padding:2px 8px;font-size:0.75rem;">رفض ❌</button>
+                ` : `
+                  <span style="font-size:0.75rem;color:var(--color-text-dim);">تم اتخاذ القرار</span>
+                `}
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        // Approve Request
+        document.querySelectorAll('.approve-req-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const reqId = btn.dataset.id;
+            Modal.confirm({
+              title: 'تأكيد اعتماد وتفعيل الاشتراك',
+              message: 'هل أنت متأكد من صحة التحويل؟ سيتم تفعيل حساب الطالب في قاعدة البيانات فوراً وفتح كافة المناهج والامتحانات.',
+              onConfirm: async () => {
+                try {
+                  const res = await ApiClient.post(`/subscriptions/requests/${reqId}/approve`);
+                  Toast.success(res.message || 'تم اعتماد وتفعيل الاشتراك بنجاح 🎉');
+                  loadRequests();
+                } catch (err) {
+                  Toast.error(err.message);
+                }
+              }
+            });
+          });
+        });
+
+        // Reject Request
+        document.querySelectorAll('.reject-req-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const reqId = btn.dataset.id;
+            const reason = prompt('أدخل سبب رفض الطلب لإخطار الطالب به:', 'بيانات التحويل غير مطابقة أو العملية غير مكتملة');
+            if (reason !== null) {
+              ApiClient.post(`/subscriptions/requests/${reqId}/reject`, { rejection_reason: reason.trim() || 'بيانات التحويل غير صحيحة' })
+                .then(res => {
+                  Toast.success('تم رفض الطلب وإخطار الطالب');
+                  loadRequests();
+                })
+                .catch(err => Toast.error(err.message));
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error(err);
+        Toast.error('فشل تحميل قائمة طلبات الاشتراكات');
+      }
+    }
+
+    document.getElementById('filter-sub-req-status')?.addEventListener('change', loadRequests);
+    document.getElementById('filter-sub-req-search')?.addEventListener('input', debounce(loadRequests, 300));
+
+    await loadRequests();
+  }
+
+  /* ===================================================================
+     11. ADMIN ACCOUNT SETTINGS
+  =================================================================== */
+  static async renderSettings(container) {
+    const { StudentPages } = await import('./studentPages.js');
+    return StudentPages.renderSettings(container);
+  }
+
 }
