@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
+    
+    # AI Coding Assistant
+    AI_API_KEY: str = os.getenv("AI_API_KEY", "")
+    
+    # Official Payment & Subscription Info
+    OFFICIAL_CONTACT_PHONE: str = os.getenv("OFFICIAL_CONTACT_PHONE", "+201559159038")
+    INSTAPAY_PHONE: str = os.getenv("INSTAPAY_PHONE", "+201552696208")
+    INSTAPAY_LINK: str = os.getenv("INSTAPAY_LINK", "https://ipn.eg/S/moazasem/instapay/27DsGj")
 
     class Config:
         case_sensitive = True

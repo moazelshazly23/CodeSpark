@@ -359,6 +359,31 @@ CREATE TABLE IF NOT EXISTS web_projects (
 
 CREATE INDEX IF NOT EXISTS idx_web_projects_user ON web_projects(user_id);
 
+
+CREATE TABLE IF NOT EXISTS subscription_requests (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    student_name TEXT NOT NULL,
+    student_email TEXT NOT NULL,
+    phone TEXT,
+    package_name TEXT NOT NULL DEFAULT 'اشتراك فصلي (3 أشهر)',
+    amount REAL DEFAULT 0.0,
+    payment_method TEXT NOT NULL DEFAULT 'InstaPay',
+    payment_reference TEXT,
+    transfer_date TEXT,
+    proof_file_url TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    rejection_reason TEXT,
+    admin_notes TEXT,
+    reviewed_by TEXT REFERENCES users(id),
+    reviewed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_sub_requests_user ON subscription_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_sub_requests_status ON subscription_requests(status);
+
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);

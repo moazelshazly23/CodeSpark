@@ -1,149 +1,170 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from typing import Optional, List
-from app.api.deps import require_admin, require_staff, get_current_user
-from app.db.engine import db_engine
-from app.services.core_services import AuthService, ActivityService
-from app.schemas.auth import RegisterRequest, UserUpdateRequest
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
+from app.api.deps import require_role, get_current_user
+from app.db.engine import db_engine, now_iso
+from app.services.core_services import AuthService
+from app.repositories.all_repositories import AuditRepository
+from app.core.security import verify_password, get_password_hash
 
-router = APIRouter(prefix="/users", tags=["Users & Students"])
+router = APIRouter(prefix="/users", tags=["Users & Account Settings"])
 
-@router.get("/students")
-def list_students(
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+class UpdateProfileRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str
+
+class AdminUpdateUserRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
+    is_active: Optional[bool] = None
+
+@router.get("/me")
+def get_my_profile(user: Dict[str, Any] = Depends(get_current_user)):
+    """Returns current user's profile without passwords"""
+    u = db_engine.fetch_one("SELECT id, username, email, full_name, phone, role, is_active, created_at FROM users WHERE id = ?", (user["id"],))
+    if not u:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    return u
+
+@router.put("/profile")
+def update_profile(req: UpdateProfileRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    """User updates their personal profile information"""
+    up = {}
+    if req.full_name is not None and req.full_name.strip():
+        up["full_name"] = req.full_name.strip()
+    if req.phone is not None:
+        up["phone"] = req.phone.strip()
+    if req.email is not None and req.email.strip():
+        new_email = req.email.strip().lower()
+        if new_email != user.get("email"):
+            # Check unique
+            exist = db_engine.fetch_one("SELECT id FROM users WHERE email = ? AND id != ?", (new_email, user["id"]))
+            if exist:
+                raise HTTPException(status_code=400, detail="البريد الإلكتروني مستخدم بالفعل بواسطة حساب آخر")
+            up["email"] = new_email
+
+    if up:
+        up["updated_at"] = now_iso()
+        db_engine.update("users", user["id"], up)
+        AuditRepository.log(user_id=user["id"], action="profile_updated", entity_type="user", entity_id=user["id"], details={"fields": list(up.keys())})
+
+    return {"success": True, "message": "تم تحديث البيانات بنجاح", "user": db_engine.fetch_one("SELECT id, username, email, full_name, phone, role FROM users WHERE id = ?", (user["id"],))}
+
+@router.post("/change-password")
+def change_password(req: ChangePasswordRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    """User changes their password with verification of current password"""
+    if req.new_password != req.confirm_password:
+        raise HTTPException(status_code=400, detail="كلمة المرور الجديدة وتأكيدها غير متطابقين")
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="يجب أن تتكون كلمة المرور الجديدة من 6 خانات على الأقل")
+
+    full_user = db_engine.fetch_one("SELECT hashed_password FROM users WHERE id = ?", (user["id"],))
+    if not full_user or not verify_password(req.current_password, full_user["hashed_password"]):
+        raise HTTPException(status_code=400, detail="كلمة المرور الحالية غير صحيحة")
+
+    new_hash = get_password_hash(req.new_password)
+    db_engine.update("users", user["id"], {
+        "hashed_password": new_hash,
+        "updated_at": now_iso()
+    })
+    AuditRepository.log(user_id=user["id"], action="password_changed", entity_type="user", entity_id=user["id"], details={})
+    return {"success": True, "message": "تم تغيير كلمة المرور بنجاح"}
+
+@router.get("/all")
+def list_all_users(
+    role: Optional[str] = None,
     search: Optional[str] = None,
-    is_active: Optional[bool] = None,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(15, ge=1, le=100),
-    user: dict = Depends(require_staff)
+    user: Dict[str, Any] = Depends(require_role("admin"))
 ):
-    offset = (page - 1) * page_size
-    filters = {"role": "student"}
-    if is_active is not None:
-        filters["is_active"] = is_active
-    
-    records, total = db_engine.query(
-        "users", 
-        filters=filters, 
-        search_field="full_name", 
-        search_query=search,
-        order_by="created_at",
-        descending=True,
-        offset=offset,
-        limit=page_size
-    )
+    """Admin views all users in the system"""
+    query = "SELECT id, username, email, full_name, phone, role, is_active, created_at FROM users"
+    params = []
+    clauses = []
+    if role:
+        clauses.append("role = ?")
+        params.append(role)
+    if search:
+        clauses.append("(full_name LIKE ? OR username LIKE ? OR email LIKE ?)")
+        s = f"%{search}%"
+        params.extend([s, s, s])
 
-    # Attach computed metrics per student
-    student_list = []
-    for s in records:
-        progress_recs, _ = db_engine.query("lesson_progress", filters={"student_id": s["id"]})
-        completed_lessons = sum(1 for p in progress_recs if p.get("is_completed"))
-        attempts, _ = db_engine.query("exam_attempts", filters={"student_id": s["id"], "status": "graded"})
-        avg_score = round(sum(a.get("percentage", 0.0) for a in attempts) / len(attempts), 1) if attempts else 0.0
-        
-        student_list.append({
-            "id": s["id"],
-            "username": s["username"],
-            "email": s["email"],
-            "full_name": s["full_name"],
-            "role": s["role"],
-            "is_active": s.get("is_active", True),
-            "phone": s.get("phone"),
-            "created_at": s.get("created_at", ""),
-            "completed_lessons": completed_lessons,
-            "average_score": avg_score,
-            "exams_count": len(attempts)
-        })
+    if clauses:
+        query += " WHERE " + " AND ".join(clauses)
+    query += " ORDER BY created_at DESC"
 
-    return {
-        "items": student_list,
-        "total": total,
-        "page": page,
-        "page_size": page_size
-    }
+    users = db_engine.fetch_all(query, tuple(params))
+    return users
 
-@router.post("/students")
-def create_student(req: RegisterRequest, admin: dict = Depends(require_admin)):
-    try:
-        data = req.dict()
-        data["role"] = "student"
-        student = AuthService.register(data)
-        return {
-            "id": student["id"],
-            "username": student["username"],
-            "email": student["email"],
-            "full_name": student["full_name"],
-            "role": student["role"],
-            "is_active": student.get("is_active", True),
-            "phone": student.get("phone"),
-            "created_at": student.get("created_at", "")
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+@router.post("/{user_id}/reset-password")
+def admin_reset_password(
+    user_id: str,
+    req: AdminResetPasswordRequest,
+    admin: Dict[str, Any] = Depends(require_role("admin"))
+):
+    """Admin resets user password (never reveals password in logs)"""
+    target = db_engine.fetch_one("SELECT id, username FROM users WHERE id = ?", (user_id,))
+    if not target:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="يجب أن تتكون كلمة المرور من 6 خانات على الأقل")
 
-@router.get("/students/{student_id}")
-def get_student_detail(student_id: str, staff: dict = Depends(require_staff)):
-    student = db_engine.get_by_id("users", student_id)
-    if not student or student.get("role") != "student":
-        raise HTTPException(status_code=404, detail="الطالب غير موجود")
+    new_hash = get_password_hash(req.new_password)
+    db_engine.update("users", user_id, {
+        "hashed_password": new_hash,
+        "updated_at": now_iso()
+    })
+    AuditRepository.log(user_id=admin["id"], action="user_password_reset", entity_type="user", entity_id=user_id, details={})
+    return {"success": True, "message": f"تم إعادة تعيين كلمة المرور للمستخدم {target['username']} بنجاح"}
 
-    # Real academic data
-    progress, _ = db_engine.query("lesson_progress", filters={"student_id": student_id})
-    attempts, _ = db_engine.query("exam_attempts", filters={"student_id": student_id}, order_by="started_at", descending=True)
-    submissions, _ = db_engine.query("assignment_submissions", filters={"student_id": student_id}, order_by="submitted_at", descending=True)
-    activities, _ = db_engine.query("activities", filters={"user_id": student_id}, order_by="created_at", descending=True, limit=20)
+@router.put("/{user_id}/toggle-active")
+def toggle_user_active(user_id: str, admin: Dict[str, Any] = Depends(require_role("admin"))):
+    """Admin activates or deactivates an account"""
+    target = db_engine.fetch_one("SELECT id, is_active, role FROM users WHERE id = ?", (user_id,))
+    if not target:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+    if target["role"] == "admin" and target["id"] == admin["id"]:
+        raise HTTPException(status_code=400, detail="لا يمكنك تعطيل حسابك الإداري الحالي")
 
-    # Attach exam details to attempts
-    for att in attempts:
-        ex = db_engine.get_by_id("exams", att["exam_id"])
-        att["exam_title"] = ex["title"] if ex else "امتحان"
+    new_state = 0 if target["is_active"] else 1
+    db_engine.update("users", user_id, {"is_active": new_state, "updated_at": now_iso()})
+    return {"success": True, "is_active": bool(new_state)}
 
-    # Attach assignment details to submissions
-    for sub in submissions:
-        assign = db_engine.get_by_id("assignments", sub["assignment_id"])
-        sub["assignment_title"] = assign["title"] if assign else "واجب"
+@router.put("/{user_id}")
+def admin_update_user(
+    user_id: str,
+    req: AdminUpdateUserRequest,
+    admin: Dict[str, Any] = Depends(require_role("admin"))
+):
+    """Admin edits user details"""
+    target = db_engine.fetch_one("SELECT id FROM users WHERE id = ?", (user_id,))
+    if not target:
+        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
 
-    return {
-        "student": {
-            "id": student["id"],
-            "username": student["username"],
-            "email": student["email"],
-            "full_name": student["full_name"],
-            "phone": student.get("phone"),
-            "is_active": student.get("is_active", True),
-            "created_at": student.get("created_at", "")
-        },
-        "academic_summary": {
-            "completed_lessons": sum(1 for p in progress if p.get("is_completed")),
-            "exams_taken": len(attempts),
-            "assignments_submitted": len(submissions)
-        },
-        "progress": progress,
-        "attempts": attempts,
-        "submissions": submissions,
-        "activities": activities
-    }
+    up = {}
+    if req.full_name is not None:
+        up["full_name"] = req.full_name.strip()
+    if req.email is not None:
+        up["email"] = req.email.strip().lower()
+    if req.phone is not None:
+        up["phone"] = req.phone.strip()
+    if req.role is not None and req.role in ("admin", "assistant", "student"):
+        up["role"] = req.role
+    if req.is_active is not None:
+        up["is_active"] = 1 if req.is_active else 0
 
-@router.put("/students/{student_id}")
-def update_student(student_id: str, req: UserUpdateRequest, admin: dict = Depends(require_admin)):
-    student = db_engine.get_by_id("users", student_id)
-    if not student:
-        raise HTTPException(status_code=404, detail="الطالب غير موجود")
-    
-    updates = req.dict(exclude_unset=True)
-    if "password" in updates and updates["password"]:
-        from app.core.security import get_password_hash
-        updates["hashed_password"] = get_password_hash(updates.pop("password"))
-    else:
-        updates.pop("password", None)
+    if up:
+        up["updated_at"] = now_iso()
+        db_engine.update("users", user_id, up)
 
-    updated = db_engine.update("users", student_id, updates)
-    ActivityService.log(admin["id"], "student_updated", {"student_id": student_id, "updated_fields": list(updates.keys())})
-    return updated
-
-@router.delete("/students/{student_id}")
-def delete_student(student_id: str, admin: dict = Depends(require_admin)):
-    student = db_engine.get_by_id("users", student_id)
-    if not student:
-        raise HTTPException(status_code=404, detail="الطالب غير موجود")
-    db_engine.delete("users", student_id)
-    ActivityService.log(admin["id"], "student_deleted", {"student_id": student_id, "username": student["username"]})
-    return {"success": True, "message": "تم حذف الطالب وجميع سجلاته بنجاح"}
+    return {"success": True, "message": "تم تحديث بيانات المستخدم بنجاح"}
