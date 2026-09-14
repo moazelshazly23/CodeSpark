@@ -19,19 +19,17 @@ def list_assistants():
 
 @router.post("")
 def create_assistant(req: AssistantCreateRequest):
-    norm_username = req.username.strip().lower()
-    norm_email = req.email.strip().lower()
-    if UserRepository.get_by_username(norm_username):
+    if UserRepository.get_by_username(req.username):
         raise HTTPException(status_code=400, detail="اسم المستخدم مسجل بالفعل")
-    if UserRepository.get_by_email(norm_email):
+    if UserRepository.get_by_email(req.email):
         raise HTTPException(status_code=400, detail="البريد الإلكتروني مسجل بالفعل")
 
     with db_engine.transaction():
         user_id = uuid.uuid4().hex
         rec = {
             "id": user_id,
-            "username": norm_username,
-            "email": norm_email,
+            "username": req.username.strip(),
+            "email": req.email.strip().lower(),
             "hashed_password": get_password_hash(req.password),
             "full_name": req.full_name.strip(),
             "role": "assistant",

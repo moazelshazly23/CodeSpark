@@ -31,7 +31,7 @@ from app.repositories.all_repositories import (
 class AuthService:
     @staticmethod
     def register(data: Dict[str, Any]) -> Dict[str, Any]:
-        username = data.get("username", "").strip().lower()
+        username = data.get("username", "").strip()
         email = data.get("email", "").strip().lower()
         password = data.get("password", "")
         full_name = data.get("full_name", "").strip()

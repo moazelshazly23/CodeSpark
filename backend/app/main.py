@@ -28,6 +28,8 @@ from app.api.routers.support_router import router as support_router
 from app.api.routers.assistants_router import router as assistants_router
 from app.api.routers.students_router import router as students_router
 from app.api.routers.admin_router import router as admin_router
+from app.api.routers.playground_router import router as playground_router
+from app.api.routers.users_router import router as users_router
 from app.api.routers.activity_router import router as activity_router
 
 app = FastAPI(
@@ -38,10 +40,26 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
+
+# Auto-seed initial data on cloud/fresh container startup if database is empty
+@app.on_event("startup")
+def startup_event():
+    try:
+        from app.db.engine import db_engine
+        from app.db.seed import seed_database
+        user_count = db_engine.fetch_one("SELECT COUNT(*) as c FROM users")
+        if not user_count or user_count.get("c", 0) == 0:
+            print("Empty database detected on startup. Auto-seeding initial data...")
+            seed_database()
+            print("✓ Database auto-seeded successfully on startup!")
+    except Exception as e:
+        print(f"Startup auto-seed notification: {e}")
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origin_regex=".*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -84,6 +102,8 @@ app.include_router(support_router, prefix=settings.API_V1_STR)
 app.include_router(assistants_router, prefix=settings.API_V1_STR)
 app.include_router(students_router, prefix=settings.API_V1_STR)
 app.include_router(admin_router, prefix=settings.API_V1_STR)
+app.include_router(playground_router, prefix=settings.API_V1_STR)
+app.include_router(users_router, prefix=settings.API_V1_STR)
 app.include_router(activity_router, prefix=settings.API_V1_STR)
 
 # Mount Static Storage
@@ -91,23 +111,39 @@ if os.path.exists(settings.STORAGE_DIR):
     app.mount("/storage", StaticFiles(directory=settings.STORAGE_DIR), name="storage")
 
 # Mount Frontend Static Assets & SPA Fallback
-frontend_dir = os.path.abspath("../frontend")
-if not os.path.exists(frontend_dir):
+possible_frontend_dirs = [
+    os.path.abspath("../frontend"),
+    os.path.abspath("frontend"),
+    os.path.abspath("CodeSpark/frontend"),
+    os.path.abspath("../CodeSpark/frontend"),
+    os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../frontend")) if "__file__" in globals() else None,
+    os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../frontend")) if "__file__" in globals() else None,
+    "/app/frontend",
+    "/app/CodeSpark/frontend",
+    "/working_dir/CodeSpark/frontend"
+]
+frontend_dir = None
+for p in possible_frontend_dirs:
+    if p and os.path.exists(p) and os.path.isfile(os.path.join(p, "index.html")):
+        frontend_dir = p
+        break
+
+if not frontend_dir:
     frontend_dir = os.path.abspath("../frontend")
 
 if os.path.exists(frontend_dir):
-    for sub in ["css", "js", "assets"]:
+    for sub in ["css", "js", "assets", "static"]:
         sub_path = os.path.join(frontend_dir, sub)
         if os.path.exists(sub_path):
-            app.mount(f"/{sub}", StaticFiles(directory=sub_path), name=f"static_{sub}")
-    app.mount("/static", StaticFiles(directory=frontend_dir), name="frontend_static")
+            app.mount(f"/{sub}", StaticFiles(directory=sub_path), name=f"frontend_{sub}")
+    app.mount("/static", StaticFiles(directory=frontend_dir), name="frontend_root_static")
 
     @app.get("/")
     async def serve_root():
         index_file = os.path.join(frontend_dir, "index.html")
         if os.path.isfile(index_file):
             return FileResponse(index_file)
-        return JSONResponse(content={"platform": "Code Spark", "status": "running"})
+        return JSONResponse(content={"platform": settings.PROJECT_NAME, "status": "running"})
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
@@ -116,7 +152,13 @@ if os.path.exists(frontend_dir):
         candidate = os.path.join(frontend_dir, full_path)
         if os.path.isfile(candidate):
             return FileResponse(candidate)
+        
+        # Guard: Never return HTML for broken script or stylesheet requests
+        ext = os.path.splitext(full_path)[1].lower()
+        if ext in [".js", ".css", ".svg", ".png", ".jpg", ".jpeg", ".ico", ".json"]:
+            return JSONResponse(status_code=404, content={"detail": f"File '{full_path}' not found"})
+
         index_file = os.path.join(frontend_dir, "index.html")
         if os.path.isfile(index_file):
             return FileResponse(index_file)
-        return JSONResponse(content={"platform": "Code Spark", "status": "running"})
+        return JSONResponse(content={"platform": settings.PROJECT_NAME, "status": "running"})

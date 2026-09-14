@@ -21,7 +21,7 @@ def seed_database():
         "exercise_submissions", "exercises", "quiz_attempts", "quiz_questions", "quizzes",
         "exam_attempts", "exam_questions", "exams", "question_bank", "lesson_progress",
         "educational_resources", "lessons", "units", "courses", "bookmarks", "support_messages",
-        "support_tickets", "notifications", "announcements", "activity_logs", "subscriptions",
+        "support_tickets", "notifications", "announcements", "activity_logs", "subscription_requests", "subscriptions",
         "subscription_codes", "assistant_permissions", "student_stats", "users"
     ]
     with db_engine.transaction():
@@ -35,6 +35,48 @@ def seed_database():
     student_free_id = "usr_stud_free_004"
 
     users = [
+        {
+            "id": "usr_admin_test",
+            "username": "admin.test",
+            "email": "admin.test@codespark.local",
+            "hashed_password": get_password_hash("Spark#AdminTest2026!Secure"),
+            "full_name": "المهندس معاذ الشاذلي (مشرف النظام التجريبي)",
+            "role": "admin",
+            "is_active": 1,
+            "is_verified": 1,
+            "phone": "+201559159038",
+            "avatar_url": None,
+            "created_at": now_str,
+            "updated_at": now_str
+        },
+        {
+            "id": "usr_asst_test",
+            "username": "assistant.test",
+            "email": "assistant.test@codespark.local",
+            "hashed_password": get_password_hash("Spark#AsstTest2026!Secure"),
+            "full_name": "أحمد خليل (مساعد تعليمي تجريبي)",
+            "role": "assistant",
+            "is_active": 1,
+            "is_verified": 1,
+            "phone": "+201000000002",
+            "avatar_url": None,
+            "created_at": now_str,
+            "updated_at": now_str
+        },
+        {
+            "id": "usr_stud_test",
+            "username": "student.test",
+            "email": "student.test@codespark.local",
+            "hashed_password": get_password_hash("Spark#StudentTest2026!Secure"),
+            "full_name": "عمر محمود (طالب تجريبي)",
+            "role": "student",
+            "is_active": 1,
+            "is_verified": 1,
+            "phone": "+201000000003",
+            "avatar_url": None,
+            "created_at": now_str,
+            "updated_at": now_str
+        },
         {
             "id": admin_id,
             "username": "admin",
@@ -117,7 +159,16 @@ def seed_database():
             "granted_at": now_str
         })
 
-    # 3. Subscription Codes
+    
+    for p in assistant_perms:
+        db_engine.insert("assistant_permissions", {
+            "id": uuid.uuid4().hex,
+            "user_id": "usr_asst_test",
+            "permission": p,
+            "granted_at": now_str
+        })
+
+# 3. Subscription Codes
     codes = [
         {
             "id": "code_001",
