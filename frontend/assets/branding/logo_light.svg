@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 260" width="100%" height="100%">
+  <title>Code Spark - Full Logo (Light Background)</title>
+  <desc>Full logo adapted for light background #F4F7F5 with high-contrast emerald and deep green typography 'Code Spark - كود سبارك'.</desc>
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&amp;family=Inter:wght@400;600;700;800;900&amp;display=swap');
+      .brand-text-en-light {
+        font-family: 'Cairo', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 900;
+        font-size: 50px;
+        letter-spacing: -0.5px;
+      }
+      .brand-separator-light {
+        font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+        font-weight: 400;
+        font-size: 40px;
+        fill: #60A175;
+      }
+      .brand-text-ar-light {
+        font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        font-weight: 800;
+        font-size: 46px;
+        letter-spacing: 0px;
+      }
+      .brand-tagline-light {
+        font-family: 'Cairo', 'Inter', system-ui, -apple-system, sans-serif;
+        font-weight: 600;
+        font-size: 14.5px;
+        letter-spacing: 3.5px;
+      }
+    </style>
+    <!-- Background Gradients -->
+    <linearGradient id="ll_bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F7FAF8"/>
+      <stop offset="50%" stop-color="#F4F7F5"/>
+      <stop offset="100%" stop-color="#EDF3EF"/>
+    </linearGradient>
+    <linearGradient id="ll_text_spark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1E472B"/>
+      <stop offset="100%" stop-color="#60A175"/>
+    </linearGradient>
+    <linearGradient id="ll_text_arabic" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#03260E"/>
+      <stop offset="100%" stop-color="#1E472B"/>
+    </linearGradient>
+    <linearGradient id="ll_line_grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#60A175" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#1E472B" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#60A175" stop-opacity="0"/>
+    </linearGradient>
+    
+    <linearGradient id="ll_outer" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#82C497"/>
+      <stop offset="25%" stop-color="#60A175"/>
+      <stop offset="65%" stop-color="#1E472B"/>
+      <stop offset="100%" stop-color="#03260E"/>
+    </linearGradient>
+    <linearGradient id="ll_inner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E472B"/>
+      <stop offset="35%" stop-color="#03260E"/>
+      <stop offset="85%" stop-color="#060807"/>
+      <stop offset="100%" stop-color="#1E472B"/>
+    </linearGradient>
+    <linearGradient id="ll_ridge" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A4E0B8"/>
+      <stop offset="50%" stop-color="#82C497"/>
+      <stop offset="100%" stop-color="#60A175"/>
+    </linearGradient>
+    <linearGradient id="ll_star" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="25%" stop-color="#E3F8EB"/>
+      <stop offset="65%" stop-color="#60A175"/>
+      <stop offset="100%" stop-color="#1E472B"/>
+    </linearGradient>
+    <radialGradient id="ll_center_aura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#60A175" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#60A175" stop-opacity="0.25"/>
+      <stop offset="75%" stop-color="#1E472B" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#060807" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ll_small_aura" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#60A175" stop-opacity="0.30"/>
+      <stop offset="50%" stop-color="#60A175" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#060807" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Light Canvas Background #F4F7F5 -->
+  <rect width="960" height="260" rx="18" fill="url(#ll_bg)" stroke="#E0E7E2" stroke-width="1.5"/>
+
+  <!-- Left: Code Spark Emblem (Adapted for light background) -->
+  <g id="logo-emblem-light" transform="translate(130, 130) scale(0.47) translate(-256, -256)">
+    
+    <!-- Emblem Glow Auras -->
+    <circle cx="231.5" cy="287.0" r="105" fill="url(#ll_center_aura)"/>
+    <circle cx="392.5" cy="111.0" r="50" fill="url(#ll_small_aura)"/>
+
+    <!-- Stylized Geometric Hexagonal/Beveled C -->
+    <g id="ll_hexagonal_c">
+      <!-- Inner / Recessed Facet -->
+      <path d="M 330.50,179.00 L 200.50,179.00 L 125.50,254.00 L 125.50,320.00 L 200.50,395.00 L 330.50,395.00 L 303.50,363.00 L 213.50,363.00 L 157.50,307.00 L 157.50,267.00 L 213.50,211.00 L 303.50,211.00 Z" fill="url(#ll_inner)"/>
+      <!-- Outer / Raised Facet -->
+      <path d="M 357.50,147.00 L 187.50,147.00 L 93.50,241.00 L 93.50,333.00 L 187.50,427.00 L 357.50,427.00 L 330.50,395.00 L 200.50,395.00 L 125.50,320.00 L 125.50,254.00 L 200.50,179.00 L 330.50,179.00 Z" fill="url(#ll_outer)"/>
+      <!-- Luminous Central Ridge -->
+      <path d="M 330.50,179.00 L 200.50,179.00 L 125.50,254.00 L 125.50,320.00 L 200.50,395.00 L 330.50,395.00" fill="none" stroke="url(#ll_ridge)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Outer Chamfer Highlight Line -->
+      <path d="M 357.50,147.00 L 187.50,147.00 L 93.50,241.00 L 93.50,333.00" fill="none" stroke="#A4E0B8" stroke-width="2" stroke-opacity="0.95" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Center Bright 4-Pointed Sparkle Star -->
+    <g id="ll_center_sparkle">
+      <path d="M 231.50,229.00 C 231.50,274.00 244.50,287.00 289.50,287.00 C 244.50,287.00 231.50,300.00 231.50,345.00 C 231.50,300.00 218.50,287.00 173.50,287.00 C 218.50,287.00 231.50,274.00 231.50,229.00 Z" fill="url(#ll_star)"/>
+      <path d="M 245.64,272.86 C 235.04,283.46 235.04,290.54 245.64,301.14 C 235.04,290.54 227.96,290.54 217.36,301.14 C 227.96,290.54 227.96,283.46 217.36,272.86 C 227.96,283.46 235.04,283.46 245.64,272.86 Z" fill="#A4E0B8" opacity="0.85"/>
+      <circle cx="231.5" cy="287.0" r="4.5" fill="#FFFFFF"/>
+    </g>
+
+    <!-- Small Sparkle Star Above Right -->
+    <g id="ll_small_sparkle">
+      <path d="M 392.50,85.00 C 392.50,105.00 398.50,111.00 418.50,111.00 C 398.50,111.00 392.50,117.00 392.50,137.00 C 392.50,117.00 386.50,111.00 366.50,111.00 C 386.50,111.00 392.50,105.00 392.50,85.00 Z" fill="url(#ll_star)"/>
+      <path d="M 398.86,104.64 C 394.27,109.23 394.27,112.77 398.86,117.36 C 394.27,112.77 390.73,112.77 386.14,117.36 C 390.73,112.77 390.73,109.23 386.14,104.64 C 390.73,109.23 394.27,109.23 398.86,104.64 Z" fill="#A4E0B8" opacity="0.85"/>
+      <circle cx="392.5" cy="111.0" r="2.2" fill="#FFFFFF"/>
+    </g>
+  </g>
+
+  <!-- Right: Typography "Code Spark - كود سبارك" on Light Background -->
+  <g id="logo-typography-light">
+    <!-- Primary Title Line: Bilingual English + Arabic -->
+    <text x="250" y="124">
+      <tspan class="brand-text-en-light" fill="#060807">Code </tspan>
+      <tspan class="brand-text-en-light" fill="url(#ll_text_spark)">Spark</tspan>
+      <tspan class="brand-separator-light"> — </tspan>
+      <tspan class="brand-text-ar-light" fill="url(#ll_text_arabic)">كود سبارك</tspan>
+    </text>
+
+    <!-- Clean Tech Divider Line -->
+    <line x1="252" y1="145" x2="890" y2="145" stroke="url(#ll_line_grad)" stroke-width="1.5"/>
+
+    <!-- Secondary Tagline: Platform Descriptor -->
+    <text x="252" y="178" class="brand-tagline-light" fill="#1E472B">
+      <tspan fill="#03260E">منصة تعليم البرمجة</tspan>
+      <tspan fill="#60A175"> • </tspan>
+      <tspan fill="#1E472B">PROGRAMMING EDUCATION PLATFORM</tspan>
+    </text>
+  </g>
+</svg>
