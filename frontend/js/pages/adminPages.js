@@ -1749,9 +1749,10 @@ export class AdminPages {
           <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
             <span>💳</span> مراجعة واعتماد طلبات تفعيل الاشتراكات
           </h2>
-          <p style="color:var(--color-text-muted);">متابعة تحويلات InstaPay واعتماد تفعيل حسابات الطلاب فورياً</p>
+          <p style="color:var(--color-text-muted);">متابعة تحويلات InstaPay وإيصالات الطلاب واعتماد تفعيل الحسابات فورياً</p>
         </div>
         <div style="display:flex;gap:0.5rem;">
+          <a href="#/admin/settings" class="btn btn-primary btn-sm">⚙️ إعدادات الباقات وأرقام الدفع</a>
           <a href="#/admin/subscriptions" class="btn btn-secondary btn-sm">🔑 أكواد الاشتراكات</a>
         </div>
       </div>
@@ -1774,20 +1775,46 @@ export class AdminPages {
               <tr>
                 <th>الطالب</th>
                 <th>الهاتف</th>
-                <th>الباقة والمبلغ</th>
+                <th>الباقة والمدة</th>
+                <th>المبلغ المسدد</th>
                 <th>رقم العملية / المرجع</th>
+                <th>الإيصال المرفق</th>
                 <th>تاريخ التحويل</th>
                 <th>الحالة</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody id="sub-req-table-body">
-              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="9" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <!-- Screenshot Preview Modal -->
+      <div id="proof-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:1.5rem;">
+        <div class="card" style="max-width:650px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:1rem;position:relative;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.1rem;">معاينة إيصال التحويل 🖼️</h3>
+            <button id="close-proof-modal" class="btn btn-secondary btn-sm" style="padding:2px 8px;">✕ إغلاق</button>
+          </div>
+          <div style="flex:1;overflow:auto;text-align:center;background:#030712;padding:0.5rem;border-radius:6px;">
+            <img id="proof-modal-img" src="" alt="صورة الإيصال" style="max-width:100%;max-height:70vh;object-fit:contain;">
+          </div>
+          <div id="proof-modal-caption" style="margin-top:0.75rem;font-size:0.85rem;color:var(--color-text-muted);text-align:center;"></div>
+        </div>
+      </div>
     `;
+
+    const proofModal = document.getElementById('proof-modal');
+    const proofImg = document.getElementById('proof-modal-img');
+    const proofCaption = document.getElementById('proof-modal-caption');
+    document.getElementById('close-proof-modal')?.addEventListener('click', () => {
+      if (proofModal) proofModal.style.display = 'none';
+    });
+    proofModal?.addEventListener('click', (e) => {
+      if (e.target === proofModal) proofModal.style.display = 'none';
+    });
 
     async function loadRequests() {
       const status = document.getElementById('filter-sub-req-status')?.value || '';
@@ -1811,7 +1838,7 @@ export class AdminPages {
         }
 
         if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد طلبات تطابق الفلتر المحدد.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:2rem;">لا توجد طلبات تطابق الفلتر المحدد.</td></tr>';
           return;
         }
 
@@ -1824,11 +1851,21 @@ export class AdminPages {
             <td style="font-family:var(--font-mono);">${r.phone || '—'}</td>
             <td>
               <span style="font-weight:700;color:var(--color-primary);">${r.package_name}</span>
-              ${r.amount ? `<div style="font-size:0.75rem;color:#10B981;">${r.amount} ج.م</div>` : ''}
+              ${r.duration_months ? `<div style="font-size:0.75rem;color:var(--color-text-muted);">${r.duration_months} أشهر</div>` : ''}
+            </td>
+            <td style="font-family:var(--font-mono);color:#10B981;font-weight:800;font-size:1.05rem;">
+              ${r.amount ? `${r.amount} ج.م` : '—'}
             </td>
             <td>
               <code style="font-family:var(--font-mono);color:var(--color-cyan-accent);background:var(--color-bg-surface);padding:2px 6px;border-radius:4px;">${r.payment_reference}</code>
               ${r.admin_notes ? `<div style="font-size:0.75rem;color:var(--color-text-dim);">ملاحظة: ${r.admin_notes}</div>` : ''}
+            </td>
+            <td>
+              ${r.proof_file_url ? `
+                <button class="btn btn-secondary btn-sm view-proof-btn" data-url="${r.proof_file_url}" data-name="${r.student_name}" data-ref="${r.payment_reference}" style="padding:2px 7px;font-size:0.75rem;">
+                  🖼️ عرض الإيصال
+                </button>
+              ` : '<span style="color:var(--color-text-dim);font-size:0.75rem;">بدون إيصال</span>'}
             </td>
             <td>${r.transfer_date || r.created_at?.substring(0, 10)}</td>
             <td>
@@ -1849,7 +1886,16 @@ export class AdminPages {
           </tr>
         `).join('');
 
-        // Approve Request
+        document.querySelectorAll('.view-proof-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (proofImg && proofModal) {
+              proofImg.src = btn.dataset.url;
+              if (proofCaption) proofCaption.textContent = `إيصال الطالب: ${btn.dataset.name} | رقم المرجع: ${btn.dataset.ref}`;
+              proofModal.style.display = 'flex';
+            }
+          });
+        });
+
         document.querySelectorAll('.approve-req-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const reqId = btn.dataset.id;
@@ -1869,7 +1915,6 @@ export class AdminPages {
           });
         });
 
-        // Reject Request
         document.querySelectorAll('.reject-req-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const reqId = btn.dataset.id;
@@ -1898,11 +1943,315 @@ export class AdminPages {
   }
 
   /* ===================================================================
-     11. ADMIN ACCOUNT SETTINGS
+     11. ADMIN PLATFORM SETTINGS & 11-PLAN SUBSCRIPTION MANAGEMENT
   =================================================================== */
   static async renderSettings(container) {
-    const { StudentPages } = await import('./studentPages.js');
-    return StudentPages.renderSettings(container);
-  }
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
+          <span>⚙️</span> إعدادات المنصة وإدارة باقات الاشتراكات
+        </h2>
+        <p style="color:var(--color-text-muted);">تحكم كامل في أرقام التحويل المعتمدة وتعديل أسعار ومدد باقات الاشتراكات (1 إلى 11 شهراً)</p>
+      </div>
 
+      <!-- 1. Payment & Transfer Number Settings Section -->
+      <div class="card" style="margin-bottom:1.5rem;border-right:4px solid var(--color-primary);">
+        <h3 style="font-size:1.25rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;">
+          <span>📱</span> رقم التحويل وبيانات السداد (InstaPay / المحافظ)
+        </h3>
+        <p style="color:var(--color-text-muted);font-size:0.88rem;line-height:1.6;margin-bottom:1.25rem;">
+          الرقم الذي يظهر لجميع الطلاب في صفحة الاشتراك. عند تعديل هذا الرقم يتم حفظه في قاعدة البيانات ويظهر تلقائياً للطلاب فوراً دون الحاجة لتعديل أي كود برمجي.
+        </p>
+
+        <form id="admin-payment-settings-form">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;margin-bottom:1rem;">
+            <div class="form-group">
+              <label class="form-label">رقم التحويل المعتمد للطلاب (Transfer/Payment Phone) <span style="color:#EF4444;">*</span></label>
+              <input type="text" id="admin-set-payment-phone" class="form-input" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--color-cyan-accent);" required placeholder="+20159159038">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">رقم التواصل والدعم الفني (WhatsApp Phone)</label>
+              <input type="text" id="admin-set-contact-phone" class="form-input" style="font-family:var(--font-mono);" placeholder="+201559159038">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الرابط المباشر لتطبيق InstaPay</label>
+              <input type="url" id="admin-set-instapay-link" class="form-input" style="font-family:var(--font-mono);font-size:0.85rem;" placeholder="https://ipn.eg/S/moazasem/instapay/...">
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button type="submit" id="btn-save-payment-settings" class="btn btn-primary" style="font-weight:800;padding:0.6rem 1.5rem;">
+              💾 حفظ بيانات الدفع في قاعدة البيانات
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 2. Subscription Plans Management Section (11 Plans) -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem;">
+          <div>
+            <h3 style="font-size:1.25rem;font-weight:800;color:var(--color-text-main);display:flex;align-items:center;gap:0.4rem;">
+              <span>💳</span> إدارة باقات الاشتراكات الأكاديمية (11 باقة معتمدة)
+            </h3>
+            <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">
+              يمكنك تعديل أسعار الباقات أو تفعيلها/تعطيلها. المعاملات السابقة تظل محمية بالمبلغ الأصلي المسدد.
+            </p>
+          </div>
+          <button id="btn-open-add-plan-modal" class="btn btn-primary btn-sm" style="font-weight:700;">
+            + إضافة باقة اشتراك جديدة
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table class="table" style="width:100%;">
+            <thead>
+              <tr>
+                <th>المدة (شهور)</th>
+                <th>اسم الباقة</th>
+                <th>السعر (ج.م)</th>
+                <th>ترتيب العرض</th>
+                <th>الحالة</th>
+                <th>إجمالي الطلبات</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="admin-plans-table-body">
+              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري تحميل الباقات...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add New Plan Modal -->
+      <div id="add-plan-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:1.5rem;">
+        <div class="card" style="max-width:500px;width:100%;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.15rem;">إضافة باقة اشتراك جديدة</h3>
+            <button id="close-add-plan-modal" class="btn btn-secondary btn-sm" style="padding:2px 8px;">✕</button>
+          </div>
+          <form id="form-add-new-plan">
+            <div class="form-group">
+              <label class="form-label">اسم الباقة <span style="color:#EF4444;">*</span></label>
+              <input type="text" id="new-plan-name" class="form-input" required placeholder="مثال: اشتراك فصلي مميز">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">المدة بالشهور <span style="color:#EF4444;">*</span></label>
+                <input type="number" id="new-plan-months" class="form-input" required min="1" max="60" value="1">
+              </div>
+              <div class="form-group">
+                <label class="form-label">السعر (ج.م) <span style="color:#EF4444;">*</span></label>
+                <input type="number" id="new-plan-price" class="form-input" required min="0" step="0.5" placeholder="100">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ترتيب العرض</label>
+              <input type="number" id="new-plan-order" class="form-input" min="0" value="0">
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1.25rem;">
+              <button type="button" id="cancel-add-plan" class="btn btn-secondary">إلغاء</button>
+              <button type="submit" class="btn btn-primary" style="font-weight:700;">حفظ الباقة الجديدة ✨</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    async function loadPaymentSettings() {
+      try {
+        const sett = await ApiClient.get('/subscriptions/payment-info');
+        const phoneInput = document.getElementById('admin-set-payment-phone');
+        const contactInput = document.getElementById('admin-set-contact-phone');
+        const linkInput = document.getElementById('admin-set-instapay-link');
+
+        if (phoneInput && sett.payment_phone) phoneInput.value = sett.payment_phone;
+        if (contactInput && sett.contact_phone) contactInput.value = sett.contact_phone;
+        if (linkInput && sett.instapay_link) linkInput.value = sett.instapay_link;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    document.getElementById('admin-payment-settings-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const phoneVal = document.getElementById('admin-set-payment-phone').value.trim();
+      const contactVal = document.getElementById('admin-set-contact-phone').value.trim();
+      const linkVal = document.getElementById('admin-set-instapay-link').value.trim();
+      const btn = document.getElementById('btn-save-payment-settings');
+
+      btn.disabled = true;
+      btn.textContent = 'جاري الحفظ...';
+
+      try {
+        const res = await ApiClient.put('/subscriptions/admin/payment-info', {
+          payment_phone: phoneVal,
+          contact_phone: contactVal,
+          instapay_link: linkVal
+        });
+        Toast.success(res.message || 'تم تحديث بيانات التحويل بنجاح! ستظهر للطلاب فوراً.');
+      } catch (err) {
+        Toast.error(err.message || 'تعذر تحديث بيانات التحويل');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 حفظ بيانات الدفع في قاعدة البيانات';
+      }
+    });
+
+    async function loadAdminPlans() {
+      const tbody = document.getElementById('admin-plans-table-body');
+      try {
+        const plans = await ApiClient.get('/subscriptions/admin/plans');
+        if (!plans || plans.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد باقات معرفة.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = plans.map(p => `
+          <tr data-plan-id="${p.id}">
+            <td style="font-family:var(--font-mono);font-weight:800;font-size:1.1rem;color:var(--color-primary);">${p.duration_months} شهر</td>
+            <td>
+              <input type="text" class="form-input plan-name-input" value="${p.name}" style="padding:0.3rem 0.5rem;font-size:0.88rem;min-width:180px;">
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:0.3rem;">
+                <input type="number" class="form-input plan-price-input" value="${p.price}" min="0" step="0.5" style="width:100px;font-family:var(--font-mono);font-weight:700;color:#10B981;padding:0.3rem 0.5rem;">
+                <span style="font-size:0.75rem;color:var(--color-text-dim);">ج.م</span>
+              </div>
+            </td>
+            <td>
+              <input type="number" class="form-input plan-order-input" value="${p.order_index || p.duration_months}" min="0" style="width:60px;padding:0.3rem 0.5rem;font-family:var(--font-mono);">
+            </td>
+            <td>
+              <button class="btn btn-sm toggle-plan-active-btn ${p.is_active ? 'btn-secondary' : 'btn-danger'}" data-active="${p.is_active ? '1' : '0'}" style="font-size:0.75rem;padding:2px 8px;">
+                ${p.is_active ? 'مفعلة ✅' : 'معطلة ❌'}
+              </button>
+            </td>
+            <td style="font-family:var(--font-mono);text-align:center;">
+              <span class="badge badge-public">${p.total_requests || 0} طلب</span>
+            </td>
+            <td>
+              <div style="display:flex;gap:0.3rem;">
+                <button class="btn btn-primary btn-sm save-plan-row-btn" style="font-size:0.75rem;padding:2px 8px;font-weight:700;">حفظ 💾</button>
+                <button class="btn btn-danger btn-sm delete-plan-row-btn" style="font-size:0.75rem;padding:2px 7px;">حذف 🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('tr').forEach(tr => {
+          const planId = tr.dataset.planId;
+          const nameInput = tr.querySelector('.plan-name-input');
+          const priceInput = tr.querySelector('.plan-price-input');
+          const orderInput = tr.querySelector('.plan-order-input');
+          const toggleBtn = tr.querySelector('.toggle-plan-active-btn');
+          const saveBtn = tr.querySelector('.save-plan-row-btn');
+          const delBtn = tr.querySelector('.delete-plan-row-btn');
+
+          toggleBtn?.addEventListener('click', async () => {
+            const currentActive = toggleBtn.dataset.active === '1';
+            const newActive = !currentActive;
+            try {
+              await ApiClient.put(`/subscriptions/admin/plans/${planId}`, { is_active: newActive });
+              Toast.success(newActive ? 'تم تفعيل الباقة بنجاح' : 'تم تعطيل الباقة بنجاح');
+              loadAdminPlans();
+            } catch (err) {
+              Toast.error(err.message);
+            }
+          });
+
+          saveBtn?.addEventListener('click', async () => {
+            const newName = nameInput.value.trim();
+            const newPrice = parseFloat(priceInput.value);
+            const newOrder = parseInt(orderInput.value) || 0;
+
+            if (!newName || isNaN(newPrice) || newPrice < 0) {
+              Toast.error('يرجى إدخال اسم وسعر صحيح');
+              return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = '...';
+
+            try {
+              await ApiClient.put(`/subscriptions/admin/plans/${planId}`, {
+                name: newName,
+                price: newPrice,
+                order_index: newOrder
+              });
+              Toast.success('تم حفظ تعديلات الباقة بنجاح!');
+            } catch (err) {
+              Toast.error(err.message);
+            } finally {
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'حفظ 💾';
+            }
+          });
+
+          delBtn?.addEventListener('click', () => {
+            Modal.confirm({
+              title: 'تأكيد إزالة أو تعطيل الباقة',
+              message: 'هل تريد إزالة هذه الباقة؟ إذا كانت هناك طلبات سابقة مسجلة بها، فسيتم تعطيلها بأمان للحفاظ على سجلات الطلاب.',
+              onConfirm: async () => {
+                try {
+                  const res = await ApiClient.delete(`/subscriptions/admin/plans/${planId}`);
+                  Toast.success(res.message || 'تم حذف الباقة بنجاح');
+                  loadAdminPlans();
+                } catch (err) {
+                  Toast.error(err.message);
+                }
+              }
+            });
+          });
+        });
+
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:#EF4444;padding:2rem;">فشل تحميل الباقات</td></tr>';
+      }
+    }
+
+    const addPlanModal = document.getElementById('add-plan-modal');
+    document.getElementById('btn-open-add-plan-modal')?.addEventListener('click', () => {
+      if (addPlanModal) addPlanModal.style.display = 'flex';
+    });
+    document.getElementById('close-add-plan-modal')?.addEventListener('click', () => {
+      if (addPlanModal) addPlanModal.style.display = 'none';
+    });
+    document.getElementById('cancel-add-plan')?.addEventListener('click', () => {
+      if (addPlanModal) addPlanModal.style.display = 'none';
+    });
+
+    document.getElementById('form-add-new-plan')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('new-plan-name').value.trim();
+      const months = parseInt(document.getElementById('new-plan-months').value);
+      const price = parseFloat(document.getElementById('new-plan-price').value);
+      const order = parseInt(document.getElementById('new-plan-order').value) || months;
+
+      if (!name || isNaN(months) || isNaN(price)) {
+        Toast.error('يرجى ملء جميع الحقول المطلوبة بشكل صحيح');
+        return;
+      }
+
+      try {
+        const res = await ApiClient.post('/subscriptions/admin/plans', {
+          name: name,
+          duration_months: months,
+          price: price,
+          order_index: order
+        });
+        Toast.success(res.message || 'تمت إضافة الباقة بنجاح! ✨');
+        if (addPlanModal) addPlanModal.style.display = 'none';
+        document.getElementById('form-add-new-plan').reset();
+        loadAdminPlans();
+      } catch (err) {
+        Toast.error(err.message || 'تعذر إنشاء الباقة');
+      }
+    });
+
+    await Promise.all([loadPaymentSettings(), loadAdminPlans()]);
+  }
 }

@@ -534,17 +534,16 @@ export class StudentPages {
     }
   }
 
-  /* ===================================================================
-     4. CODE PLAYGROUND (Python / JavaScript / HTML / CSS)
-  =================================================================== */
-  /* ===================================================================
-     4. CODE PLAYGROUND & WEB DEVELOPMENT WORKSPACE (ENHANCED)
+    /* ===================================================================
+     4. CODE PLAYGROUND & WEB DEVELOPMENT WORKSPACE (IDE LAYOUT)
   =================================================================== */
   static async renderPlayground(container) {
     let currentMode = "python"; // python, javascript, web
     let currentActiveFile = "index.html";
     let currentProjectId = null;
     let lastErrorDetected = null;
+    let isMaximized = false;
+    let normalSplitWidth = "52%";
 
     // Web Workspace in-memory file structure
     let webFiles = {
@@ -578,70 +577,44 @@ export class StudentPages {
 }
 .container {
   background: #0F172A;
-  padding: 2rem;
+  padding: 2.5rem;
   border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   border: 1px solid #1E293B;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   text-align: center;
-  max-width: 480px;
+  max-width: 500px;
 }
-h1 {
-  color: #00D2FF;
-  font-size: 1.6rem;
-  margin-bottom: 0.5rem;
-}
-p {
-  color: #94A3B8;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
+h1 { color: #38BDF8; margin-top: 0; }
 .btn {
-  background: linear-gradient(135deg, #2563EB, #00D2FF);
+  background: linear-gradient(135deg, #0EA5E9, #0284C7);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  padding: 0.8rem 1.8rem;
+  font-size: 1rem;
   font-weight: bold;
+  border-radius: 8px;
   cursor: pointer;
-  margin-top: 1rem;
-  transition: transform 0.2s ease;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 .btn:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(14,165,233,0.4);
 }
 .counter-box {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  color: #F59E0B;
-  font-size: 1.1rem;
+  color: #A5F3FC;
 }`,
-      "script.js": `// تفاعل مباشر مع عناصر الصفحة
-let count = 0;
+      "script.js": `let count = 0;
 const btn = document.getElementById("click-btn");
 const counter = document.getElementById("counter");
 
-if (btn && counter) {
-  btn.addEventListener("click", () => {
-    count++;
-    counter.textContent = "عدد النقرات: " + count;
-    console.log("تم النقر على الزر! القيمة الحالية:", count);
-  });
-}
-console.log("تم تحميل السكربت بنجاح في نافذة المعاينة ✅");`
-    };
-
-    let standaloneCode = {
-      python: `# بيئة بايثون 3.11 التفاعلية والمعزولة
-def calculate_spark(n):
-    total = sum(i * 2 for i in range(1, n + 1))
-    return f"Code Spark Factorial Sum: {total}"
-
-print(calculate_spark(10))
-print("مرحباً بك في بيئة تشغيل بايثون!")`,
-      javascript: `// بيئة جافا سكريبت التفاعلية (Node.js)
-const students = ["عمر", "سارة", "أحمد", "مريم"];
-students.forEach((name, idx) => {
-  console.log(\`الطالب #\${idx + 1}: \${name} في منصة Code Spark\`);
+btn.addEventListener("click", () => {
+  count++;
+  counter.textContent = "عدد النقرات: " + count;
+  btn.style.transform = "scale(0.95)";
+  setTimeout(() => { btn.style.transform = "scale(1)"; }, 100);
 });`
     };
 
@@ -652,7 +625,7 @@ students.forEach((name, idx) => {
           <h2 style="font-size:1.7rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
             <span>💻</span> محرر الأكواد التفاعلي (Code Playground)
           </h2>
-          <p style="color:var(--color-text-muted);font-size:0.88rem;">بيئة برمجية متطورة لتشغيل بايثون، جافا سكريبت، ومشاريع الويب المتكاملة مع المساعد الذكي</p>
+          <p style="color:var(--color-text-muted);font-size:0.88rem;">بيئة برمجية متطورة لتشغيل بايثون 3.11، نود جي اس، ومشاريع الويب مع وحدة إخراج تفاعلية ومساعد ذكي</p>
         </div>
 
         <!-- Mode Selectors & Action Buttons -->
@@ -668,23 +641,21 @@ students.forEach((name, idx) => {
             <button id="btn-load-projects" class="btn btn-secondary btn-sm" title="فتح المشاريع السابقة">📂 مشاريعي</button>
           </div>
 
-          <button id="main-run-btn" class="btn btn-primary" style="font-weight:800;padding:0.45rem 1.1rem;display:flex;align-items:center;gap:0.4rem;">
+          <button id="main-run-btn" class="btn btn-primary" style="font-weight:800;padding:0.45rem 1.2rem;display:flex;align-items:center;gap:0.4rem;">
             <span>▶</span> تشغيل الكود
           </button>
         </div>
       </div>
 
-      <!-- Main Playground Layout Grid -->
-      <div id="playground-main-grid" style="display:grid;grid-template-columns:1.2fr 1fr;gap:1rem;height:calc(100vh - 210px);min-height:540px;" class="playground-layout">
+      <!-- Main Playground Resizable Split Layout -->
+      <div id="playground-split-wrapper" class="playground-split-container">
 
         <!-- LEFT PANE: Editor & File Tabs -->
-        <div class="card" style="display:flex;flex-direction:column;padding:0.75rem;height:100%;position:relative;">
+        <div id="playground-editor-pane" class="playground-editor-pane card" style="width:52%;padding:0.75rem;position:relative;">
           
           <!-- Web Workspace File Tabs -->
           <div id="web-file-tabs-bar" style="display:none;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border);padding-bottom:0.4rem;margin-bottom:0.5rem;">
-            <div id="web-tabs-container" style="display:flex;gap:0.35rem;overflow-x:auto;">
-              <!-- Injected dynamically -->
-            </div>
+            <div id="web-tabs-container" style="display:flex;gap:0.35rem;overflow-x:auto;"></div>
             <div style="display:flex;gap:0.3rem;">
               <button id="btn-new-file" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.75rem;" title="إضافة ملف جديد">+ ملف</button>
               <button id="btn-del-file" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.75rem;" title="حذف الملف الحالي">🗑️</button>
@@ -703,8 +674,6 @@ students.forEach((name, idx) => {
           <!-- Code Editor Textarea with IntelliSense Autocomplete -->
           <div style="position:relative;flex:1;display:flex;flex-direction:column;">
             <textarea id="main-code-editor" class="form-input" style="flex:1;font-family:var(--font-mono);font-size:0.95rem;line-height:1.6;direction:ltr;text-align:left;background:#030712;color:#38BDF8;border:1px solid var(--color-border);resize:none;padding:1rem;border-radius:var(--radius-sm);" spellcheck="false"></textarea>
-            
-            <!-- Autocomplete / IntelliSense Popup -->
             <div id="autocomplete-popup" class="code-autocomplete-box"></div>
           </div>
 
@@ -716,23 +685,30 @@ students.forEach((name, idx) => {
 
         </div>
 
-        <!-- RIGHT PANE: Dual Mode (Terminal Output & Assistant / Web Live Preview & Console) -->
-        <div style="display:flex;flex-direction:column;gap:0.75rem;height:100%;">
+        <!-- DRAGGABLE DIVIDER -->
+        <div id="playground-divider" class="playground-divider" title="اسحب لتكبير أو تصغير الشاشة"></div>
+
+        <!-- RIGHT PANE: Output Panel & Terminal Console & Assistant -->
+        <div id="playground-output-pane" class="playground-output-pane" style="flex:1;">
 
           <!-- STANDALONE OUTPUT VIEW (Python / Node) -->
-          <div id="standalone-output-view" class="card" style="flex:1;display:flex;flex-direction:column;padding:0.75rem;background:#02050D;border:1px solid var(--color-border-light);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-              <div style="font-weight:700;font-size:0.85rem;color:var(--color-text-main);display:flex;align-items:center;gap:0.4rem;">
+          <div id="standalone-output-view" class="card" style="flex:1;display:flex;flex-direction:column;padding:0.75rem;background:#02050D;border:1px solid var(--color-border-light);height:100%;overflow:hidden;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;gap:0.4rem;">
+              <div style="font-weight:800;font-size:0.88rem;color:var(--color-text-main);display:flex;align-items:center;gap:0.4rem;">
                 <span>⚡</span> شاشة المخرجات (Terminal Console)
+                <span id="terminal-runtime-badge" style="font-size:0.75rem;background:rgba(14,165,233,0.15);color:var(--color-cyan-accent);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Python 3.11</span>
               </div>
-              <div id="run-status-text" style="font-size:0.75rem;color:var(--color-text-dim);">جاهز للتشغيل</div>
+              <div style="display:flex;align-items:center;gap:0.5rem;">
+                <div id="run-status-text" style="font-size:0.75rem;color:var(--color-text-dim);">جاهز للتشغيل</div>
+                <button id="btn-clear-terminal" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 7px;" title="مسح المخرجات">🗑️ مسح</button>
+                <button id="btn-maximize-terminal" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 8px;font-weight:700;" title="تكبير أو تصغير نافذة المخرجات">⛶ تكبير الشاشة</button>
+              </div>
             </div>
-            <pre id="standalone-terminal-output" style="flex:1;font-family:var(--font-mono);font-size:0.9rem;line-height:1.5;direction:ltr;text-align:left;margin:0;padding:0.75rem;background:#030712;color:#E0F2FE;border-radius:var(--radius-sm);overflow:auto;white-space:pre-wrap;border:1px solid rgba(14,165,233,0.15);">اضغط على [تشغيل الكود] لعرض المخرجات هنا...</pre>
+            <pre id="standalone-terminal-output" class="terminal-scroll-area">اضغط على [▶ تشغيل الكود] لعرض المخرجات هنا...</pre>
           </div>
 
           <!-- WEB DEVELOPMENT PREVIEW VIEW (Iframe & Web Console) -->
           <div id="web-preview-view" style="display:none;flex:1;flex-direction:column;gap:0.5rem;height:100%;">
-            <!-- Live Preview Frame Container -->
             <div class="card" style="flex:1.4;display:flex;flex-direction:column;padding:0.5rem;background:#090E1A;border:1px solid var(--color-border-light);">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;padding:0 0.25rem;">
                 <span style="font-size:0.8rem;font-weight:700;color:var(--color-cyan-accent);">👁️ المعاينة المباشرة (Live Preview Sandbox)</span>
@@ -743,7 +719,6 @@ students.forEach((name, idx) => {
               <iframe id="web-live-iframe" sandbox="allow-scripts" style="flex:1;width:100%;height:100%;border:1px solid #1E293B;border-radius:6px;background:#FFF;"></iframe>
             </div>
 
-            <!-- Web JavaScript Console -->
             <div class="card" style="flex:1;display:flex;flex-direction:column;padding:0.5rem;background:#02050D;border:1px solid var(--color-border);">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
                 <span style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);">🖥️ سجل مخرجات الويب (Web Console)</span>
@@ -756,7 +731,7 @@ students.forEach((name, idx) => {
           </div>
 
           <!-- AI CODING ASSISTANT DRAWER / PANEL -->
-          <div class="card" style="padding:0.75rem;border:1px solid var(--color-border-light);background:radial-gradient(ellipse at top, rgba(14,165,233,0.08), var(--color-bg-card));">
+          <div id="ai-assistant-container" class="card" style="margin-top:0.6rem;padding:0.75rem;border:1px solid var(--color-border-light);background:radial-gradient(ellipse at top, rgba(14,165,233,0.08), var(--color-bg-card));">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
               <div style="font-weight:800;font-size:0.88rem;color:var(--color-primary);display:flex;align-items:center;gap:0.4rem;">
                 <span>🤖</span> مساعد البرمجة التعليمي الذكي (AI Code Assistant)
@@ -776,7 +751,7 @@ students.forEach((name, idx) => {
             </div>
 
             <!-- AI Response Box -->
-            <div id="ai-assistant-response" style="max-height:150px;overflow-y:auto;background:var(--color-bg-deep);padding:0.6rem;border-radius:var(--radius-sm);font-size:0.82rem;line-height:1.5;color:var(--color-text-main);white-space:pre-wrap;border:1px solid var(--color-border);">اختر أي إجراء لمساعدتك في فهم الكود خطوة بخطوة...</div>
+            <div id="ai-assistant-response" style="max-height:140px;overflow-y:auto;background:var(--color-bg-deep);padding:0.6rem;border-radius:var(--radius-sm);font-size:0.82rem;line-height:1.5;color:var(--color-text-main);white-space:pre-wrap;border:1px solid var(--color-border);">اختر أي إجراء لمساعدتك في فهم الكود خطوة بخطوة...</div>
             <button id="btn-apply-ai-code" class="btn btn-primary btn-sm" style="display:none;width:100%;margin-top:0.4rem;font-weight:700;padding:0.35rem;">تطبيق الكود المقترح على المحرر ✨</button>
           </div>
 
@@ -786,6 +761,14 @@ students.forEach((name, idx) => {
     `;
 
     // DOM Elements
+    const splitWrapper = document.getElementById("playground-split-wrapper");
+    const editorPane = document.getElementById("playground-editor-pane");
+    const divider = document.getElementById("playground-divider");
+    const outputPane = document.getElementById("playground-output-pane");
+    const btnMaximize = document.getElementById("btn-maximize-terminal");
+    const btnClearTerm = document.getElementById("btn-clear-terminal");
+    const runtimeBadge = document.getElementById("terminal-runtime-badge");
+
     const editor = document.getElementById("main-code-editor");
     const terminal = document.getElementById("standalone-terminal-output");
     const runBtn = document.getElementById("main-run-btn");
@@ -805,6 +788,7 @@ students.forEach((name, idx) => {
     const webIframe = document.getElementById("web-live-iframe");
     const webConsole = document.getElementById("web-console-logs");
 
+    const aiContainer = document.getElementById("ai-assistant-container");
     const aiResponse = document.getElementById("ai-assistant-response");
     const btnApplyAi = document.getElementById("btn-apply-ai-code");
     const btnQuickFix = document.getElementById("btn-quick-fix-error");
@@ -812,6 +796,97 @@ students.forEach((name, idx) => {
     let suggestedAiCode = null;
 
     // -------------------------------------------------------------
+    // Resizable Split Layout Logic (Mouse & Touch Drag)
+    // -------------------------------------------------------------
+    let isDragging = false;
+
+    divider.addEventListener("mousedown", (e) => {
+      if (isMaximized) return;
+      isDragging = true;
+      divider.classList.add("dragging");
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging || isMaximized) return;
+      const containerRect = splitWrapper.getBoundingClientRect();
+      const isRTL = document.documentElement.dir === "rtl";
+      
+      let newLeftWidthPx;
+      if (isRTL) {
+        newLeftWidthPx = containerRect.right - e.clientX;
+      } else {
+        newLeftWidthPx = e.clientX - containerRect.left;
+      }
+
+      const totalWidthPx = containerRect.width;
+      let pct = (newLeftWidthPx / totalWidthPx) * 100;
+      pct = Math.max(20, Math.min(80, pct)); // clamp between 20% and 80%
+      normalSplitWidth = `${pct}%`;
+      editorPane.style.width = normalSplitWidth;
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isDragging) {
+        isDragging = false;
+        divider.classList.remove("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    });
+
+    // Touch support for tablet / mobile devices
+    divider.addEventListener("touchstart", (e) => {
+      if (isMaximized) return;
+      isDragging = true;
+      divider.classList.add("dragging");
+    }, { passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!isDragging || isMaximized || !e.touches[0]) return;
+      const touch = e.touches[0];
+      const containerRect = splitWrapper.getBoundingClientRect();
+      const isRTL = document.documentElement.dir === "rtl";
+      let newLeftWidthPx = isRTL ? (containerRect.right - touch.clientX) : (touch.clientX - containerRect.left);
+      let pct = (newLeftWidthPx / containerRect.width) * 100;
+      pct = Math.max(20, Math.min(80, pct));
+      normalSplitWidth = `${pct}%`;
+      editorPane.style.width = normalSplitWidth;
+    }, { passive: true });
+
+    window.addEventListener("touchend", () => {
+      if (isDragging) {
+        isDragging = false;
+        divider.classList.remove("dragging");
+      }
+    });
+
+    // Maximize / Restore Controls
+    btnMaximize?.addEventListener("click", () => {
+      isMaximized = !isMaximized;
+      if (isMaximized) {
+        splitWrapper.classList.add("terminal-maximized");
+        btnMaximize.innerHTML = "🗗 استعادة الحجم";
+        btnMaximize.classList.remove("btn-secondary");
+        btnMaximize.classList.add("btn-primary");
+        if (aiContainer) aiContainer.style.display = "none";
+      } else {
+        splitWrapper.classList.remove("terminal-maximized");
+        editorPane.style.width = normalSplitWidth;
+        btnMaximize.innerHTML = "⛶ تكبير الشاشة";
+        btnMaximize.classList.remove("btn-primary");
+        btnMaximize.classList.add("btn-secondary");
+        if (aiContainer && currentMode !== "web") aiContainer.style.display = "block";
+      }
+    });
+
+    // Clear Terminal Button
+    btnClearTerm?.addEventListener("click", () => {
+      terminal.textContent = "تم مسح شاشة المخرجات.";
+      terminal.style.color = "var(--color-text-dim)";
+      runStatusText.textContent = "جاهز";
+    });
     // Switch Modes (Python vs Node vs Web)
     // -------------------------------------------------------------
     function setMode(mode) {
@@ -1076,10 +1151,12 @@ students.forEach((name, idx) => {
 
         if (res.success) {
           terminal.textContent = res.output || "(تم التنفيذ بنجاح دون مخرجات نصية)";
+          terminal.scrollTop = terminal.scrollHeight;
           terminal.style.color = "#38BDF8";
           runStatusText.textContent = "تم التنفيذ بنجاح ✅";
         } else {
           terminal.textContent = res.error || "حدث خطأ أثناء التنفيذ";
+          terminal.scrollTop = terminal.scrollHeight;
           terminal.style.color = "#EF4444";
           runStatusText.textContent = "تم رصد خطأ ❌";
           lastErrorDetected = res.error;
@@ -1696,13 +1773,16 @@ students.forEach((name, idx) => {
   /* ===================================================================
      8. SUBSCRIPTION & ACTIVATION PAGE (STUDENT)
   =================================================================== */
+    /* ===================================================================
+     10. ACADEMIC SUBSCRIPTION & 11-PLAN ACTIVATION WORKSPACE
+  =================================================================== */
   static async renderSubscriptionPage(container) {
     container.innerHTML = `
       <div style="margin-bottom:1.5rem;">
         <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
           <span>💳</span> الاشتراك وتفعيل الحساب الأكاديمي
         </h2>
-        <p style="color:var(--color-text-muted);">طرق السداد المعتمدة وتفعيل الوصول الشامل للمناهج والامتحانات</p>
+        <p style="color:var(--color-text-muted);">طرق السداد المعتمدة عبر InstaPay وتفعيل الوصول الشامل للمناهج والامتحانات</p>
       </div>
 
       <!-- Current Subscription Status Card -->
@@ -1716,16 +1796,16 @@ students.forEach((name, idx) => {
           <span>⚡</span> بيانات الدفع والتحويل الرسمية المعتمدة
         </h3>
         <p style="color:var(--color-text-muted);font-size:0.95rem;line-height:1.6;margin-bottom:1.25rem;">
-          يمكنك تفعيل الاشتراك الفصلي أو السنوي عن طريق التحويل المباشر عبر تطبيق <strong>InstaPay</strong> أو المحافظ الإلكترونية، ثم تقديم طلب التفعيل أدناه ليتم اعتماده فوراً.
+          يمكنك اختيار باقة الاشتراك المناسبة لك (من شهر وحتى 11 شهراً) والتحويل المباشر عبر تطبيق <strong>InstaPay</strong> أو المحافظ الإلكترونية، ثم تقديم طلب التفعيل أدناه ليتم اعتماده فوراً.
         </p>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;">
           <!-- InstaPay Transfer Card -->
           <div style="background:var(--color-bg-surface);padding:1rem;border-radius:var(--radius-md);border:1px solid var(--color-border);">
-            <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.3rem;">رقم التحويل عبر InstaPay / المحافظ:</div>
+            <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.3rem;">رقم التحويل المعتمد عبر InstaPay / المحافظ:</div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
-              <span id="official-instapay-num" style="font-family:var(--font-mono);font-size:1.2rem;font-weight:800;color:var(--color-cyan-accent);">+201552696208</span>
-              <button id="copy-instapay-btn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;">نسخ</button>
+              <span id="official-instapay-num" style="font-family:var(--font-mono);font-size:1.25rem;font-weight:900;color:var(--color-cyan-accent);">+20159159038</span>
+              <button id="copy-instapay-btn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;">نسخ 📋</button>
             </div>
           </div>
 
@@ -1742,51 +1822,97 @@ students.forEach((name, idx) => {
             <div style="font-size:0.8rem;color:var(--color-text-muted);margin-bottom:0.3rem;">رقم التواصل وتأكيد التفعيل (واتساب / هاتف):</div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;">
               <span id="official-contact-num" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:800;color:#10B981;">+201559159038</span>
-              <a href="https://wa.me/201559159038" target="_blank" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;color:#10B981;">واتساب 💬</a>
+              <a id="official-whatsapp-link" href="https://wa.me/201559159038" target="_blank" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:0.25rem 0.6rem;color:#10B981;">واتساب 💬</a>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Submit Request Form & Activation Code Dual Grid -->
+      <!-- 1. Subscription Plans Selection Grid (1 to 11 months) -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+          <div>
+            <h3 style="font-size:1.3rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
+              <span>🎯</span> باقات الاشتراك المتاحة (اختر مدتك المناسبة)
+            </h3>
+            <p style="color:var(--color-text-muted);font-size:0.88rem;margin:0;">اختر المدة من شهر وحتى 11 شهراً، وستظهر تفاصيل التحويل والمبلغ تلقائياً</p>
+          </div>
+          <span class="badge badge-public" style="font-size:0.8rem;">11 باقة معتمدة</span>
+        </div>
+
+        <div id="sub-plans-loading" style="text-align:center;padding:2rem;color:var(--color-text-muted);">
+          <div class="skeleton" style="height:140px;margin-bottom:1rem;"></div>
+          جاري تحميل باقات الاشتراك...
+        </div>
+
+        <div id="sub-plans-grid" class="plans-selection-grid" style="display:none;"></div>
+      </div>
+
+      <!-- 2. Submit Request Form & Quick Activation Code Dual Grid -->
       <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:1.5rem;" class="sub-dual-grid">
         
         <!-- Activation Request Form -->
         <div class="card">
-          <h3 style="font-size:1.2rem;font-weight:800;color:var(--color-text-main);margin-bottom:1rem;display:flex;align-items:center;gap:0.4rem;">
-            <span>📝</span> تقديم طلب تفعيل الاشتراك بعد التحويل
+          <h3 style="font-size:1.2rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;">
+            <span>📝</span> تأكيد التحويل وتقديم طلب التفعيل
           </h3>
+
+          <!-- Selected Plan Summary Banner -->
+          <div id="selected-plan-summary" style="background:rgba(14,165,233,0.1);border:1px solid var(--color-primary);border-radius:var(--radius-md);padding:0.85rem 1rem;margin-bottom:1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
+            <div>
+              <span style="font-size:0.75rem;color:var(--color-text-muted);">الباقة المختارة:</span>
+              <strong id="summary-plan-name" style="color:var(--color-primary);margin-right:0.3rem;font-size:1rem;">اشتراك فصلي (3 أشهر)</strong>
+            </div>
+            <div>
+              <span style="font-size:0.75rem;color:var(--color-text-muted);">المبلغ المطلوب:</span>
+              <strong id="summary-plan-price" style="font-family:var(--font-mono);color:#10B981;font-size:1.25rem;margin-right:0.3rem;">270 ج.م</strong>
+            </div>
+          </div>
+
           <form id="form-submit-sub-req">
+            <input type="hidden" id="sub-req-selected-plan-id" value="">
+
             <div class="form-group">
-              <label class="form-label">رقم الهاتف المحول منه (أو رقم محفظتك)</label>
-              <input type="text" id="sub-req-phone" class="form-input" required placeholder="01552696208">
+              <label class="form-label">رقم الهاتف المحول منه (أو رقم محفظتك) <span style="color:#EF4444;">*</span></label>
+              <input type="text" id="sub-req-phone" class="form-input" required placeholder="مثال: 01552696208">
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-              <div class="form-group">
-                <label class="form-label">الباقة المطلوبة</label>
-                <select id="sub-req-pkg" class="form-input">
-                  <option value="اشتراك فصلي (3 أشهر)">اشتراك فصلي (3 أشهر)</option>
-                  <option value="اشتراك سنوي شامل (12 شهر)">اشتراك سنوي شامل (12 شهر)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label">المبلغ المحول (ج.م)</label>
-                <input type="number" id="sub-req-amt" class="form-input" placeholder="مثال: 250" min="0">
-              </div>
-            </div>
+
             <div class="form-group">
-              <label class="form-label">رقم العملية أو اسم الحساب المحول منه (Reference)</label>
-              <input type="text" id="sub-req-ref" class="form-input" required placeholder="مثال: رقم الحوالة في انستاباي أو اسم صاحب الحساب">
+              <label class="form-label">رقم العملية أو اسم الحساب المحول منه (Reference ID) <span style="color:#EF4444;">*</span></label>
+              <input type="text" id="sub-req-ref" class="form-input" required placeholder="رقم إشعار التحويل من انستاباي أو اسم صاحب الحساب">
             </div>
+
             <div class="form-group">
               <label class="form-label">تاريخ التحويل</label>
               <input type="date" id="sub-req-date" class="form-input" value="${new Date().toISOString().substring(0, 10)}">
             </div>
+
+            <!-- Transfer Screenshot Upload -->
+            <div class="form-group">
+              <label class="form-label">صورة إشعار / إيصال التحويل (Screenshot) <span style="color:var(--color-text-muted);font-size:0.8rem;">(PNG, JPG, WEBP - بحد أقصى 10MB)</span></label>
+              <div id="screenshot-dropzone" class="screenshot-preview-container">
+                <input type="file" id="sub-req-file-input" accept="image/png, image/jpeg, image/jpg, image/webp" style="display:none;">
+                <div id="screenshot-upload-prompt" style="cursor:pointer;">
+                  <div style="font-size:2rem;margin-bottom:0.25rem;">📷</div>
+                  <div style="font-weight:700;color:var(--color-primary);font-size:0.95rem;">اضغط لاختيار صورة الإيصال أو اسحبها هنا</div>
+                  <p style="font-size:0.78rem;color:var(--color-text-muted);margin-top:0.25rem;">يساعد إرفاق الإيصال في سرعة مراجعة واعتماد حسابك فورياً</p>
+                </div>
+                <div id="screenshot-preview-box" style="display:none;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;padding:0.5rem;">
+                  <img id="screenshot-preview-img" src="" alt="إيصال التحويل" style="max-height:120px;max-width:180px;border-radius:6px;border:1px solid var(--color-border);object-fit:cover;">
+                  <div>
+                    <div id="screenshot-filename" style="font-size:0.85rem;font-weight:700;color:var(--color-text-main);direction:ltr;"></div>
+                    <button type="button" id="btn-remove-screenshot" class="btn btn-danger btn-sm" style="margin-top:0.4rem;padding:2px 8px;font-size:0.75rem;">إزالة الصورة 🗑️</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">ملاحظات إضافية (اختياري)</label>
-              <textarea id="sub-req-notes" class="form-input" rows="2" placeholder="أي تفاصيل ترغب في إضافتها للإدارة..."></textarea>
+              <textarea id="sub-req-notes" class="form-input" rows="2" placeholder="أي تفاصيل تود إضافتها للإدارة..."></textarea>
             </div>
-            <button type="submit" id="btn-sub-req-submit" class="btn btn-primary" style="width:100%;font-weight:700;padding:0.75rem;">
+
+            <button type="submit" id="btn-sub-req-submit" class="btn btn-primary" style="width:100%;font-weight:800;padding:0.8rem;font-size:1.05rem;">
               إرسال طلب التفعيل للإدارة 🚀
             </button>
           </form>
@@ -1796,13 +1922,13 @@ students.forEach((name, idx) => {
         <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;">
           <div>
             <h3 style="font-size:1.15rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.4rem;">
-              <span>🔑</span> هل تمتلك كود اشتراك مطبوع؟
+              <span>🔑</span> تفعيل سريع عبر كود مسبق الدفع
             </h3>
             <p style="color:var(--color-text-muted);font-size:0.88rem;line-height:1.6;margin-bottom:1rem;">
               إذا حصلت على كود تفعيل مسبق الدفع (مثل <code>CS-SPARK-2026</code>)، يمكنك إدخاله هنا وتفعيل حسابك بشكل فوري ولحظي دون انتظار مراجعة التحويل.
             </p>
             <div class="form-group">
-              <input type="text" id="quick-input-code" class="form-input" placeholder="CS-XXXX-XXXX" style="text-transform:uppercase;font-family:var(--font-mono);font-size:1.05rem;letter-spacing:1px;text-align:center;">
+              <input type="text" id="quick-input-code" class="form-input" placeholder="CS-XXXX-XXXX" style="text-transform:uppercase;font-family:var(--font-mono);font-size:1.1rem;letter-spacing:1px;text-align:center;">
             </div>
             <button id="btn-quick-activate" class="btn btn-secondary" style="width:100%;font-weight:700;">
               تفعيل بالكود فوراً ✨
@@ -1810,17 +1936,231 @@ students.forEach((name, idx) => {
           </div>
 
           <div style="margin-top:1.5rem;padding:1rem;background:var(--color-bg-surface);border-radius:var(--radius-md);border:1px solid var(--color-border);font-size:0.82rem;color:var(--color-text-dim);">
-            🛡️ <strong>ضمان الخدمة:</strong> تتم مراجعة الطلبات واعتمادها خلال دقائق من الإدارة. في حال واجهتك أي مشكلة، تواصل مباشرة مع الدعم الفني على الواتساب.
+            🛡️ <strong>ضمان الخدمة والأمان:</strong> تتم مراجعة كافة الطلبات من الإدارة واعتمادها فور التأكد من صحة التحويل، ويتم حفظ إيصالك وسجل معاملاتك بالكامل بأمان.
           </div>
         </div>
 
       </div>
 
-      <!-- Pending Requests List -->
+      <!-- Student Requests History Section -->
       <div id="sub-requests-history" style="margin-top:1.5rem;"></div>
     `;
 
-    // Fetch and bind status
+    let activePlans = [];
+    let selectedPlan = null;
+    let selectedFile = null;
+
+    // Load Payment Info dynamically from DB platform settings
+    try {
+      const payInfo = await ApiClient.get('/subscriptions/payment-info');
+      const instapayNumEl = document.getElementById('official-instapay-num');
+      const contactNumEl = document.getElementById('official-contact-num');
+      const instapayLinkEl = document.getElementById('official-instapay-link');
+      const whatsappLinkEl = document.getElementById('official-whatsapp-link');
+
+      if (instapayNumEl && payInfo.payment_phone) {
+        instapayNumEl.textContent = payInfo.payment_phone;
+      }
+      if (contactNumEl && payInfo.contact_phone) {
+        contactNumEl.textContent = payInfo.contact_phone;
+      }
+      if (instapayLinkEl && payInfo.instapay_link) {
+        instapayLinkEl.href = payInfo.instapay_link;
+      }
+      if (whatsappLinkEl && payInfo.contact_phone) {
+        const cleanPhone = payInfo.contact_phone.replace(/[^0-9]/g, '');
+        whatsappLinkEl.href = `https://wa.me/${cleanPhone}`;
+      }
+    } catch (e) {
+      console.error('Failed to load payment info:', e);
+    }
+
+    // Load 11 Subscription Plans dynamically from Database
+    try {
+      activePlans = await ApiClient.get('/subscriptions/plans');
+      const loadingEl = document.getElementById('sub-plans-loading');
+      const gridEl = document.getElementById('sub-plans-grid');
+
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (gridEl) {
+        gridEl.style.display = 'grid';
+        if (activePlans.length === 0) {
+          gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد باقات مفعلة حالياً. يرجى التواصل مع الإدارة.</div>';
+        } else {
+          gridEl.innerHTML = activePlans.map(p => {
+            const isQuarterly = p.duration_months === 3;
+            const isSemiAnnual = p.duration_months === 6;
+            const badge = isQuarterly ? 'الأكثر طلباً ⭐' : (isSemiAnnual ? 'توفير ممتاز 💰' : null);
+            return `
+              <div class="plan-card ${isQuarterly ? 'selected' : ''}" data-plan-id="${p.id}">
+                ${badge ? `<div class="plan-card-badge">${badge}</div>` : ''}
+                <div>
+                  <div style="font-weight:800;font-size:1.05rem;color:var(--color-text-main);margin-bottom:0.3rem;">${p.name}</div>
+                  <div style="font-size:0.8rem;color:var(--color-text-muted);">المدة: ${p.duration_months} ${p.duration_months === 1 ? 'شهر' : (p.duration_months === 2 ? 'شهرين' : (p.duration_months <= 10 ? 'أشهر' : 'شهراً'))}</div>
+                  <div class="plan-price-tag">${p.price} <span style="font-size:0.9rem;font-weight:600;color:var(--color-text-muted);">ج.م</span></div>
+                </div>
+                <div style="border-top:1px solid var(--color-border);padding-top:0.6rem;margin-top:0.6rem;font-size:0.78rem;color:var(--color-text-dim);">
+                  <div>✓ فتح شامل لكافة الدروس</div>
+                  <div>✓ بنك الأسئلة والامتحانات</div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm select-plan-btn" style="width:100%;margin-top:0.75rem;font-weight:700;">
+                  ${isQuarterly ? 'مختارة حالياً ✓' : 'اختيار هذه الباقة'}
+                </button>
+              </div>
+            `;
+          }).join('');
+
+          // Bind plan card selections
+          const planCards = gridEl.querySelectorAll('.plan-card');
+          function selectPlan(plan) {
+            selectedPlan = plan;
+            document.getElementById('sub-req-selected-plan-id').value = plan.id;
+            document.getElementById('summary-plan-name').textContent = plan.name;
+            document.getElementById('summary-plan-price').textContent = `${plan.price} ج.م`;
+
+            planCards.forEach(c => {
+              if (c.dataset.planId === plan.id) {
+                c.classList.add('selected');
+                c.querySelector('.select-plan-btn').textContent = 'مختارة حالياً ✓';
+              } else {
+                c.classList.remove('selected');
+                c.querySelector('.select-plan-btn').textContent = 'اختيار هذه الباقة';
+              }
+            });
+          }
+
+          planCards.forEach(card => {
+            card.addEventListener('click', () => {
+              const p = activePlans.find(item => item.id === card.dataset.planId);
+              if (p) selectPlan(p);
+            });
+          });
+
+          // Select default plan (3-month or first)
+          const defaultP = activePlans.find(p => p.duration_months === 3) || activePlans[0];
+          if (defaultP) selectPlan(defaultP);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load subscription plans:', e);
+      Toast.error('فشل تحميل باقات الاشتراك');
+    }
+
+    // Screenshot File Upload Handling & Preview
+    const fileInput = document.getElementById('sub-req-file-input');
+    const dropzone = document.getElementById('screenshot-dropzone');
+    const uploadPrompt = document.getElementById('screenshot-upload-prompt');
+    const previewBox = document.getElementById('screenshot-preview-box');
+    const previewImg = document.getElementById('screenshot-preview-img');
+    const filenameEl = document.getElementById('screenshot-filename');
+    const btnRemoveImg = document.getElementById('btn-remove-screenshot');
+
+    uploadPrompt?.addEventListener('click', () => fileInput?.click());
+
+    dropzone?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropzone.classList.add('drag-over');
+    });
+    dropzone?.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+    dropzone?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleImageFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput?.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleImageFile(e.target.files[0]);
+      }
+    });
+
+    function handleImageFile(file) {
+      if (!file.type.startsWith('image/')) {
+        Toast.error('الملف المختار ليس صورة صالحة. يرجى اختيار ملف PNG أو JPG');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        Toast.error('حجم الصورة يتجاوز 10 ميجابايت. يرجى اختيار صورة أصغر');
+        return;
+      }
+
+      selectedFile = file;
+      filenameEl.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+      
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        previewImg.src = re.target.result;
+        uploadPrompt.style.display = 'none';
+        previewBox.style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    btnRemoveImg?.addEventListener('click', () => {
+      selectedFile = null;
+      if (fileInput) fileInput.value = '';
+      previewImg.src = '';
+      previewBox.style.display = 'none';
+      uploadPrompt.style.display = 'block';
+    });
+
+    // Submit Subscription Request Form
+    const reqForm = document.getElementById('form-submit-sub-req');
+    reqForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const planId = document.getElementById('sub-req-selected-plan-id')?.value;
+      const phone = document.getElementById('sub-req-phone')?.value.trim();
+      const ref = document.getElementById('sub-req-ref')?.value.trim();
+      const date = document.getElementById('sub-req-date')?.value;
+      const notes = document.getElementById('sub-req-notes')?.value.trim();
+      const submitBtn = document.getElementById('btn-sub-req-submit');
+
+      if (!planId) {
+        Toast.error('يرجى اختيار باقة الاشتراك أولاً من القائمة أعلاه');
+        return;
+      }
+      if (!phone || !ref) {
+        Toast.error('يرجى كتابة رقم الهاتف ورقم العملية المرجعية');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'جاري رفع الإيصال وإرسال الطلب...';
+
+      try {
+        let proofUrl = null;
+        if (selectedFile) {
+          const formData = new FormData();
+          formData.append('file', selectedFile);
+          const uploadRes = await ApiClient.post('/subscriptions/upload-screenshot', formData);
+          proofUrl = uploadRes.file_url;
+        }
+
+        const res = await ApiClient.post('/subscriptions/requests', {
+          plan_id: planId,
+          phone: phone,
+          payment_reference: ref,
+          transfer_date: date,
+          proof_file_url: proofUrl,
+          admin_notes: notes || null
+        });
+
+        Toast.success(res.message || 'تم إرسال طلب التفعيل بنجاح! 🎉');
+        // Reset form
+        reqForm.reset();
+        btnRemoveImg?.click();
+        await refreshSubStatus();
+      } catch (err) {
+        Toast.error(err.message || 'تعذر إرسال طلب الاشتراك');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'إرسال طلب التفعيل للإدارة 🚀';
+      }
+    });
+
+    // Fetch and bind status & history
     async function refreshSubStatus() {
       try {
         const [stat, myReqs] = await Promise.all([
@@ -1846,24 +2186,28 @@ students.forEach((name, idx) => {
               <div>
                 <span class="badge badge-subscribers" style="font-size:0.9rem;padding:0.4rem 0.8rem;">خطة تجريبية مجانية</span>
                 <h3 style="font-weight:800;color:var(--color-text-main);margin-top:0.4rem;">قم بالاشتراك لفتح كافة الدروس والامتحانات والمذكرات</h3>
-                <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">سدد الرسوم عبر InstaPay وقدّم طلبك أدناه لتفعيل حسابك فوراً.</p>
+                <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">سدد الرسوم عبر InstaPay وقدّم طلبك أعلاه لتفعيل حسابك فوراً.</p>
               </div>
             </div>
           `;
         }
 
-        // History
+        // Render Request History
         const histDiv = document.getElementById('sub-requests-history');
         if (myReqs && myReqs.length > 0) {
           histDiv.innerHTML = `
             <div class="card">
-              <h3 style="font-weight:800;font-size:1.1rem;color:var(--color-text-main);margin-bottom:0.75rem;">سجل طلبات التفعيل السابقة:</h3>
+              <h3 style="font-weight:800;font-size:1.15rem;color:var(--color-text-main);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+                <span>📋</span> سجل طلبات التفعيل السابقة الخاصة بك:
+              </h3>
               <div class="table-container">
                 <table class="table" style="width:100%;">
                   <thead>
                     <tr>
-                      <th>الباقة</th>
+                      <th>الباقة والمدة</th>
+                      <th>المبلغ</th>
                       <th>رقم المرجع</th>
+                      <th>الإيصال</th>
                       <th>تاريخ الإرسال</th>
                       <th>الحالة</th>
                       <th>ملاحظات الإدارة</th>
@@ -1872,8 +2216,15 @@ students.forEach((name, idx) => {
                   <tbody>
                     ${myReqs.map(r => `
                       <tr>
-                        <td><strong>${r.package_name}</strong></td>
+                        <td>
+                          <strong>${r.package_name}</strong>
+                          <div style="font-size:0.75rem;color:var(--color-text-muted);">${r.duration_months ? `${r.duration_months} أشهر` : ''}</div>
+                        </td>
+                        <td style="font-family:var(--font-mono);color:#10B981;font-weight:700;">${r.amount} ج.م</td>
                         <td style="font-family:var(--font-mono);">${r.payment_reference}</td>
+                        <td>
+                          ${r.proof_file_url ? `<a href="${r.proof_file_url}" target="_blank" class="btn btn-secondary btn-sm" style="padding:2px 7px;font-size:0.75rem;">🖼️ الإيصال</a>` : '<span style="color:var(--color-text-dim);font-size:0.75rem;">—</span>'}
+                        </td>
                         <td>${r.created_at ? r.created_at.substring(0, 10) : ''}</td>
                         <td>
                           <span class="badge ${r.status === 'APPROVED' ? 'badge-public' : (r.status === 'PENDING' ? 'badge-subscribers' : 'badge-danger')}">
@@ -1903,56 +2254,26 @@ students.forEach((name, idx) => {
       Toast.success(`تم نسخ رقم التحويل: ${num}`);
     });
 
-    // Submit Request
-    document.getElementById('form-submit-sub-req')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const submitBtn = document.getElementById('btn-sub-req-submit');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'جاري إرسال الطلب...';
-
-      try {
-        const payload = {
-          phone: document.getElementById('sub-req-phone').value.trim(),
-          package_name: document.getElementById('sub-req-pkg').value,
-          amount: parseFloat(document.getElementById('sub-req-amt').value) || 0.0,
-          payment_reference: document.getElementById('sub-req-ref').value.trim(),
-          transfer_date: document.getElementById('sub-req-date').value,
-          admin_notes: document.getElementById('sub-req-notes').value.trim()
-        };
-
-        const res = await ApiClient.post('/subscriptions/requests', payload);
-        Toast.success(res.message || 'تم إرسال طلب التفعيل بنجاح! سيتم اعتماده قريباً');
-        document.getElementById('form-submit-sub-req').reset();
-        await refreshSubStatus();
-      } catch (err) {
-        Toast.error(err.message || 'تعذر إرسال الطلب');
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'إرسال طلب التفعيل للإدارة 🚀';
-      }
-    });
-
-    // Quick Code Activate
+    // Quick Code Activation
     document.getElementById('btn-quick-activate')?.addEventListener('click', async () => {
-      const code = document.getElementById('quick-input-code').value.trim().toUpperCase();
+      const codeInput = document.getElementById('quick-input-code');
+      const code = codeInput?.value.trim().toUpperCase();
       if (!code) {
-        Toast.warning('يرجى كتابة كود الاشتراك أولاً');
+        Toast.error('يرجى إدخال كود الاشتراك أولاً');
         return;
       }
       try {
         const res = await ApiClient.post('/subscriptions/activate', { code });
         Toast.success(res.message || 'تم تفعيل الاشتراك بنجاح! 🎉');
+        codeInput.value = '';
         await refreshSubStatus();
-        window.dispatchEvent(new Event('hashchange'));
       } catch (err) {
-        Toast.error(err.message || 'كود غير صالح');
+        Toast.error(err.message || 'كود الاشتراك غير صحيح');
       }
     });
   }
 
-  /* ===================================================================
-     9. ACCOUNT SETTINGS (STUDENT / ASSISTANT / ADMIN)
-  =================================================================== */
+
   static async renderSettings(container) {
     container.innerHTML = `
       <div style="margin-bottom:1.5rem;">
