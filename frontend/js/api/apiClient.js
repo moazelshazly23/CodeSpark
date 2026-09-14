@@ -7,10 +7,16 @@ const API_BASE = '/api';
 
 class ApiClient {
   static getToken() {
-    return localStorage.getItem('codespark_token');
+    const token = localStorage.getItem('codespark_token');
+    if (!token || token === 'undefined' || token === 'null') return null;
+    return token;
   }
 
   static setToken(token) {
+    if (!token || token === 'undefined' || token === 'null') {
+      console.error('Refusing to store invalid auth token:', token);
+      return;
+    }
     localStorage.setItem('codespark_token', token);
   }
 

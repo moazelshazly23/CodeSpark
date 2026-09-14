@@ -10,7 +10,7 @@ import json
 from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional, Tuple
 from contextlib import contextmanager
-from app.core.config import settings
+from app.core.config import settings, BASE_BACKEND_DIR
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -404,9 +404,18 @@ class RelationalDatabaseEngine:
             p = p.replace("sqlite:///", "")
         elif p.startswith("sqlite://"):
             p = p.replace("sqlite://", "")
+
+        # SECURITY/RELIABILITY FIX: a relative DB_PATH/DATABASE_URL (e.g. "codespark.db")
+        # must NEVER be resolved against the process's current working directory --
+        # that directory can differ between local runs, containers, and restarts,
+        # which silently points registration and login at two different database
+        # files. Anchor any relative path to the fixed backend directory instead.
+        if not os.path.isabs(p):
+            p = os.path.join(BASE_BACKEND_DIR, p)
+
         db_dir = os.path.dirname(os.path.abspath(p))
         if not os.path.exists(db_dir):
-            p = os.path.abspath("codespark.db")
+            os.makedirs(db_dir, exist_ok=True)
         self.db_path = os.path.abspath(p)
         self.lock = threading.RLock()
         self._local = threading.local()
@@ -421,8 +430,11 @@ class RelationalDatabaseEngine:
             )
             conn.row_factory = sqlite3.Row
             conn.execute("PRAGMA foreign_keys = ON;")
-            conn.execute("PRAGMA journal_mode = DELETE;")
-            conn.execute("PRAGMA synchronous = OFF;")
+            # WAL mode (not DELETE) so concurrent reads/writes from multiple
+            # worker processes/threads against the same file don't lock each
+            # other out during registration/login under load.
+            conn.execute("PRAGMA journal_mode = WAL;")
+            conn.execute("PRAGMA synchronous = NORMAL;")
             conn.execute("PRAGMA busy_timeout = 15000;")
             self._local.conn = conn
         return self._local.conn

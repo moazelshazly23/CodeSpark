@@ -18,7 +18,9 @@ class AuthService {
   }
 
   static isAuthenticated() {
-    return !!ApiClient.getToken() && !!this.currentUser;
+    const token = ApiClient.getToken();
+    const hasValidToken = !!token && token !== 'undefined' && token !== 'null';
+    return hasValidToken && !!this.currentUser;
   }
 
   static getUser() {
@@ -38,6 +40,10 @@ class AuthService {
       password: password
     });
 
+    if (!res.access_token || res.access_token === 'undefined') {
+      throw new Error('لم يتم استلام رمز الدخول من الخادم');
+    }
+
     ApiClient.setToken(res.access_token);
     this.currentUser = {
       id: res.user_id,
@@ -50,18 +56,13 @@ class AuthService {
     return this.currentUser;
   }
 
+  // NOTE: /auth/register only returns {success, message, user_id} — it does NOT
+  // issue a token. This method only creates the account; callers must follow up
+  // with AuthService.login(username, password) to actually authenticate.
+  // (This matches how the live register form in app.js already behaves.)
   static async register(data) {
     const res = await ApiClient.post('/auth/register', data);
-    ApiClient.setToken(res.access_token);
-    this.currentUser = {
-      id: res.user_id,
-      username: res.username,
-      full_name: res.full_name,
-      role: res.role,
-      permissions: res.permissions || []
-    };
-    localStorage.setItem('codespark_user', JSON.stringify(this.currentUser));
-    return this.currentUser;
+    return res;
   }
 
   static logout() {
