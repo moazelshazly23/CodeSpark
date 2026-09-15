@@ -42,6 +42,10 @@ Router.register('/student/profile', (c) => StudentPages.renderProfile(c));
 Router.register('/profile', (c) => StudentPages.renderProfile(c));
 
 Router.register('/student/settings', (c) => StudentPages.renderSettings(c));
+Router.register('/student/files', (c) => StudentPages.renderStudyFiles(c));
+Router.register('/files', (c) => StudentPages.renderStudyFiles(c));
+Router.register('/admin/files', (c) => AdminPages.renderStudyFiles(c), ['admin', 'assistant']);
+
 Router.register('/settings', (c) => StudentPages.renderSettings(c));
 
 Router.register('/student/notifications', (c) => StudentPages.renderDashboard(c));
@@ -123,6 +127,7 @@ function updateNavigationUI() {
       <div class="nav-section-label">إدارة المحتوى الأكاديمي</div>
       <a href="#/admin/courses" class="nav-item">📚 المناهج والكورسات</a>
       <a href="#/admin/lessons" class="nav-item">🎬 إدارة الدروس والفيديوهات</a>
+      <a href="#/admin/files" class="nav-item">📁 الملفات والمذكرات الدراسية</a>
       <a href="#/admin/questions" class="nav-item">📝 بنك الأسئلة المركزي</a>
       <a href="#/admin/exams" class="nav-item">🎯 الامتحانات والتصحيح</a>
       <a href="#/admin/announcements" class="nav-item">📢 نشر الإعلانات العامة</a>
@@ -139,6 +144,7 @@ function updateNavigationUI() {
     items += '<div class="nav-section-label">إدارة المحتوى والأنشطة</div>';
     items += '<a href="#/admin/courses" class="nav-item">📚 المناهج والكورسات</a>';
     items += '<a href="#/admin/lessons" class="nav-item">🎬 إدارة الدروس والفيديوهات</a>';
+    items += '<a href="#/admin/files" class="nav-item">📁 الملفات والمذكرات الدراسية</a>';
     items += '<a href="#/admin/questions" class="nav-item">📝 بنك الأسئلة</a>';
     items += '<a href="#/admin/exams" class="nav-item">🎯 الامتحانات والتصحيح</a>';
     items += '<a href="#/admin/announcements" class="nav-item">📢 نشر الإعلانات</a>';
@@ -156,6 +162,7 @@ function updateNavigationUI() {
       <div class="nav-section-label">التعلم الأكاديمي</div>
       <a href="#/student/dashboard" class="nav-item">🏠 لوحة المتابعة</a>
       <a href="#/student/courses" class="nav-item">📚 المناهج والدروس</a>
+      <a href="#/student/files" class="nav-item">📁 الملفات والمذكرات الدراسية</a>
       <a href="#/student/playground" class="nav-item">💻 محرر الأكواد التفاعلي</a>
       <a href="#/student/exams" class="nav-item">🎯 الامتحانات الدورية</a>
       

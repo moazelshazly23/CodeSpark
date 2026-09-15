@@ -11,7 +11,12 @@ from app.repositories.all_repositories import UserRepository, SubscriptionReposi
 def get_optional_user(authorization: Optional[str] = Header(None)) -> Optional[Dict[str, Any]]:
     if not authorization or not authorization.startswith("Bearer "):
         return None
-    token = authorization.split(" ")[1]
+    parts = authorization.split(" ")
+    if len(parts) != 2:
+        return None
+    token = parts[1].strip()
+    if not token or token.lower() in ("undefined", "null", "none"):
+        return None
     try:
         payload = decode_access_token(token)
         user_id = payload.get("sub")
@@ -31,7 +36,20 @@ def get_current_user(authorization: Optional[str] = Header(None)) -> Dict[str, A
             detail="رمز الدخول مفقود أو غير صالح. يرجى تسجيل الدخول",
             headers={"WWW-Authenticate": "Bearer"}
         )
-    token = authorization.split(" ")[1]
+    parts = authorization.split(" ")
+    if len(parts) != 2:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز الدخول غير صالح",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    token = parts[1].strip()
+    if not token or token.lower() in ("undefined", "null", "none"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="رمز الدخول غير صالح أو غير معرف",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     try:
         payload = decode_access_token(token)
         user_id = payload.get("sub")

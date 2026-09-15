@@ -7,11 +7,19 @@ const API_BASE = '/api';
 
 class ApiClient {
   static getToken() {
-    return localStorage.getItem('codespark_token');
+    const token = localStorage.getItem('codespark_token');
+    if (!token || token === 'undefined' || token === 'null' || typeof token !== 'string' || token.trim() === '') {
+      return null;
+    }
+    return token.trim();
   }
 
   static setToken(token) {
-    localStorage.setItem('codespark_token', token);
+    if (!token || token === 'undefined' || token === 'null' || typeof token !== 'string' || token.trim() === '') {
+      this.clearToken();
+      return;
+    }
+    localStorage.setItem('codespark_token', token.trim());
   }
 
   static clearToken() {
@@ -83,6 +91,10 @@ class ApiClient {
       method: 'POST',
       body: isFormData ? data : JSON.stringify(data)
     });
+  }
+
+  static upload(endpoint, formData) {
+    return this.post(endpoint, formData);
   }
 
   static put(endpoint, data) {

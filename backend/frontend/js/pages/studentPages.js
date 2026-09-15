@@ -545,6 +545,9 @@ export class StudentPages {
     let currentActiveFile = "index.html";
     let currentProjectId = null;
     let lastErrorDetected = null;
+    let isAiDrawerOpen = false;
+    let savedEditorHeight = "52%";
+    let savedTerminalHeight = "48%";
 
     // Web Workspace in-memory file structure
     let webFiles = {
@@ -578,65 +581,49 @@ export class StudentPages {
 }
 .container {
   background: #0F172A;
-  padding: 2rem;
+  padding: 2.5rem;
   border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
   border: 1px solid #1E293B;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   text-align: center;
-  max-width: 480px;
+  max-width: 500px;
 }
-h1 {
-  color: #00D2FF;
-  font-size: 1.6rem;
-  margin-bottom: 0.5rem;
-}
-p {
-  color: #94A3B8;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
+h1 { color: #38BDF8; margin-top: 0; }
 .btn {
-  background: linear-gradient(135deg, #2563EB, #00D2FF);
+  background: linear-gradient(135deg, #0EA5E9, #0284C7);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+  padding: 0.8rem 1.8rem;
+  font-size: 1rem;
   font-weight: bold;
+  border-radius: 8px;
   cursor: pointer;
-  margin-top: 1rem;
-  transition: transform 0.2s ease;
+  transition: transform 0.15s, box-shadow 0.15s;
 }
 .btn:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(14,165,233,0.4);
 }
 .counter-box {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  color: #F59E0B;
-  font-size: 1.1rem;
+  color: #A5F3FC;
 }`,
-      "script.js": `// تفاعل مباشر مع عناصر الصفحة
-let count = 0;
+      "script.js": `let count = 0;
 const btn = document.getElementById("click-btn");
 const counter = document.getElementById("counter");
 
-if (btn && counter) {
-  btn.addEventListener("click", () => {
-    count++;
-    counter.textContent = "عدد النقرات: " + count;
-    console.log("تم النقر على الزر! القيمة الحالية:", count);
-  });
-}
-console.log("تم تحميل السكربت بنجاح في نافذة المعاينة ✅");`
+btn.addEventListener("click", () => {
+  count++;
+  counter.textContent = "عدد النقرات: " + count;
+  btn.style.transform = "scale(0.95)";
+  setTimeout(() => { btn.style.transform = "scale(1)"; }, 100);
+});`
     };
 
-    let standaloneCode = {
-      python: `# بيئة بايثون 3.11 التفاعلية والمعزولة
-def calculate_spark(n):
-    total = sum(i * 2 for i in range(1, n + 1))
-    return f"Code Spark Factorial Sum: {total}"
-
-print(calculate_spark(10))
+    const standaloneStarters = {
+      python: `# بيئة بايثون 3.11 التفاعلية (Code Spark IDE)
 print("مرحباً بك في بيئة تشغيل بايثون!")`,
       javascript: `// بيئة جافا سكريبت التفاعلية (Node.js)
 const students = ["عمر", "سارة", "أحمد", "مريم"];
@@ -647,12 +634,12 @@ students.forEach((name, idx) => {
 
     container.innerHTML = `
       <!-- Header Toolbar -->
-      <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;">
+      <div style="margin-bottom:0.75rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem;">
         <div>
-          <h2 style="font-size:1.7rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
+          <h2 style="font-size:1.6rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem;">
             <span>💻</span> محرر الأكواد التفاعلي (Code Playground)
           </h2>
-          <p style="color:var(--color-text-muted);font-size:0.88rem;">بيئة برمجية متطورة لتشغيل بايثون، جافا سكريبت، ومشاريع الويب المتكاملة مع المساعد الذكي</p>
+          <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">بيئة IDE سحابية متطورة لتشغيل بايثون 3.11، نود جي اس، ومشاريع الويب مع شاشة مخرجات كبيرة قابلة للتكبير وإعادة التحجيم</p>
         </div>
 
         <!-- Mode Selectors & Action Buttons -->
@@ -668,116 +655,133 @@ students.forEach((name, idx) => {
             <button id="btn-load-projects" class="btn btn-secondary btn-sm" title="فتح المشاريع السابقة">📂 مشاريعي</button>
           </div>
 
-          <button id="main-run-btn" class="btn btn-primary" style="font-weight:800;padding:0.45rem 1.1rem;display:flex;align-items:center;gap:0.4rem;">
+          <button id="main-run-btn" class="btn btn-primary" style="font-weight:800;padding:0.5rem 1.4rem;display:flex;align-items:center;gap:0.5rem;font-size:0.95rem;box-shadow:0 0 15px rgba(14,165,233,0.3);">
             <span>▶</span> تشغيل الكود
           </button>
         </div>
       </div>
 
-      <!-- Main Playground Layout Grid -->
-      <div id="playground-main-grid" style="display:grid;grid-template-columns:1.2fr 1fr;gap:1rem;height:calc(100vh - 210px);min-height:540px;" class="playground-layout">
+      <!-- Professional IDE Stacked Container (Editor Top, Terminal Bottom) -->
+      <div id="playground-ide-container" class="playground-ide-layout">
 
-        <!-- LEFT PANE: Editor & File Tabs -->
-        <div class="card" style="display:flex;flex-direction:column;padding:0.75rem;height:100%;position:relative;">
+        <!-- TOP PANE: Code Editor -->
+        <div id="playground-editor-section" class="playground-editor-section" style="height:52%;">
           
           <!-- Web Workspace File Tabs -->
-          <div id="web-file-tabs-bar" style="display:none;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border);padding-bottom:0.4rem;margin-bottom:0.5rem;">
-            <div id="web-tabs-container" style="display:flex;gap:0.35rem;overflow-x:auto;">
-              <!-- Injected dynamically -->
-            </div>
+          <div id="web-file-tabs-bar" style="display:none;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border);padding:0.35rem 0.75rem;background:#090E1A;">
+            <div id="web-tabs-container" style="display:flex;gap:0.35rem;overflow-x:auto;"></div>
             <div style="display:flex;gap:0.3rem;">
               <button id="btn-new-file" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.75rem;" title="إضافة ملف جديد">+ ملف</button>
               <button id="btn-del-file" class="btn btn-secondary btn-sm" style="padding:2px 8px;font-size:0.75rem;" title="حذف الملف الحالي">🗑️</button>
             </div>
           </div>
 
-          <!-- Standalone Mode Bar -->
-          <div id="standalone-editor-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-            <span id="editor-file-title" style="font-weight:700;font-size:0.85rem;color:var(--color-primary);font-family:var(--font-mono);">main.py</span>
+          <!-- Standalone Editor Header Toolbar -->
+          <div id="standalone-editor-header" style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.75rem;border-bottom:1px solid #1E293B;background:#080D1A;">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span id="editor-file-title" style="font-weight:800;font-size:0.88rem;color:var(--color-primary);font-family:var(--font-mono);display:flex;align-items:center;gap:0.3rem;">
+                <span>📄</span> main.py
+              </span>
+              <span id="editor-language-indicator" style="font-size:0.75rem;color:var(--color-cyan-accent);background:rgba(14,165,233,0.12);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);">Python 3.11</span>
+            </div>
             <div style="display:flex;gap:0.4rem;">
               <button id="editor-format-btn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 8px;">تنظيف الكود</button>
-              <button id="editor-clear-btn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 8px;">مسح</button>
+              <button id="editor-clear-btn" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 8px;">مسح المحرر</button>
             </div>
           </div>
 
-          <!-- Code Editor Textarea with IntelliSense Autocomplete -->
-          <div style="position:relative;flex:1;display:flex;flex-direction:column;">
-            <textarea id="main-code-editor" class="form-input" style="flex:1;font-family:var(--font-mono);font-size:0.95rem;line-height:1.6;direction:ltr;text-align:left;background:#030712;color:#38BDF8;border:1px solid var(--color-border);resize:none;padding:1rem;border-radius:var(--radius-sm);" spellcheck="false"></textarea>
-            
-            <!-- Autocomplete / IntelliSense Popup -->
+          <!-- Editor Textarea with Autocomplete -->
+          <div style="position:relative;flex:1;display:flex;flex-direction:column;min-height:0;">
+            <textarea id="main-code-editor" class="form-input" style="flex:1;width:100%;height:100%;font-family:var(--font-mono);font-size:0.98rem;line-height:1.65;direction:ltr;text-align:left;background:#030712;color:#38BDF8;border:none;outline:none;resize:none;padding:1rem;border-radius:0;" spellcheck="false"></textarea>
             <div id="autocomplete-popup" class="code-autocomplete-box"></div>
           </div>
 
           <!-- Editor Footer Status -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.5rem;font-size:0.75rem;color:var(--color-text-dim);">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.25rem 0.75rem;border-top:1px solid #1E293B;font-size:0.75rem;color:var(--color-text-dim);background:#050B17;">
             <span>الأسطر: <span id="stat-lines-count">1</span> | الأحرف: <span id="stat-chars-count">0</span></span>
-            <span id="editor-language-indicator" style="color:var(--color-cyan-accent);font-family:var(--font-mono);">Python 3.11</span>
+            <span style="font-family:var(--font-mono);color:#64748B;">UTF-8 | LF</span>
           </div>
 
         </div>
 
-        <!-- RIGHT PANE: Dual Mode (Terminal Output & Assistant / Web Live Preview & Console) -->
-        <div style="display:flex;flex-direction:column;gap:0.75rem;height:100%;">
+        <!-- DRAGGABLE HORIZONTAL SPLITTER -->
+        <div id="playground-drag-divider" class="playground-drag-divider" title="اسحب لأعلى أو لأسفل لتكبير أو تصغير مساحة المخرجات">
+          <div class="handle-bar"></div>
+        </div>
 
-          <!-- STANDALONE OUTPUT VIEW (Python / Node) -->
-          <div id="standalone-output-view" class="card" style="flex:1;display:flex;flex-direction:column;padding:0.75rem;background:#02050D;border:1px solid var(--color-border-light);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-              <div style="font-weight:700;font-size:0.85rem;color:var(--color-text-main);display:flex;align-items:center;gap:0.4rem;">
-                <span>⚡</span> شاشة المخرجات (Terminal Console)
+        <!-- BOTTOM PANE: Substantial Terminal Console & Output -->
+        <div id="playground-terminal-section" class="playground-terminal-section" style="height:48%;">
+
+          <!-- Terminal Top Control Header -->
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0.75rem;background:#060C1B;border-bottom:1px solid #1E293B;flex-wrap:wrap;gap:0.4rem;">
+            <div style="display:flex;align-items:center;gap:0.6rem;">
+              <div style="font-weight:900;font-size:0.88rem;color:var(--color-text-main);display:flex;align-items:center;gap:0.4rem;">
+                <span style="color:#F59E0B;">⚡</span> شاشة المخرجات (Terminal Console)
               </div>
-              <div id="run-status-text" style="font-size:0.75rem;color:var(--color-text-dim);">جاهز للتشغيل</div>
+              <div id="run-status-text" style="font-size:0.75rem;color:var(--color-text-dim);font-weight:600;">جاهز للتشغيل</div>
             </div>
-            <pre id="standalone-terminal-output" style="flex:1;font-family:var(--font-mono);font-size:0.9rem;line-height:1.5;direction:ltr;text-align:left;margin:0;padding:0.75rem;background:#030712;color:#E0F2FE;border-radius:var(--radius-sm);overflow:auto;white-space:pre-wrap;border:1px solid rgba(14,165,233,0.15);">اضغط على [تشغيل الكود] لعرض المخرجات هنا...</pre>
-          </div>
-
-          <!-- WEB DEVELOPMENT PREVIEW VIEW (Iframe & Web Console) -->
-          <div id="web-preview-view" style="display:none;flex:1;flex-direction:column;gap:0.5rem;height:100%;">
-            <!-- Live Preview Frame Container -->
-            <div class="card" style="flex:1.4;display:flex;flex-direction:column;padding:0.5rem;background:#090E1A;border:1px solid var(--color-border-light);">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;padding:0 0.25rem;">
-                <span style="font-size:0.8rem;font-weight:700;color:var(--color-cyan-accent);">👁️ المعاينة المباشرة (Live Preview Sandbox)</span>
-                <div style="display:flex;gap:0.3rem;">
-                  <button id="btn-reload-preview" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 7px;">إعادة تحميل 🔄</button>
-                </div>
-              </div>
-              <iframe id="web-live-iframe" sandbox="allow-scripts" style="flex:1;width:100%;height:100%;border:1px solid #1E293B;border-radius:6px;background:#FFF;"></iframe>
-            </div>
-
-            <!-- Web JavaScript Console -->
-            <div class="card" style="flex:1;display:flex;flex-direction:column;padding:0.5rem;background:#02050D;border:1px solid var(--color-border);">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
-                <span style="font-size:0.75rem;font-weight:700;color:var(--color-text-muted);">🖥️ سجل مخرجات الويب (Web Console)</span>
-                <button id="btn-clear-web-console" class="btn btn-secondary btn-sm" style="font-size:0.7rem;padding:1px 6px;">مسح</button>
-              </div>
-              <div id="web-console-logs" style="flex:1;overflow-y:auto;font-family:var(--font-mono);font-size:0.8rem;background:#030712;padding:0.5rem;border-radius:4px;display:flex;flex-direction:column;gap:0.25rem;direction:ltr;text-align:left;">
-                <div style="color:#64748B;">[جاهز لاستقبال مخرجات JavaScript]</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- AI CODING ASSISTANT DRAWER / PANEL -->
-          <div class="card" style="padding:0.75rem;border:1px solid var(--color-border-light);background:radial-gradient(ellipse at top, rgba(14,165,233,0.08), var(--color-bg-card));">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-              <div style="font-weight:800;font-size:0.88rem;color:var(--color-primary);display:flex;align-items:center;gap:0.4rem;">
-                <span>🤖</span> مساعد البرمجة التعليمي الذكي (AI Code Assistant)
-              </div>
-              <button id="btn-quick-fix-error" class="btn btn-danger btn-sm" style="display:none;padding:2px 8px;font-size:0.75rem;font-weight:700;">
-                🛠️ مساعدة في إصلاح الخطأ
+            
+            <div style="display:flex;align-items:center;gap:0.4rem;">
+              <button id="btn-toggle-ai" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 8px;" title="فتح مساعد البرمجة الذكي">
+                🤖 المساعد الذكي
+              </button>
+              <button id="btn-clear-terminal" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 8px;" title="مسح المخرجات">
+                🗑️ مسح المخرجات
+              </button>
+              <button id="btn-maximize-terminal" class="btn btn-secondary btn-sm" style="font-size:0.75rem;padding:2px 10px;font-weight:700;" title="تكبير أو استعادة نافذة المخرجات">
+                ⛶ تكبير الشاشة
               </button>
             </div>
+          </div>
 
-            <!-- Quick Action Pills -->
-            <div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.5rem;">
-              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="hint" style="font-size:0.75rem;padding:2px 8px;">💡 تلميح (Hint)</button>
-              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="explain" style="font-size:0.75rem;padding:2px 8px;">📖 اشرح الكود</button>
-              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="detect_error" style="font-size:0.75rem;padding:2px 8px;">🔍 فحص الأخطاء</button>
-              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="complete" style="font-size:0.75rem;padding:2px 8px;">⚡ أكمل الكود</button>
-              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="improve" style="font-size:0.75rem;padding:2px 8px;">🚀 تحسينات</button>
+          <!-- Standalone Terminal Console Output (Python / Node) -->
+          <div id="standalone-output-view" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;position:relative;">
+            <pre id="standalone-terminal-output" class="terminal-console-output">اضغط على [▶ تشغيل الكود] لعرض المخرجات هنا...</pre>
+          </div>
+
+          <!-- Web Development Live Preview & Console (Web Mode Only) -->
+          <div id="web-preview-view" style="display:none;flex:1;min-height:0;overflow:hidden;">
+            <div style="display:flex;height:100%;gap:0;">
+              <!-- Live Sandbox Frame -->
+              <div style="flex:1.4;display:flex;flex-direction:column;border-right:1px solid #1E293B;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0.6rem;background:#080E1C;border-bottom:1px solid #1E293B;">
+                  <span style="font-size:0.78rem;font-weight:700;color:var(--color-cyan-accent);">👁️ المعاينة المباشرة (Sandbox)</span>
+                  <button id="btn-reload-preview" class="btn btn-secondary btn-sm" style="font-size:0.72rem;padding:1px 6px;">إعادة تحميل 🔄</button>
+                </div>
+                <iframe id="web-live-iframe" sandbox="allow-scripts" style="flex:1;width:100%;height:100%;border:none;background:#FFF;"></iframe>
+              </div>
+              <!-- Web Console -->
+              <div style="flex:1;display:flex;flex-direction:column;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0.6rem;background:#080E1C;border-bottom:1px solid #1E293B;">
+                  <span style="font-size:0.78rem;font-weight:700;color:var(--color-text-muted);">🖥️ Console Logs</span>
+                  <button id="btn-clear-web-console" class="btn btn-secondary btn-sm" style="font-size:0.72rem;padding:1px 6px;">مسح</button>
+                </div>
+                <div id="web-console-logs" style="flex:1;overflow-y:auto;font-family:var(--font-mono);font-size:0.82rem;background:#030712;padding:0.5rem;display:flex;flex-direction:column;gap:0.2rem;direction:ltr;text-align:left;">
+                  <div style="color:#64748B;">[Console ready]</div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <!-- AI Response Box -->
-            <div id="ai-assistant-response" style="max-height:150px;overflow-y:auto;background:var(--color-bg-deep);padding:0.6rem;border-radius:var(--radius-sm);font-size:0.82rem;line-height:1.5;color:var(--color-text-main);white-space:pre-wrap;border:1px solid var(--color-border);">اختر أي إجراء لمساعدتك في فهم الكود خطوة بخطوة...</div>
-            <button id="btn-apply-ai-code" class="btn btn-primary btn-sm" style="display:none;width:100%;margin-top:0.4rem;font-weight:700;padding:0.35rem;">تطبيق الكود المقترح على المحرر ✨</button>
+          <!-- Collapsible AI Assistant Panel (Drawer) -->
+          <div id="ai-assistant-container" style="display:none;background:#060D1F;border-top:1px solid #1E293B;padding:0.65rem 0.85rem;max-height:220px;overflow-y:auto;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+              <div style="font-weight:800;font-size:0.85rem;color:var(--color-primary);display:flex;align-items:center;gap:0.4rem;">
+                <span>🤖</span> مساعد البرمجة التعليمي الذكي
+              </div>
+              <button id="btn-quick-fix-error" class="btn btn-danger btn-sm" style="display:none;padding:1px 8px;font-size:0.75rem;font-weight:700;">
+                🛠️ إصلاح الخطأ
+              </button>
+            </div>
+            <div style="display:flex;gap:0.35rem;flex-wrap:wrap;margin-bottom:0.4rem;">
+              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="hint" style="font-size:0.72rem;padding:2px 7px;">💡 تلميح</button>
+              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="explain" style="font-size:0.72rem;padding:2px 7px;">📖 شرح الكود</button>
+              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="detect_error" style="font-size:0.72rem;padding:2px 7px;">🔍 فحص الأخطاء</button>
+              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="complete" style="font-size:0.72rem;padding:2px 7px;">⚡ إكمال الكود</button>
+              <button class="btn btn-secondary btn-sm ai-action-btn" data-act="improve" style="font-size:0.72rem;padding:2px 7px;">🚀 تحسينات</button>
+            </div>
+            <div id="ai-assistant-response" style="max-height:100px;overflow-y:auto;background:#02050D;padding:0.5rem;border-radius:4px;font-size:0.82rem;line-height:1.5;color:var(--color-text-main);white-space:pre-wrap;border:1px solid #1E293B;">اختر أي إجراء لمساعدتك في فهم الكود خطوة بخطوة...</div>
+            <button id="btn-apply-ai-code" class="btn btn-primary btn-sm" style="display:none;width:100%;margin-top:0.35rem;font-weight:700;padding:0.3rem;">تطبيق الكود المقترح على المحرر ✨</button>
           </div>
 
         </div>
@@ -786,6 +790,15 @@ students.forEach((name, idx) => {
     `;
 
     // DOM Elements
+    const ideContainer = document.getElementById("playground-ide-container");
+    const editorSection = document.getElementById("playground-editor-section");
+    const dragDivider = document.getElementById("playground-drag-divider");
+    const terminalSection = document.getElementById("playground-terminal-section");
+    const btnMaximize = document.getElementById("btn-maximize-terminal");
+    const btnClearTerminal = document.getElementById("btn-clear-terminal");
+    const btnToggleAi = document.getElementById("btn-toggle-ai");
+    const aiContainer = document.getElementById("ai-assistant-container");
+
     const editor = document.getElementById("main-code-editor");
     const terminal = document.getElementById("standalone-terminal-output");
     const runBtn = document.getElementById("main-run-btn");
@@ -812,8 +825,114 @@ students.forEach((name, idx) => {
     let suggestedAiCode = null;
 
     // -------------------------------------------------------------
-    // Switch Modes (Python vs Node vs Web)
+    // Draggable Splitter Implementation
     // -------------------------------------------------------------
+    let isDragging = false;
+
+    dragDivider.addEventListener("mousedown", (e) => {
+      if (ideContainer.classList.contains("maximized")) return;
+      isDragging = true;
+      dragDivider.classList.add("dragging");
+      document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging || ideContainer.classList.contains("maximized")) return;
+      const rect = ideContainer.getBoundingClientRect();
+      const newEditorH = e.clientY - rect.top;
+      const divH = 12;
+      const minH = 120;
+      const maxH = rect.height - minH - divH;
+      const clamped = Math.max(minH, Math.min(maxH, newEditorH));
+      
+      savedEditorHeight = `${clamped}px`;
+      savedTerminalHeight = `${rect.height - clamped - divH}px`;
+      editorSection.style.height = savedEditorHeight;
+      terminalSection.style.height = savedTerminalHeight;
+      editorSection.style.flex = "none";
+      terminalSection.style.flex = "none";
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isDragging) {
+        isDragging = false;
+        dragDivider.classList.remove("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    });
+
+    // Touch events for mobile / tablets
+    dragDivider.addEventListener("touchstart", (e) => {
+      if (ideContainer.classList.contains("maximized")) return;
+      isDragging = true;
+      dragDivider.classList.add("dragging");
+    }, { passive: true });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!isDragging || ideContainer.classList.contains("maximized") || !e.touches[0]) return;
+      const touch = e.touches[0];
+      const rect = ideContainer.getBoundingClientRect();
+      const newEditorH = touch.clientY - rect.top;
+      const divH = 12;
+      const minH = 120;
+      const maxH = rect.height - minH - divH;
+      const clamped = Math.max(minH, Math.min(maxH, newEditorH));
+
+      savedEditorHeight = `${clamped}px`;
+      savedTerminalHeight = `${rect.height - clamped - divH}px`;
+      editorSection.style.height = savedEditorHeight;
+      terminalSection.style.height = savedTerminalHeight;
+      editorSection.style.flex = "none";
+      terminalSection.style.flex = "none";
+    }, { passive: true });
+
+    window.addEventListener("touchend", () => {
+      if (isDragging) {
+        isDragging = false;
+        dragDivider.classList.remove("dragging");
+      }
+    });
+
+    // Maximize / Restore Controls
+    btnMaximize?.addEventListener("click", () => {
+      const isMax = ideContainer.classList.contains("maximized");
+      if (!isMax) {
+        savedEditorHeight = editorSection.style.height || "52%";
+        savedTerminalHeight = terminalSection.style.height || "48%";
+        ideContainer.classList.add("maximized");
+        btnMaximize.innerHTML = "🗗 استعادة الحجم";
+        btnMaximize.classList.remove("btn-secondary");
+        btnMaximize.classList.add("btn-primary");
+      } else {
+        ideContainer.classList.remove("maximized");
+        editorSection.style.height = savedEditorHeight;
+        terminalSection.style.height = savedTerminalHeight;
+        btnMaximize.innerHTML = "⛶ تكبير الشاشة";
+        btnMaximize.classList.remove("btn-primary");
+        btnMaximize.classList.add("btn-secondary");
+      }
+    });
+
+    // Clear Terminal Output
+    btnClearTerminal?.addEventListener("click", () => {
+      terminal.textContent = "تم مسح شاشة المخرجات.";
+      terminal.style.color = "var(--color-text-dim)";
+      runStatusText.textContent = "جاهز";
+    });
+
+    // Toggle AI Assistant Drawer
+    btnToggleAi?.addEventListener("click", () => {
+      isAiDrawerOpen = !isAiDrawerOpen;
+      if (aiContainer) {
+        aiContainer.style.display = isAiDrawerOpen ? "block" : "none";
+      }
+      btnToggleAi.classList.toggle("btn-primary", isAiDrawerOpen);
+      btnToggleAi.classList.toggle("btn-secondary", !isAiDrawerOpen);
+    });
+
+    // Switch Modes (Python vs Node vs Web)
     function setMode(mode) {
       currentMode = mode;
       document.querySelectorAll(".playground-mode-btn").forEach(b => {
@@ -821,24 +940,33 @@ students.forEach((name, idx) => {
       });
 
       if (mode === "web") {
-        standaloneOutView.style.display = "none";
-        standaloneHeader.style.display = "none";
-        webPrevView.style.display = "flex";
         webTabsBar.style.display = "flex";
         webActionsBar.style.display = "flex";
-        runBtn.innerHTML = "<span>▶</span> تشغيل ومعاينة الويب";
+        standaloneHeader.style.display = "none";
+        standaloneOutView.style.display = "none";
+        webPrevView.style.display = "block";
+        runBtn.innerHTML = "<span>🔄</span> تحديث المعاينة";
+        langIndicator.textContent = "HTML / CSS / JS";
         renderWebTabs();
         loadWebFile(currentActiveFile);
+        updateLivePreview();
       } else {
-        standaloneOutView.style.display = "flex";
-        standaloneHeader.style.display = "flex";
-        webPrevView.style.display = "none";
         webTabsBar.style.display = "none";
         webActionsBar.style.display = "none";
+        standaloneHeader.style.display = "flex";
+        standaloneOutView.style.display = "flex";
+        webPrevView.style.display = "none";
         runBtn.innerHTML = "<span>▶</span> تشغيل الكود";
-        editor.value = standaloneCode[mode] || "";
-        fileTitle.textContent = mode === "python" ? "main.py" : "index.js";
-        langIndicator.textContent = mode === "python" ? "Python 3.11" : "Node.js (v20)";
+
+        if (mode === "python") {
+          fileTitle.innerHTML = "<span>🐍</span> main.py";
+          langIndicator.textContent = "Python 3.11";
+          editor.value = standaloneStarters.python;
+        } else if (mode === "javascript") {
+          fileTitle.innerHTML = "<span>⚡</span> script.js";
+          langIndicator.textContent = "Node.js v18";
+          editor.value = standaloneStarters.javascript;
+        }
         updateEditorStats();
       }
     }
@@ -848,134 +976,141 @@ students.forEach((name, idx) => {
     });
 
     // -------------------------------------------------------------
-    // Web Development Workspace: Files & Tabs
+    // Web Mode Workspace Tabs & Management
     // -------------------------------------------------------------
     function renderWebTabs() {
-      webTabsContainer.innerHTML = Object.keys(webFiles).map(fn => `
-        <div class="file-tab ${fn === currentActiveFile ? 'active' : ''}" data-file="${fn}">
-          <span>${fn.endsWith('.html') ? '🌐' : (fn.endsWith('.css') ? '🎨' : '📜')}</span>
-          <span>${fn}</span>
-        </div>
-      `).join("");
-
-      webTabsContainer.querySelectorAll(".file-tab").forEach(tab => {
+      webTabsContainer.innerHTML = "";
+      Object.keys(webFiles).forEach(fileName => {
+        const tab = document.createElement("button");
+        tab.className = `btn btn-sm ${fileName === currentActiveFile ? "btn-primary" : "btn-secondary"}`;
+        tab.style.padding = "2px 10px";
+        tab.style.fontSize = "0.8rem";
+        tab.textContent = fileName;
         tab.addEventListener("click", () => {
-          // Save current file content before switching
           webFiles[currentActiveFile] = editor.value;
-          loadWebFile(tab.dataset.file);
+          currentActiveFile = fileName;
+          renderWebTabs();
+          loadWebFile(fileName);
         });
+        webTabsContainer.appendChild(tab);
       });
     }
 
     function loadWebFile(fileName) {
-      currentActiveFile = fileName;
       editor.value = webFiles[fileName] || "";
-      fileTitle.textContent = fileName;
-      langIndicator.textContent = fileName.endsWith(".html") ? "HTML5" : (fileName.endsWith(".css") ? "CSS3" : "JavaScript");
-      renderWebTabs();
       updateEditorStats();
     }
 
-    // New file
+    // New File
     document.getElementById("btn-new-file")?.addEventListener("click", () => {
-      const name = prompt("أدخل اسم الملف الجديد (مثال: about.html أو animation.css):");
+      const name = prompt("أدخل اسم الملف الجديد مع الامتداد (مثال: about.html أو utils.js):");
       if (name && name.trim()) {
         const cleanName = name.trim();
-        if (!webFiles[cleanName]) {
-          webFiles[cleanName] = `/* ${cleanName} */\n`;
-          loadWebFile(cleanName);
-          Toast.success(`تم إنشاء الملف: ${cleanName}`);
+        if (webFiles[cleanName]) {
+          Toast.error("الملف موجود بالفعل بهذا الاسم");
+          return;
         }
+        webFiles[cleanName] = `/* ${cleanName} */\n`;
+        currentActiveFile = cleanName;
+        renderWebTabs();
+        loadWebFile(cleanName);
       }
     });
 
-    // Delete file
+    // Delete File
     document.getElementById("btn-del-file")?.addEventListener("click", () => {
-      if (["index.html", "style.css", "script.js"].includes(currentActiveFile)) {
-        Toast.warning("لا يمكن حذف الملفات الأساسية للمشروع.");
+      if (Object.keys(webFiles).length <= 1) {
+        Toast.error("لا يمكن حذف آخر ملف في المشروع");
         return;
       }
-      Modal.confirm({
-        title: "حذف الملف",
-        message: `هل أنت متأكد من رغبتك في حذف ${currentActiveFile}؟`,
-        onConfirm: () => {
-          delete webFiles[currentActiveFile];
-          loadWebFile("index.html");
-          Toast.success("تم حذف الملف");
-        }
-      });
+      if (confirm(`هل أنت متأكد من رغبتك في حذف الملف (${currentActiveFile})؟`)) {
+        delete webFiles[currentActiveFile];
+        currentActiveFile = Object.keys(webFiles)[0];
+        renderWebTabs();
+        loadWebFile(currentActiveFile);
+        updateLivePreview();
+      }
     });
 
     // -------------------------------------------------------------
-    // Sandboxed Web Live Preview & Console Receiver
+    // Live Preview Engine (HTML + CSS + JS in isolated iframe sandbox)
     // -------------------------------------------------------------
-    function renderWebPreview() {
+    function updateLivePreview() {
+      if (currentMode !== "web") return;
       webFiles[currentActiveFile] = editor.value;
+
       const html = webFiles["index.html"] || "";
       const css = webFiles["style.css"] || "";
       const js = webFiles["script.js"] || "";
 
-      // Safe client-side console logger injected into iframe
-      const consoleScript = `<script>
-        (function() {
-          const _send = (type, args) => {
-            try {
-              window.parent.postMessage({
-                source: 'codespark_preview_console',
-                type: type,
-                payload: Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
-              }, '*');
-            } catch(e) {}
-          };
-          console.log = function(...args) { _send('log', args); };
-          console.error = function(...args) { _send('error', args); };
-          console.warn = function(...args) { _send('warn', args); };
-          window.onerror = function(msg, url, line) {
-            _send('error', ['خطأ برمجى: ' + msg + ' (السطر ' + line + ')']);
-            return false;
-          };
-        })();
-      <\/script>`;
+      const consoleCaptureScript = `
+        <script>
+          (function() {
+            function sendLog(type, args) {
+              try {
+                window.parent.postMessage({
+                  source: "codespark_sandbox",
+                  type: type,
+                  message: Array.from(args).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')
+                }, "*");
+              } catch(e) {}
+            }
+            const _log = console.log;
+            const _err = console.error;
+            const _warn = console.warn;
+            console.log = function() { sendLog('log', arguments); _log.apply(console, arguments); };
+            console.error = function() { sendLog('error', arguments); _err.apply(console, arguments); };
+            console.warn = function() { sendLog('warn', arguments); _warn.apply(console, arguments); };
+          })();
+        </script>
+      `;
 
-      // Combine into composite HTML document
-      let fullDoc = html;
-      if (!fullDoc.includes("<style>") && css) {
-        fullDoc = fullDoc.replace("</head>", `<style>${css}</style></head>`);
+      let combinedDoc = html;
+      if (css && !combinedDoc.includes("<style>")) {
+        combinedDoc = combinedDoc.replace("</head>", `<style>${css}</style></head>`);
       }
-      fullDoc = fullDoc.replace("</body>", `${consoleScript}<script>${js}<\/script></body>`);
+      combinedDoc = combinedDoc.replace("<head>", `<head>${consoleCaptureScript}`);
+      if (js && !combinedDoc.includes('<script src="script.js">')) {
+        combinedDoc = combinedDoc.replace("</body>", `<script>${js}</script></body>`);
+      } else if (js) {
+        combinedDoc = combinedDoc.replace('<script src="script.js"></script>', `<script>${js}</script>`);
+      }
 
-      webIframe.srcdoc = fullDoc;
+      webIframe.srcdoc = combinedDoc;
     }
 
-    document.getElementById("btn-reload-preview")?.addEventListener("click", renderWebPreview);
-    document.getElementById("btn-clear-web-console")?.addEventListener("click", () => {
-      webConsole.innerHTML = '<div style="color:#64748B;">[تم مسح سجل المخرجات]</div>';
-    });
-
-    // Listen for sandboxed iframe console messages
-    window.addEventListener("message", (e) => {
-      if (e.data && e.data.source === "codespark_preview_console") {
+    // Capture console messages from sandbox iframe
+    window.addEventListener("message", (event) => {
+      if (event.data && event.data.source === "codespark_sandbox") {
         const item = document.createElement("div");
-        const color = e.data.type === "error" ? "#EF4444" : (e.data.type === "warn" ? "#F59E0B" : "#38BDF8");
-        item.style.color = color;
-        item.textContent = `[${new Date().toLocaleTimeString()}] ${e.data.payload}`;
+        if (event.data.type === "error") {
+          item.style.color = "#EF4444";
+          item.textContent = `❌ [Error] ${event.data.message}`;
+        } else if (event.data.type === "warn") {
+          item.style.color = "#F59E0B";
+          item.textContent = `⚠️ [Warn] ${event.data.message}`;
+        } else {
+          item.style.color = "#38BDF8";
+          item.textContent = `💬 ${event.data.message}`;
+        }
         webConsole.appendChild(item);
         webConsole.scrollTop = webConsole.scrollHeight;
-
-        if (e.data.type === "error") {
-          lastErrorDetected = e.data.payload;
-          btnQuickFix.style.display = "inline-flex";
-        }
       }
     });
+
+    document.getElementById("btn-clear-web-console")?.addEventListener("click", () => {
+      webConsole.innerHTML = '<div style="color:#64748B;">[سجل المخرجات فارغ]</div>';
+    });
+
+    document.getElementById("btn-reload-preview")?.addEventListener("click", updateLivePreview);
 
     // -------------------------------------------------------------
     // Save & Load Web Projects via Backend API (/api/playground/projects)
     // -------------------------------------------------------------
     document.getElementById("btn-save-project")?.addEventListener("click", async () => {
       webFiles[currentActiveFile] = editor.value;
-      const title = prompt("أدخل اسم المشروع لحفظه:", "مشروع ويب - " + new Date().toLocaleDateString("ar-EG"));
-      if (!title || !title.trim()) return;
+      const title = prompt("أدخل اسماً لحفظ مشروع الويب الخاص بك:", currentProjectId ? "مشروعي المحدث" : "مشروعي التفاعلي");
+      if (!title) return;
 
       try {
         if (currentProjectId) {
@@ -983,17 +1118,17 @@ students.forEach((name, idx) => {
             title: title.trim(),
             files: webFiles
           });
-          Toast.success("تم تحديث وحفظ المشروع في قاعدة البيانات بنجاح 💾");
+          Toast.success("تم تحديث المشروع بنجاح في حسابك! 💾");
         } else {
           const res = await ApiClient.post("/playground/projects", {
             title: title.trim(),
             files: webFiles
           });
           currentProjectId = res.project_id;
-          Toast.success("تم حفظ المشروع الجديد في قاعدة البيانات بنجاح 💾");
+          Toast.success("تم حفظ المشروع الجديد بنجاح في حسابك! 🚀");
         }
       } catch (err) {
-        Toast.error("تعذر حفظ المشروع: " + err.message);
+        Toast.error("فشل حفظ المشروع: " + err.message);
       }
     });
 
@@ -1001,72 +1136,72 @@ students.forEach((name, idx) => {
       try {
         const projects = await ApiClient.get("/playground/projects");
         if (!projects || projects.length === 0) {
-          Toast.info("لا توجد مشاريع محفوظة لديك حتى الآن.");
+          Toast.info("لا توجد مشاريع ويب محفوظة سابقة لديك");
           return;
         }
 
-        Modal.open({
-          title: "مشاريعك المحفوظة في قاعدة البيانات",
-          contentHtml: `
-            <div style="display:flex;flex-direction:column;gap:0.75rem;max-height:300px;overflow-y:auto;">
-              ${projects.map(p => `
-                <div style="padding:0.75rem 1rem;background:var(--color-bg-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);display:flex;justify-content:space-between;align-items:center;">
-                  <div>
-                    <strong style="color:var(--color-text-main);">${p.title}</strong>
-                    <div style="font-size:0.75rem;color:var(--color-text-muted);">آخر تعديل: ${p.updated_at ? p.updated_at.substring(0, 16).replace('T', ' ') : ''}</div>
-                  </div>
-                  <div style="display:flex;gap:0.4rem;">
-                    <button class="btn btn-primary btn-sm m-open-proj-btn" data-pid="${p.id}">فتح 📂</button>
-                    <button class="btn btn-danger btn-sm m-del-proj-btn" data-pid="${p.id}">حذف</button>
-                  </div>
-                </div>
-              `).join('')}
+        const projectListHtml = projects.map(p => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem;border-bottom:1px solid var(--color-border);gap:0.5rem;">
+            <div>
+              <strong style="color:var(--color-text-main);font-size:0.95rem;">${p.title}</strong>
+              <div style="font-size:0.75rem;color:var(--color-text-dim);">آخر تعديل: ${p.updated_at.substring(0, 10)}</div>
             </div>
-          `
-        });
+            <div style="display:flex;gap:0.3rem;">
+              <button class="btn btn-primary btn-sm btn-open-p" data-pid="${p.id}">فتح 📂</button>
+              <button class="btn btn-danger btn-sm btn-del-p" data-pid="${p.id}">🗑️</button>
+            </div>
+          </div>
+        `).join("");
 
-        document.querySelectorAll(".m-open-proj-btn").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const pData = await ApiClient.get(`/playground/projects/${btn.dataset.pid}`);
-            webFiles = pData.files || webFiles;
-            currentProjectId = pData.id;
-            Modal.close();
-            setMode("web");
-            loadWebFile("index.html");
-            renderWebPreview();
-            Toast.success(`تم تحميل المشروع: ${pData.title}`);
-          });
-        });
+        Modal.show({
+          title: "📂 مشاريع الويب المحفوظة لديك",
+          content: `<div style="max-height:350px;overflow-y:auto;">${projectListHtml}</div>`,
+          onRender: (modalEl) => {
+            modalEl.querySelectorAll(".btn-open-p").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                const pData = await ApiClient.get(`/playground/projects/${btn.dataset.pid}`);
+                currentProjectId = pData.id;
+                webFiles = pData.files || {};
+                currentActiveFile = Object.keys(webFiles)[0] || "index.html";
+                renderWebTabs();
+                loadWebFile(currentActiveFile);
+                updateLivePreview();
+                Modal.close();
+                Toast.success(`تم تحميل مشروع: ${pData.title}`);
+              });
+            });
 
-        document.querySelectorAll(".m-del-proj-btn").forEach(btn => {
-          btn.addEventListener("click", async () => {
-            await ApiClient.delete(`/playground/projects/${btn.dataset.pid}`);
-            Toast.success("تم حذف المشروع");
-            Modal.close();
-          });
+            modalEl.querySelectorAll(".btn-del-p").forEach(btn => {
+              btn.addEventListener("click", async () => {
+                if (confirm("هل أنت متأكد من حذف هذا المشروع نهائياً؟")) {
+                  await ApiClient.delete(`/playground/projects/${btn.dataset.pid}`);
+                  Toast.success("تم حذف المشروع");
+                  Modal.close();
+                }
+              });
+            });
+          }
         });
       } catch (err) {
-        Toast.error("فشل استرجاع المشاريع: " + err.message);
+        Toast.error("تعذر جلب المشاريع: " + err.message);
       }
     });
 
     // -------------------------------------------------------------
-    // Code Execution (Subprocess Runner & Web Render)
+    // RUN CODE EXECUTION ENGINE (Python & Node & Web)
     // -------------------------------------------------------------
     runBtn.addEventListener("click", async () => {
       if (currentMode === "web") {
-        renderWebPreview();
-        Toast.success("تم تشغيل ومعاينة كود الويب بنجاح 🌐");
+        updateLivePreview();
+        Toast.success("تم تحديث المعاينة المباشرة بنجاح ✨");
         return;
       }
 
-      const code = editor.value;
       runBtn.disabled = true;
-      runBtn.innerHTML = "<span>⏳</span> جاري المعالجة...";
-      runStatusText.textContent = "جاري التنفيذ في الصندوق المعزول...";
-      terminal.textContent = "Running code in sandbox...";
-      terminal.style.color = "#E0F2FE";
-      btnQuickFix.style.display = "none";
+      runBtn.innerHTML = "<span>⏳</span> جاري التشغيل...";
+      runStatusText.textContent = "جاري المعالجة...";
+
+      let code = editor.value;
 
       try {
         const res = await ApiClient.post("/playground/run", {
@@ -1078,17 +1213,20 @@ students.forEach((name, idx) => {
           terminal.textContent = res.output || "(تم التنفيذ بنجاح دون مخرجات نصية)";
           terminal.style.color = "#38BDF8";
           runStatusText.textContent = "تم التنفيذ بنجاح ✅";
+          terminal.scrollTop = terminal.scrollHeight;
         } else {
-          terminal.textContent = res.error || "حدث خطأ أثناء التنفيذ";
+          terminal.textContent = res.error || res.output || "حدث خطأ أثناء التنفيذ";
           terminal.style.color = "#EF4444";
           runStatusText.textContent = "تم رصد خطأ ❌";
-          lastErrorDetected = res.error;
-          btnQuickFix.style.display = "inline-flex";
+          lastErrorDetected = res.error || res.output;
+          terminal.scrollTop = terminal.scrollHeight;
+          if (btnQuickFix) btnQuickFix.style.display = "inline-flex";
         }
       } catch (err) {
-        terminal.textContent = err.message;
+        terminal.textContent = err.message || "فشل الاتصال بالخادم";
         terminal.style.color = "#EF4444";
-        runStatusText.textContent = "فشل الخادم";
+        runStatusText.textContent = "فشل الاتصال";
+        terminal.scrollTop = terminal.scrollHeight;
       } finally {
         runBtn.disabled = false;
         runBtn.innerHTML = "<span>▶</span> تشغيل الكود";
@@ -1130,122 +1268,154 @@ students.forEach((name, idx) => {
         { label: "setTimeout()", insert: "setTimeout(() => {\n  \n}, 1000);", type: "async" }
       ],
       python: [
-        { label: "def function():", insert: "def function_name():\n    return None", type: "keyword" },
-        { label: "for i in range():", insert: "for i in range(10):\n    print(i)", type: "loop" },
-        { label: "if __name__ == '__main__':", insert: "if __name__ == '__main__':\n    main()", type: "block" },
         { label: "print()", insert: "print()", type: "fn" },
-        { label: "len()", insert: "len()", type: "fn" },
-        { label: "range()", insert: "range()", type: "fn" },
-        { label: "sum()", insert: "sum()", type: "fn" }
+        { label: "def function():", insert: "def my_function(param):\n    return param", type: "keyword" },
+        { label: "if __name__ == '__main__':", insert: "if __name__ == '__main__':\n    pass", type: "keyword" },
+        { label: "for item in list:", insert: "for item in items:\n    print(item)", type: "loop" },
+        { label: "try ... except", insert: "try:\n    \nexcept Exception as e:\n    print(e)", type: "block" },
+        { label: "class MyClass:", insert: "class MyClass:\n    def __init__(self):\n        pass", type: "class" }
       ]
     };
 
-    editor.addEventListener("input", (e) => {
-      updateEditorStats();
-      const pos = editor.selectionStart;
-      const textBefore = editor.value.substring(0, pos);
-      const match = textBefore.match(/([a-zA-Z<:]{2,})$/);
-
-      if (match) {
-        const query = match[1].toLowerCase();
-        let targetLang = currentMode;
-        if (currentMode === "web") {
-          targetLang = currentActiveFile.endsWith(".html") ? "html" : (currentActiveFile.endsWith(".css") ? "css" : "javascript");
-        }
-        const pool = completions[targetLang] || completions.python;
-        const matched = pool.filter(c => c.label.toLowerCase().includes(query));
-
-        if (matched.length > 0) {
-          popup.innerHTML = matched.map((m, i) => `
-            <div class="code-autocomplete-item ${i === 0 ? 'selected' : ''}" data-idx="${i}">
-              <span>${m.label}</span>
-              <span class="code-autocomplete-badge">${m.type}</span>
-            </div>
-          `).join("");
-          popup.style.display = "block";
-          popup.style.top = "45px";
-          popup.style.left = "40px";
-
-          popup.querySelectorAll(".code-autocomplete-item").forEach(item => {
-            item.addEventListener("click", () => {
-              applyCompletion(matched[parseInt(item.dataset.idx)], match[1].length);
-            });
-          });
-          return;
-        }
+    function getActiveLanguageSuggestions() {
+      if (currentMode === "python") return completions.python;
+      if (currentMode === "javascript") return completions.javascript;
+      if (currentMode === "web") {
+        if (currentActiveFile.endsWith(".html")) return completions.html;
+        if (currentActiveFile.endsWith(".css")) return completions.css;
+        if (currentActiveFile.endsWith(".js")) return completions.javascript;
       }
-      popup.style.display = "none";
-    });
-
-    function applyCompletion(compObj, replaceLen) {
-      const pos = editor.selectionStart;
-      const before = editor.value.substring(0, pos - replaceLen);
-      const after = editor.value.substring(pos);
-      editor.value = before + compObj.insert + after;
-      editor.selectionStart = editor.selectionEnd = before.length + compObj.insert.length;
-      popup.style.display = "none";
-      editor.focus();
-      updateEditorStats();
+      return [];
     }
 
+    editor.addEventListener("input", (e) => {
+      updateEditorStats();
+      if (currentMode === "web") webFiles[currentActiveFile] = editor.value;
+
+      const val = editor.value;
+      const cursorPos = editor.selectionStart;
+      const textBefore = val.substring(0, cursorPos);
+      const match = textBefore.match(/[a-zA-Z0-9_<]{2,}$/);
+
+      if (match) {
+        const query = match[0].toLowerCase();
+        const pool = getActiveLanguageSuggestions();
+        const matches = pool.filter(item => item.label.toLowerCase().includes(query));
+
+        if (matches.length > 0) {
+          renderAutocompletePopup(matches, cursorPos - match[0].length, cursorPos);
+        } else {
+          hideAutocomplete();
+        }
+      } else {
+        hideAutocomplete();
+      }
+    });
+
+    function renderAutocompletePopup(items, replaceStart, replaceEnd) {
+      popup.innerHTML = "";
+      items.forEach((item, idx) => {
+        const div = document.createElement("div");
+        div.className = `autocomplete-item ${idx === 0 ? "active" : ""}`;
+        div.innerHTML = `
+          <span>${item.label}</span>
+          <span style="font-size:0.65rem;color:var(--color-text-dim);background:var(--color-bg-deep);padding:1px 4px;border-radius:3px;">${item.type}</span>
+        `;
+        div.addEventListener("click", () => {
+          applySuggestion(item.insert, replaceStart, replaceEnd);
+        });
+        popup.appendChild(div);
+      });
+      popup.style.display = "block";
+    }
+
+    function hideAutocomplete() {
+      popup.style.display = "none";
+    }
+
+    function applySuggestion(text, start, end) {
+      const val = editor.value;
+      editor.value = val.substring(0, start) + text + val.substring(end);
+      hideAutocomplete();
+      editor.focus();
+      const newCursor = start + text.length;
+      editor.setSelectionRange(newCursor, newCursor);
+      updateEditorStats();
+      if (currentMode === "web") webFiles[currentActiveFile] = editor.value;
+    }
+
+    // Keyboard navigation in autocomplete
     editor.addEventListener("keydown", (e) => {
       if (popup.style.display === "block") {
-        if (e.key === "Escape") {
-          popup.style.display = "none";
-        } else if (e.key === "Tab" || e.key === "Enter") {
-          const selected = popup.querySelector(".code-autocomplete-item.selected");
-          if (selected) {
-            e.preventDefault();
-            selected.click();
-          }
+        const items = popup.querySelectorAll(".autocomplete-item");
+        let activeIdx = Array.from(items).findIndex(it => it.classList.contains("active"));
+
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          items[activeIdx].classList.remove("active");
+          const next = (activeIdx + 1) % items.length;
+          items[next].classList.add("active");
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          items[activeIdx].classList.remove("active");
+          const prev = (activeIdx - 1 + items.length) % items.length;
+          items[prev].classList.add("active");
+        } else if (e.key === "Enter" || e.key === "Tab") {
+          e.preventDefault();
+          if (items[activeIdx]) items[activeIdx].click();
+        } else if (e.key === "Escape") {
+          hideAutocomplete();
         }
       }
     });
 
+    // Editor statistics
     function updateEditorStats() {
       const val = editor.value;
-      linesCount.textContent = val.split("\n").length;
+      linesCount.textContent = val ? val.split("\n").length : 1;
       charsCount.textContent = val.length;
     }
 
     // -------------------------------------------------------------
-    // AI Coding Assistant Interactions
+    // AI Assistant Integration
     // -------------------------------------------------------------
     async function triggerAiAssistant(action, customError = null) {
-      aiResponse.innerHTML = "<span>🤖 جاري تحليل الكود وصياغة التوجيه الذكي...</span>";
+      if (aiContainer) aiContainer.style.display = "block";
+      isAiDrawerOpen = true;
+      btnToggleAi.classList.add("btn-primary");
+      btnToggleAi.classList.remove("btn-secondary");
+
+      aiResponse.textContent = "🤖 جاري تحليل الكود وصياغة التوجيه الأكاديمي...";
       btnApplyAi.style.display = "none";
 
-      try {
-        let activeLang = currentMode;
-        if (currentMode === "web") {
-          activeLang = currentActiveFile.endsWith(".html") ? "html" : (currentActiveFile.endsWith(".css") ? "css" : "javascript");
-        }
+      const codeToAnalyze = editor.value;
 
+      try {
         const res = await ApiClient.post("/playground/ai-assist", {
           action: action,
-          code: editor.value,
-          language: activeLang,
-          error_message: customError || lastErrorDetected
+          code: codeToAnalyze,
+          language: currentMode,
+          error_message: customError
         });
 
-        let outHtml = `<strong>${res.title || 'تحليل الكود'}</strong>\n`;
-        if (res.explanation) outHtml += `${res.explanation}\n\n`;
-        if (res.suggestion) outHtml += `• المقترح: ${res.suggestion}\n`;
-        if (res.hint) outHtml += `• 💡 تلميح: ${res.hint}\n`;
+        let outText = `**${res.title || "مساعد الكود الذكي"}**\n\n${res.explanation || ""}`;
+        if (res.hint) outText += `\n\n💡 **تلميح:** ${res.hint}`;
 
-        aiResponse.textContent = outHtml;
+        aiResponse.textContent = outText;
 
         if (res.suggested_code) {
           suggestedAiCode = res.suggested_code;
           btnApplyAi.style.display = "block";
         }
       } catch (err) {
-        aiResponse.textContent = "تعذر الاتصال بمساعد البرمجة: " + err.message;
+        aiResponse.textContent = "عذراً، تعذر الاتصال بمساعد الذكاء الاصطناعي حالياً.";
       }
     }
 
     document.querySelectorAll(".ai-action-btn").forEach(btn => {
-      btn.addEventListener("click", () => triggerAiAssistant(btn.dataset.act));
+      btn.addEventListener("click", () => {
+        triggerAiAssistant(btn.dataset.act);
+      });
     });
 
     btnQuickFix?.addEventListener("click", () => {
@@ -1269,13 +1439,17 @@ students.forEach((name, idx) => {
       editor.focus();
     });
 
+    document.getElementById("editor-format-btn")?.addEventListener("click", () => {
+      const val = editor.value;
+      const lines = val.split("\n").map(l => l.trimEnd());
+      editor.value = lines.join("\n");
+      Toast.success("تم تنظيف وتنسيق الأسطر");
+    });
+
     // Initial state
     setMode("python");
   }
 
-  /* ===================================================================
-     5. EXAMS & TIMED EXAM TAKER
-  =================================================================== */
   static async renderExams(container) {
     container.innerHTML = `
       <div style="margin-bottom:1.5rem;">
@@ -2095,4 +2269,170 @@ students.forEach((name, idx) => {
     });
   }
 
+
+  /* ===================================================================
+     9. STUDENT STUDY FILES (الملفات والمذكرات الدراسية للطلاب)
+  =================================================================== */
+  static async renderStudyFiles(container) {
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);margin-bottom:0.25rem;">الملفات والمذكرات الدراسية 📁</h2>
+        <p style="color:var(--color-text-muted);">تحميل مذكرات الشرح، ملخصات الدروس، شرائح العرض وملفات الأكواد ومستندات Google Drive</p>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="card" style="margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;padding:1rem;">
+        <input type="text" id="stud-file-search" class="form-input" placeholder="بحث في عنوان المذكرة أو الموضوع..." style="flex:1;min-width:200px;">
+        <select id="stud-file-course" class="form-input" style="width:auto;min-width:180px;">
+          <option value="">جميع المناهج والكورسات</option>
+        </select>
+      </div>
+
+      <!-- Files Cards Grid -->
+      <div id="stud-files-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:1.25rem;">
+        <div class="card skeleton" style="height:180px;"></div>
+        <div class="card skeleton" style="height:180px;"></div>
+        <div class="card skeleton" style="height:180px;"></div>
+      </div>
+    `;
+
+    let allFiles = [];
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '';
+      const k = 1024;
+      const sizes = ['بايت', 'ك.ب', 'م.ب', 'ج.ب'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function getFileIcon(fileName, sourceType) {
+      if (sourceType === 'google_drive') return '🌐';
+      const ext = (fileName || '').split('.').pop().toLowerCase();
+      if (ext === 'pdf') return '📄';
+      if (['doc', 'docx'].includes(ext)) return '📝';
+      if (['ppt', 'pptx'].includes(ext)) return '📊';
+      if (['xls', 'xlsx'].includes(ext)) return '📈';
+      if (ext === 'zip') return '🗜️';
+      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return '🖼️';
+      if (ext === 'py') return '🐍';
+      return '📁';
+    }
+
+    async function loadFiles() {
+      try {
+        const [filesRes, coursesRes] = await Promise.all([
+          ApiClient.get('/study-files'),
+          ApiClient.get('/courses').catch(() => ({ courses: [] }))
+        ]);
+
+        allFiles = filesRes.files || [];
+        const courses = coursesRes.courses || [];
+
+        const sel = document.getElementById('stud-file-course');
+        if (sel && sel.options.length <= 1) {
+          courses.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.title;
+            sel.appendChild(opt);
+          });
+        }
+
+        renderFiltered();
+      } catch (err) {
+        console.error(err);
+        Toast.error('فشل تحميل الملفات الدراسية');
+      }
+    }
+
+    function renderFiltered() {
+      const searchVal = document.getElementById('stud-file-search')?.value.toLowerCase().trim() || '';
+      const courseVal = document.getElementById('stud-file-course')?.value || '';
+
+      let filtered = allFiles;
+      if (searchVal) {
+        filtered = filtered.filter(f =>
+          (f.title && f.title.toLowerCase().includes(searchVal)) ||
+          (f.description && f.description.toLowerCase().includes(searchVal)) ||
+          (f.file_name && f.file_name.toLowerCase().includes(searchVal))
+        );
+      }
+      if (courseVal) {
+        filtered = filtered.filter(f => f.course_id === courseVal);
+      }
+
+      const grid = document.getElementById('stud-files-grid');
+      if (!grid) return;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="card empty-state" style="grid-column: 1 / -1;padding:3rem 1.5rem;text-align:center;">
+            <div style="font-size:3rem;margin-bottom:0.75rem;">📁</div>
+            <h3 style="color:var(--color-text-main);margin-bottom:0.5rem;font-weight:800;">لا توجد ملفات دراسية حالياً</h3>
+            <p style="color:var(--color-text-muted);">لم يتم إضافة أي مذكرات أو ملفات دراسية مطابقة لبحثك بعد.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(f => {
+        const icon = getFileIcon(f.file_name, f.source_type);
+        const sz = formatBytes(f.file_size);
+        const isDrive = f.source_type === 'google_drive';
+
+        return `
+          <div class="card" style="display:flex;flex-direction:column;justify-content:space-between;padding:1.25rem;border:1px solid var(--color-border-light);box-shadow:var(--shadow-md);">
+            <div>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;margin-bottom:0.75rem;">
+                <span style="font-size:2.2rem;line-height:1;">${icon}</span>
+                <span class="badge ${f.visibility === 'PUBLIC' ? 'badge-public' : 'badge-subscribers'}" style="font-size:0.75rem;">
+                  ${f.visibility === 'PUBLIC' ? 'عام' : 'مشتركين 🔑'}
+                </span>
+              </div>
+              <h3 style="font-size:1.1rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.4rem;line-height:1.4;">${f.title}</h3>
+              ${f.description ? `<p style="font-size:0.85rem;color:var(--color-text-muted);line-height:1.5;margin-bottom:0.75rem;">${f.description}</p>` : ''}
+              
+              <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem;font-size:0.8rem;color:var(--color-text-dim);">
+                ${f.course_title ? `<span style="background:var(--color-bg-secondary);padding:2px 8px;border-radius:4px;color:var(--color-primary);font-weight:600;">📚 ${f.course_title}</span>` : ''}
+                ${isDrive ? '<span style="color:var(--color-cyan-accent);">Google Drive 🌐</span>' : (sz ? `<span>${sz}</span>` : '')}
+              </div>
+            </div>
+
+            <div style="border-top:1px solid var(--color-border);padding-top:0.85rem;margin-top:0.5rem;">
+              ${f.is_unlocked ? (
+                isDrive ? `
+                  <a href="${f.download_url || f.external_url}" target="_blank" class="btn btn-primary" style="width:100%;font-weight:700;display:flex;justify-content:center;align-items:center;gap:0.4rem;text-decoration:none;">
+                    <span>🌐</span> فتح في Google Drive
+                  </a>
+                ` : `
+                  <a href="${f.download_url}" target="_blank" class="btn btn-primary" style="width:100%;font-weight:700;display:flex;justify-content:center;align-items:center;gap:0.4rem;text-decoration:none;">
+                    <span>📥</span> تحميل المذكرة الدراسية
+                  </a>
+                `
+              ) : `
+                <button class="btn btn-secondary btn-unlock-sub-prompt" style="width:100%;font-weight:700;background:rgba(239, 68, 68, 0.1);border-color:rgba(239, 68, 68, 0.3);color:#F87171;display:flex;justify-content:center;align-items:center;gap:0.4rem;">
+                  <span>🔒</span> خاص بالمشتركين (تفعيل الاشتراك)
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Bind prompt to activate subscription
+      document.querySelectorAll('.btn-unlock-sub-prompt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const subModal = document.getElementById('sub-modal');
+          if (subModal) subModal.style.display = 'flex';
+          else window.location.hash = '#/student/subscription';
+        });
+      });
+    }
+
+    document.getElementById('stud-file-search')?.addEventListener('input', debounce(renderFiltered, 300));
+    document.getElementById('stud-file-course')?.addEventListener('change', renderFiltered);
+
+    await loadFiles();
+  }
 }

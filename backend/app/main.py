@@ -15,6 +15,7 @@ from app.api.routers.subscriptions_router import router as subscriptions_router
 from app.api.routers.courses_router import router as courses_router
 from app.api.routers.units_router import router as units_router
 from app.api.routers.lessons_router import router as lessons_router
+from app.api.routers.files_router import router as files_router
 from app.api.routers.resources_router import router as resources_router
 from app.api.routers.exercises_router import router as exercises_router
 from app.api.routers.questions_router import router as questions_router
@@ -89,6 +90,8 @@ app.include_router(subscriptions_router, prefix=settings.API_V1_STR)
 app.include_router(courses_router, prefix=settings.API_V1_STR)
 app.include_router(units_router, prefix=settings.API_V1_STR)
 app.include_router(lessons_router, prefix=settings.API_V1_STR)
+app.include_router(files_router, prefix=settings.API_V1_STR + '/study-files')
+app.include_router(files_router, prefix=settings.API_V1_STR + '/files')
 app.include_router(resources_router, prefix=settings.API_V1_STR)
 app.include_router(exercises_router, prefix=settings.API_V1_STR)
 app.include_router(questions_router, prefix=settings.API_V1_STR)

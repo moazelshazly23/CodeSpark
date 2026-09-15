@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict, Any
 from app.schemas.all_schemas import UserRegisterRequest, UserLoginRequest
 from app.services.core_services import AuthService
+from app.core.security import create_access_token, create_refresh_token
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -10,7 +11,26 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 def register(req: UserRegisterRequest):
     try:
         user = AuthService.register(req.dict())
-        return {"success": True, "message": "تم إنشاء الحساب بنجاح", "user_id": user["id"]}
+        token_payload = {
+            "sub": user["id"],
+            "username": user["username"],
+            "role": user["role"],
+            "full_name": user["full_name"],
+            "permissions": []
+        }
+        access_token = create_access_token(token_payload)
+        refresh_token = create_refresh_token(token_payload)
+        return {
+            "success": True,
+            "message": "تم إنشاء الحساب بنجاح",
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user_id": user["id"],
+            "username": user["username"],
+            "role": user["role"],
+            "full_name": user["full_name"]
+        }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

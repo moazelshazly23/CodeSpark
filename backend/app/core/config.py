@@ -15,11 +15,31 @@ except ImportError:
         class BaseSettings:
             pass
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.path.abspath("app/core")
-BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+_this_file = globals().get("__file__")
+if not _this_file and "__spec__" in globals() and getattr(__spec__, "origin", None):
+    _this_file = __spec__.origin
+
+if _this_file:
+    CURRENT_DIR = os.path.dirname(os.path.abspath(_this_file))
+    BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+else:
+    for cand in ["/mnt/agentdata/gcs/CodeSpark/backend", "/app/backend", os.path.abspath("backend"), os.path.abspath(".")]:
+        if os.path.exists(os.path.join(cand, "app")):
+            BASE_BACKEND_DIR = os.path.abspath(cand)
+            CURRENT_DIR = os.path.join(BASE_BACKEND_DIR, "app", "core")
+            break
+    else:
+        CURRENT_DIR = os.path.abspath("app/core")
+        BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
 
 # Storage & DB Paths resolved cleanly within user working directory
-DEFAULT_STORAGE_DIR = os.path.abspath(os.path.join(BASE_BACKEND_DIR, "storage"))
+# Safe, robust storage path resolution
+candidate_storage = os.path.abspath(os.path.join(BASE_BACKEND_DIR, "..", "storage"))
+if os.path.exists(candidate_storage) and os.access(candidate_storage, os.W_OK):
+    DEFAULT_STORAGE_DIR = candidate_storage
+else:
+    DEFAULT_STORAGE_DIR = "/tmp/codespark_storage"
+os.makedirs(DEFAULT_STORAGE_DIR, exist_ok=True)
 DEFAULT_DB_PATH = os.path.abspath(os.path.join(BASE_BACKEND_DIR, "codespark.db"))
 
 class Settings(BaseSettings):

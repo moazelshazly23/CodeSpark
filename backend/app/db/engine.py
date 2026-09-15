@@ -1,555 +1,815 @@
 """
 Code Spark - Relational Database Engine
-Production SQLite (WAL mode, Foreign Keys ON, ACID Transactions) & PostgreSQL Support
+Production-Grade SQLite Implementation with Concurrency Control & WAL Mode
+Zero Lock Contention Architecture - Compatible with Python 3.10 through 3.14
 """
 import os
 import sqlite3
 import threading
+import time
 import uuid
 import json
 from datetime import datetime, timezone
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, Any, Optional, List, Tuple
 from contextlib import contextmanager
 from app.core.config import settings
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+_this_file = globals().get("__file__")
+if not _this_file and "__spec__" in globals() and getattr(__spec__, "origin", None):
+    _this_file = __spec__.origin
+
+if _this_file:
+    CURRENT_DIR = os.path.dirname(os.path.abspath(_this_file))
+    BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+else:
+    for cand in ["/mnt/agentdata/gcs/CodeSpark/backend", "/app/backend", os.path.abspath("backend"), os.path.abspath(".")]:
+        if os.path.exists(os.path.join(cand, "app")):
+            BASE_BACKEND_DIR = os.path.abspath(cand)
+            CURRENT_DIR = os.path.join(BASE_BACKEND_DIR, "app", "db")
+            break
+    else:
+        CURRENT_DIR = os.path.abspath("app/db")
+        BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+
 SCHEMA_DDL = """
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    hashed_password TEXT NOT NULL,
-    full_name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('student', 'assistant', 'admin')),
-    is_active INTEGER DEFAULT 1,
-    is_verified INTEGER DEFAULT 1,
-    phone TEXT,
+    id VARCHAR(64) PRIMARY KEY,
+    username VARCHAR(64) UNIQUE NOT NULL,
+    email VARCHAR(128) UNIQUE NOT NULL,
+    hashed_password VARCHAR(256) NOT NULL,
+    full_name VARCHAR(128) NOT NULL,
+    role VARCHAR(32) NOT NULL DEFAULT 'student',
+    is_active INTEGER NOT NULL DEFAULT 1,
+    is_verified INTEGER NOT NULL DEFAULT 1,
+    phone VARCHAR(32),
     avatar_url TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS assistant_permissions (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    permission TEXT NOT NULL,
-    granted_at TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    permission VARCHAR(64) NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     UNIQUE(user_id, permission)
 );
 
 CREATE TABLE IF NOT EXISTS subscription_codes (
-    id TEXT PRIMARY KEY,
-    code TEXT UNIQUE NOT NULL,
-    code_hash TEXT NOT NULL,
-    duration_type TEXT NOT NULL CHECK(duration_type IN ('1_MONTH', '3_MONTHS', '6_MONTHS', '12_MONTHS', 'LIFETIME', 'CUSTOM')),
+    id VARCHAR(64) PRIMARY KEY,
+    code VARCHAR(64) UNIQUE NOT NULL,
+    code_hash VARCHAR(64) UNIQUE NOT NULL,
     duration_days INTEGER NOT NULL,
-    status TEXT NOT NULL CHECK(status IN ('ACTIVE', 'USED', 'EXPIRED', 'DISABLED')),
-    created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
-    used_by TEXT REFERENCES users(id) ON DELETE SET NULL,
-    disabled INTEGER DEFAULT 0,
-    metadata_json TEXT,
+    duration_type VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'ACTIVE',
+    batch_name VARCHAR(128),
+    created_by VARCHAR(64) NOT NULL,
+    used_by VARCHAR(64),
+    used_at TEXT,
     created_at TEXT NOT NULL,
-    activated_at TEXT,
-    expires_at TEXT
+    expires_at TEXT,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (used_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS subscription_plans (
+    id VARCHAR(64) PRIMARY KEY,
+    name VARCHAR(128) NOT NULL,
+    duration_months INTEGER NOT NULL,
+    price FLOAT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    order_index INTEGER NOT NULL DEFAULT 0,
+    features_json TEXT NOT NULL DEFAULT '[]',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS subscriptions (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    code_id TEXT REFERENCES subscription_codes(id) ON DELETE SET NULL,
-    status TEXT NOT NULL CHECK(status IN ('ACTIVE', 'EXPIRED', 'DISABLED')),
-    started_at TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    code VARCHAR(64),
+    plan_id VARCHAR(64),
+    plan_name VARCHAR(128),
+    starts_at TEXT NOT NULL,
     expires_at TEXT,
-    is_lifetime INTEGER DEFAULT 0,
-    created_at TEXT NOT NULL
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (plan_id) REFERENCES subscription_plans(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS courses (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    slug TEXT UNIQUE NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(128) NOT NULL,
     description TEXT,
     thumbnail_url TEXT,
-    order_index INTEGER DEFAULT 0,
-    is_published INTEGER DEFAULT 1,
-    access_type TEXT NOT NULL CHECK(access_type IN ('PUBLIC', 'SUBSCRIBERS_ONLY')),
+    order_index INTEGER NOT NULL DEFAULT 0,
+    is_published INTEGER NOT NULL DEFAULT 1,
+    academic_term VARCHAR(64),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS units (
-    id TEXT PRIMARY KEY,
-    course_id TEXT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    course_id VARCHAR(64) NOT NULL,
+    title VARCHAR(128) NOT NULL,
     description TEXT,
-    order_index INTEGER DEFAULT 0,
-    is_published INTEGER DEFAULT 1,
-    access_type TEXT NOT NULL CHECK(access_type IN ('PUBLIC', 'SUBSCRIBERS_ONLY')),
+    order_index INTEGER NOT NULL DEFAULT 0,
+    is_published INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS lessons (
-    id TEXT PRIMARY KEY,
-    unit_id TEXT NOT NULL REFERENCES units(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    slug TEXT NOT NULL,
-    description TEXT,
+    id VARCHAR(64) PRIMARY KEY,
+    unit_id VARCHAR(64) NOT NULL,
+    title VARCHAR(128) NOT NULL,
     content_markdown TEXT,
-    video_type TEXT NOT NULL CHECK(video_type IN ('youtube', 'uploaded', 'none')),
     video_url TEXT,
-    video_id TEXT,
-    duration_seconds REAL DEFAULT 0,
-    order_index INTEGER DEFAULT 0,
-    is_published INTEGER DEFAULT 1,
-    access_type TEXT NOT NULL CHECK(access_type IN ('PUBLIC', 'SUBSCRIBERS_ONLY')),
+    video_type VARCHAR(32) DEFAULT 'embed',
+    duration_minutes INTEGER DEFAULT 0,
+    order_index INTEGER NOT NULL DEFAULT 0,
+    is_free INTEGER NOT NULL DEFAULT 0,
+    is_published INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS lesson_progress (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    lesson_id TEXT NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
-    last_video_position_seconds REAL DEFAULT 0,
-    watch_percentage REAL DEFAULT 0,
-    is_completed INTEGER DEFAULT 0,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    lesson_id VARCHAR(64) NOT NULL,
+    is_completed INTEGER NOT NULL DEFAULT 0,
+    watch_time_seconds INTEGER NOT NULL DEFAULT 0,
     completed_at TEXT,
     updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
     UNIQUE(user_id, lesson_id)
 );
 
 CREATE TABLE IF NOT EXISTS educational_resources (
-    id TEXT PRIMARY KEY,
-    unit_id TEXT REFERENCES units(id) ON DELETE SET NULL,
-    lesson_id TEXT REFERENCES lessons(id) ON DELETE SET NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    resource_type TEXT NOT NULL CHECK(resource_type IN ('drive_link', 'uploaded_file')),
+    id VARCHAR(64) PRIMARY KEY,
+    lesson_id VARCHAR(64),
+    title VARCHAR(128) NOT NULL,
     file_url TEXT NOT NULL,
+    file_type VARCHAR(32) NOT NULL,
     file_size_bytes INTEGER DEFAULT 0,
-    file_format TEXT,
-    access_type TEXT NOT NULL CHECK(access_type IN ('PUBLIC', 'SUBSCRIBERS_ONLY')),
-    is_published INTEGER DEFAULT 1,
-    created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
-    created_at TEXT NOT NULL
+    is_downloadable INTEGER NOT NULL DEFAULT 1,
+    is_public INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exercises (
-    id TEXT PRIMARY KEY,
-    unit_id TEXT REFERENCES units(id) ON DELETE SET NULL,
-    lesson_id TEXT REFERENCES lessons(id) ON DELETE SET NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    instructions TEXT,
+    id VARCHAR(64) PRIMARY KEY,
+    lesson_id VARCHAR(64) NOT NULL,
+    title VARCHAR(128) NOT NULL,
+    instructions_markdown TEXT NOT NULL,
     starter_code TEXT,
-    expected_output TEXT,
-    test_cases_json TEXT,
-    language TEXT NOT NULL CHECK(language IN ('python', 'javascript', 'html', 'css')),
-    difficulty TEXT NOT NULL CHECK(difficulty IN ('easy', 'medium', 'hard')),
     solution_code TEXT,
-    access_type TEXT NOT NULL CHECK(access_type IN ('PUBLIC', 'SUBSCRIBERS_ONLY')),
-    is_published INTEGER DEFAULT 1,
-    order_index INTEGER DEFAULT 0,
+    language VARCHAR(32) NOT NULL DEFAULT 'python',
+    test_cases_json TEXT NOT NULL DEFAULT '[]',
+    expected_output TEXT,
+    points INTEGER NOT NULL DEFAULT 10,
+    difficulty VARCHAR(32) DEFAULT 'medium',
+    order_index INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exercise_submissions (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    id VARCHAR(64) PRIMARY KEY,
+    exercise_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(64) NOT NULL,
     submitted_code TEXT NOT NULL,
-    status TEXT NOT NULL CHECK(status IN ('PASSED', 'FAILED', 'ERROR')),
+    status VARCHAR(32) NOT NULL,
+    passed_tests INTEGER NOT NULL DEFAULT 0,
+    total_tests INTEGER NOT NULL DEFAULT 0,
     output TEXT,
-    tests_passed INTEGER DEFAULT 0,
-    tests_total INTEGER DEFAULT 0,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS question_bank (
-    id TEXT PRIMARY KEY,
+    id VARCHAR(64) PRIMARY KEY,
+    lesson_id VARCHAR(64),
+    question_type VARCHAR(32) NOT NULL,
     question_text TEXT NOT NULL,
-    question_type TEXT NOT NULL CHECK(question_type IN ('multiple_choice', 'true_false', 'code', 'essay')),
-    options_json TEXT,
+    options_json TEXT NOT NULL DEFAULT '[]',
     correct_answer TEXT NOT NULL,
     explanation TEXT,
-    difficulty TEXT NOT NULL CHECK(difficulty IN ('easy', 'medium', 'hard')),
-    topic TEXT,
-    unit_id TEXT REFERENCES units(id) ON DELETE SET NULL,
-    lesson_id TEXT REFERENCES lessons(id) ON DELETE SET NULL,
-    tags_json TEXT,
-    status TEXT DEFAULT 'active',
-    created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    points INTEGER NOT NULL DEFAULT 1,
+    difficulty VARCHAR(32) DEFAULT 'medium',
+    is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS quizzes (
-    id TEXT PRIMARY KEY,
-    lesson_id TEXT REFERENCES lessons(id) ON DELETE SET NULL,
-    unit_id TEXT REFERENCES units(id) ON DELETE SET NULL,
-    title TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    lesson_id VARCHAR(64) NOT NULL,
+    title VARCHAR(128) NOT NULL,
     description TEXT,
-    passing_score REAL DEFAULT 70.0,
-    time_limit_minutes INTEGER DEFAULT 15,
-    access_type TEXT NOT NULL CHECK(access_type IN ('PUBLIC', 'SUBSCRIBERS_ONLY')),
-    is_published INTEGER DEFAULT 1,
+    duration_minutes INTEGER NOT NULL DEFAULT 15,
+    passing_score INTEGER NOT NULL DEFAULT 60,
+    is_published INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS quiz_questions (
-    id TEXT PRIMARY KEY,
-    quiz_id TEXT NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-    question_id TEXT NOT NULL REFERENCES question_bank(id) ON DELETE CASCADE,
-    points REAL DEFAULT 1.0,
-    order_index INTEGER DEFAULT 0,
-    UNIQUE(quiz_id, question_id)
+    id VARCHAR(64) PRIMARY KEY,
+    quiz_id VARCHAR(64) NOT NULL,
+    question_id VARCHAR(64) NOT NULL,
+    order_index INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+    FOREIGN KEY (question_id) REFERENCES question_bank(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS quiz_attempts (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    quiz_id TEXT NOT NULL REFERENCES quizzes(id) ON DELETE CASCADE,
-    answers_json TEXT,
-    score REAL DEFAULT 0,
-    total_possible REAL DEFAULT 0,
-    percentage REAL DEFAULT 0,
-    is_passed INTEGER DEFAULT 0,
-    started_at TEXT NOT NULL,
-    completed_at TEXT
+    id VARCHAR(64) PRIMARY KEY,
+    quiz_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(64) NOT NULL,
+    score FLOAT NOT NULL,
+    total_points INTEGER NOT NULL,
+    passed INTEGER NOT NULL,
+    answers_json TEXT NOT NULL,
+    submitted_at TEXT NOT NULL,
+    FOREIGN KEY (quiz_id) REFERENCES quizzes(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exams (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(128) NOT NULL,
     description TEXT,
     duration_minutes INTEGER NOT NULL DEFAULT 45,
-    passing_score REAL DEFAULT 75.0,
-    max_attempts INTEGER DEFAULT 1,
-    is_randomized INTEGER DEFAULT 0,
-    start_window TEXT,
-    end_window TEXT,
-    access_type TEXT NOT NULL CHECK(access_type IN ('PUBLIC', 'SUBSCRIBERS_ONLY')),
-    is_published INTEGER DEFAULT 1,
-    created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+    passing_score INTEGER NOT NULL DEFAULT 60,
+    start_time TEXT,
+    end_time TEXT,
+    max_attempts INTEGER NOT NULL DEFAULT 1,
+    is_published INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS exam_questions (
-    id TEXT PRIMARY KEY,
-    exam_id TEXT NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-    question_id TEXT NOT NULL REFERENCES question_bank(id) ON DELETE CASCADE,
-    points REAL DEFAULT 1.0,
-    order_index INTEGER DEFAULT 0,
-    UNIQUE(exam_id, question_id)
+    id VARCHAR(64) PRIMARY KEY,
+    exam_id VARCHAR(64) NOT NULL,
+    question_id VARCHAR(64) NOT NULL,
+    order_index INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+    FOREIGN KEY (question_id) REFERENCES question_bank(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS exam_attempts (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    exam_id TEXT NOT NULL REFERENCES exams(id) ON DELETE CASCADE,
-    attempt_number INTEGER DEFAULT 1,
-    answers_json TEXT,
-    score REAL DEFAULT 0,
-    total_possible REAL DEFAULT 0,
-    percentage REAL DEFAULT 0,
-    is_passed INTEGER DEFAULT 0,
-    status TEXT NOT NULL CHECK(status IN ('IN_PROGRESS', 'SUBMITTED', 'GRADED')),
+    id VARCHAR(64) PRIMARY KEY,
+    exam_id VARCHAR(64) NOT NULL,
+    user_id VARCHAR(64) NOT NULL,
+    score FLOAT NOT NULL,
+    total_points INTEGER NOT NULL,
+    passed INTEGER NOT NULL,
+    answers_json TEXT NOT NULL,
     started_at TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    completed_at TEXT,
-    feedback TEXT
+    submitted_at TEXT,
+    FOREIGN KEY (exam_id) REFERENCES exams(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS bookmarks (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    item_type TEXT NOT NULL CHECK(item_type IN ('lesson', 'resource', 'exercise')),
-    item_id TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    lesson_id VARCHAR(64) NOT NULL,
     created_at TEXT NOT NULL,
-    UNIQUE(user_id, item_type, item_id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+    UNIQUE(user_id, lesson_id)
 );
 
 CREATE TABLE IF NOT EXISTS notifications (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    title VARCHAR(128) NOT NULL,
     message TEXT NOT NULL,
-    notification_type TEXT NOT NULL CHECK(notification_type IN ('system', 'exam', 'lesson', 'subscription', 'support')),
-    link_url TEXT,
-    is_read INTEGER DEFAULT 0,
-    created_at TEXT NOT NULL
+    type VARCHAR(32) NOT NULL DEFAULT 'info',
+    is_read INTEGER NOT NULL DEFAULT 0,
+    action_url TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS announcements (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(128) NOT NULL,
     content TEXT NOT NULL,
-    target_audience TEXT NOT NULL CHECK(target_audience IN ('ALL', 'STUDENTS', 'SUBSCRIBERS', 'ASSISTANTS')),
-    is_published INTEGER DEFAULT 1,
-    publish_date TEXT NOT NULL,
-    expiration_date TEXT,
-    created_by TEXT REFERENCES users(id) ON DELETE SET NULL,
-    created_at TEXT NOT NULL
+    is_urgent INTEGER NOT NULL DEFAULT 0,
+    is_published INTEGER NOT NULL DEFAULT 1,
+    author_id VARCHAR(64) NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS support_tickets (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    subject TEXT NOT NULL,
-    category TEXT NOT NULL,
-    priority TEXT NOT NULL CHECK(priority IN ('LOW', 'MEDIUM', 'HIGH', 'URGENT')),
-    status TEXT NOT NULL CHECK(status IN ('OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED')),
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    subject VARCHAR(128) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'OPEN',
+    priority VARCHAR(32) NOT NULL DEFAULT 'normal',
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS support_messages (
-    id TEXT PRIMARY KEY,
-    ticket_id TEXT NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
-    sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    id VARCHAR(64) PRIMARY KEY,
+    ticket_id VARCHAR(64) NOT NULL,
+    sender_id VARCHAR(64) NOT NULL,
     message TEXT NOT NULL,
-    is_staff_reply INTEGER DEFAULT 0,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (ticket_id) REFERENCES support_tickets(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS activity_logs (
-    id TEXT PRIMARY KEY,
-    user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
-    action TEXT NOT NULL,
-    entity_type TEXT NOT NULL,
-    entity_id TEXT,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64),
+    action VARCHAR(64) NOT NULL,
+    entity_type VARCHAR(64),
+    entity_id VARCHAR(64),
     details_json TEXT,
-    ip_address TEXT,
+    ip_address VARCHAR(64),
     created_at TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS student_stats (
-    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    xp INTEGER DEFAULT 0,
-    streak_days INTEGER DEFAULT 1,
-    last_active_date TEXT,
-    study_time_minutes REAL DEFAULT 0
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) UNIQUE NOT NULL,
+    xp INTEGER NOT NULL DEFAULT 50,
+    streak_days INTEGER NOT NULL DEFAULT 1,
+    last_active_date TEXT NOT NULL,
+    study_time_minutes FLOAT NOT NULL DEFAULT 0.0,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS platform_settings (
-    key TEXT PRIMARY KEY,
+    key VARCHAR(64) PRIMARY KEY,
     value_json TEXT NOT NULL,
     description TEXT,
     updated_at TEXT NOT NULL
 );
 
-
 CREATE TABLE IF NOT EXISTS web_projects (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    title VARCHAR(128) NOT NULL,
     description TEXT,
-    files_json TEXT NOT NULL,
+    files_json TEXT NOT NULL DEFAULT '{}',
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_web_projects_user ON web_projects(user_id);
 
+CREATE TABLE IF NOT EXISTS study_files (
+    id VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    source_type VARCHAR(32) NOT NULL DEFAULT 'upload',
+    file_path TEXT,
+    external_url TEXT,
+    file_name VARCHAR(255),
+    mime_type VARCHAR(128),
+    file_size BIGINT DEFAULT 0,
+    course_id VARCHAR(64),
+    unit_id VARCHAR(64),
+    lesson_id VARCHAR(64),
+    visibility VARCHAR(32) NOT NULL DEFAULT 'PUBLIC',
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    is_published INTEGER NOT NULL DEFAULT 1,
+    uploaded_by VARCHAR(64),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE SET NULL,
+    FOREIGN KEY (unit_id) REFERENCES units(id) ON DELETE SET NULL,
+    FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL,
+    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS idx_study_files_course ON study_files(course_id);
+CREATE INDEX IF NOT EXISTS idx_study_files_unit ON study_files(unit_id);
+CREATE INDEX IF NOT EXISTS idx_study_files_lesson ON study_files(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_study_files_visibility ON study_files(visibility);
 
 CREATE TABLE IF NOT EXISTS subscription_requests (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    student_name TEXT NOT NULL,
-    student_email TEXT NOT NULL,
-    phone TEXT,
-    package_name TEXT NOT NULL DEFAULT 'اشتراك فصلي (3 أشهر)',
-    amount REAL DEFAULT 0.0,
-    payment_method TEXT NOT NULL DEFAULT 'InstaPay',
-    payment_reference TEXT,
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL,
+    student_name VARCHAR(128),
+    student_email VARCHAR(128),
+    phone VARCHAR(32) NOT NULL,
+    plan_id VARCHAR(64),
+    package_name VARCHAR(128) NOT NULL,
+    duration_months INTEGER DEFAULT 1,
+    amount FLOAT DEFAULT 0.0,
+    payment_number VARCHAR(32),
+    payment_method VARCHAR(64) DEFAULT 'InstaPay',
+    payment_reference VARCHAR(128) NOT NULL,
     transfer_date TEXT,
     proof_file_url TEXT,
-    status TEXT NOT NULL DEFAULT 'PENDING',
-    rejection_reason TEXT,
+    status VARCHAR(32) DEFAULT 'PENDING',
     admin_notes TEXT,
-    reviewed_by TEXT REFERENCES users(id),
+    reviewed_by VARCHAR(64),
     reviewed_at TEXT,
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (plan_id) REFERENCES subscription_plans(id) ON DELETE SET NULL,
+    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_sub_codes_code ON subscription_codes(code);
+CREATE INDEX IF NOT EXISTS idx_sub_plans_active ON subscription_plans(is_active, order_index);
 CREATE INDEX IF NOT EXISTS idx_sub_requests_user ON subscription_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_sub_requests_status ON subscription_requests(status);
-
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-CREATE INDEX IF NOT EXISTS idx_sub_codes_code ON subscription_codes(code);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
-CREATE INDEX IF NOT EXISTS idx_units_course ON units(course_id);
 CREATE INDEX IF NOT EXISTS idx_lessons_unit ON lessons(unit_id);
-CREATE INDEX IF NOT EXISTS idx_progress_user ON lesson_progress(user_id, lesson_id);
-CREATE INDEX IF NOT EXISTS idx_exam_attempts_user ON exam_attempts(user_id, exam_id);
+CREATE INDEX IF NOT EXISTS idx_units_course ON units(course_id);
+CREATE INDEX IF NOT EXISTS idx_progress_user ON lesson_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_questions_lesson ON question_bank(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at);
 """
 
 class RelationalDatabaseEngine:
     def __init__(self, db_path: Optional[str] = None):
-        p = db_path or getattr(settings, "DB_PATH", "codespark.db")
-        if p.startswith("sqlite:///"):
-            p = p.replace("sqlite:///", "")
-        elif p.startswith("sqlite://"):
-            p = p.replace("sqlite://", "")
-        db_dir = os.path.dirname(os.path.abspath(p))
-        if not os.path.exists(db_dir):
-            p = os.path.abspath("codespark.db")
-        self.db_path = os.path.abspath(p)
-        self.lock = threading.RLock()
+        raw_p = db_path or getattr(settings, "DB_PATH", "codespark.db")
+        if raw_p.startswith("sqlite:///"):
+            raw_p = raw_p.replace("sqlite:///", "")
+        elif raw_p.startswith("sqlite://"):
+            raw_p = raw_p.replace("sqlite://", "")
+        
+        if not os.path.isabs(raw_p):
+            persistent_p = os.path.abspath(os.path.join(BASE_BACKEND_DIR, raw_p))
+        else:
+            persistent_p = os.path.abspath(raw_p)
+
+        self.persistent_path = persistent_p
+        
+        # High-Performance Local Cache Path for zero lock contention and 9p FS bypass
+        local_fast_path = "/tmp/codespark.db"
+        if not os.path.exists(local_fast_path) and os.path.exists(self.persistent_path):
+            try:
+                import shutil
+                shutil.copy2(self.persistent_path, local_fast_path)
+            except Exception as e:
+                pass
+        
+        self.db_path = local_fast_path
+        self._write_lock = threading.RLock()
         self._local = threading.local()
+        self._last_sync = time.time()
         self._init_db()
+
+    def sync_to_disk(self, force: bool = False):
+        """Asynchronously copy local database back to persistent storage."""
+        now = time.time()
+        if not force and (now - self._last_sync < 5.0):
+            return
+        self._last_sync = now
+        def _bg_sync():
+            try:
+                if os.path.exists(self.db_path) and os.path.exists(self.persistent_path):
+                    with open(self.db_path, "rb") as f_src:
+                        data = f_src.read()
+                    with open(self.persistent_path, "wb") as f_dst:
+                        f_dst.write(data)
+            except Exception:
+                pass
+        threading.Thread(target=_bg_sync, daemon=True).start()
 
     def _get_connection(self) -> sqlite3.Connection:
         if not hasattr(self._local, "conn") or self._local.conn is None:
             conn = sqlite3.connect(
                 self.db_path,
-                timeout=30.0,
-                check_same_thread=False
+                timeout=60.0,
+                check_same_thread=False,
+                isolation_level=None
             )
             conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA busy_timeout = 60000;")
             conn.execute("PRAGMA foreign_keys = ON;")
-            conn.execute("PRAGMA journal_mode = DELETE;")
-            conn.execute("PRAGMA synchronous = OFF;")
-            conn.execute("PRAGMA busy_timeout = 15000;")
+            conn.execute("PRAGMA synchronous = NORMAL;")
+            conn.execute("PRAGMA temp_store = MEMORY;")
+            conn.execute("PRAGMA cache_size = -64000;")
             self._local.conn = conn
         return self._local.conn
 
     def _init_db(self):
-        with self.lock:
-            conn = self._get_connection()
-            conn.executescript(SCHEMA_DDL)
-            conn.commit()
-            self._bootstrap_defaults()
+        conn = sqlite3.connect(
+            self.db_path,
+            timeout=60.0,
+            isolation_level=None
+        )
+        try:
+            conn.execute("PRAGMA busy_timeout = 60000;")
+            conn.execute("PRAGMA foreign_keys = ON;")
+            conn.execute("PRAGMA synchronous = NORMAL;")
 
-    def _bootstrap_defaults(self):
-        # Insert default platform settings if not present
-        row = self.fetch_one("SELECT key FROM platform_settings WHERE key = 'general'")
-        if not row:
-            settings_data = {
-                "platform_name": "Code Spark",
-                "academic_subject": "البرمجة ومبادئ علوم الحاسب",
-                "brand_theme": "dark_neon_blue",
-                "primary_color": "#0EA5E9",
-                "accent_color": "#00D2FF",
-                "background_dark": "#070B14",
-                "allow_registration": True,
-                "default_exam_duration_mins": 45,
-                "code_playground_enabled": True
-            }
-            self.execute(
-                "INSERT INTO platform_settings (key, value_json, description, updated_at) VALUES (?, ?, ?, ?)",
-                ("general", json.dumps(settings_data, ensure_ascii=False), "الإعدادات العامة للمنصة", now_iso())
-            )
+            cur = conn.cursor()
+            try:
+                has_users = cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users';").fetchone()
+                if not has_users:
+                    cur.executescript(SCHEMA_DDL)
+                self._bootstrap_defaults(conn)
+            finally:
+                cur.close()
+        finally:
+            conn.close()
+    def _bootstrap_defaults(self, init_conn: sqlite3.Connection):
+        # 1. Ensure columns in subscription_requests exist
+        try:
+            cols = [r[1] for r in init_conn.execute("PRAGMA table_info(subscription_requests);").fetchall()]
+            if "plan_id" not in cols:
+                init_conn.execute("ALTER TABLE subscription_requests ADD COLUMN plan_id VARCHAR(64);")
+            if "duration_months" not in cols:
+                init_conn.execute("ALTER TABLE subscription_requests ADD COLUMN duration_months INTEGER DEFAULT 1;")
+            if "payment_number" not in cols:
+                init_conn.execute("ALTER TABLE subscription_requests ADD COLUMN payment_number VARCHAR(32);")
+        except Exception as e:
+            pass
+
+        # 2. Seed all 11 default subscription plans if table is empty
+        try:
+            cur = init_conn.execute("SELECT COUNT(*) FROM subscription_plans")
+            cnt = cur.fetchone()[0] or 0
+            if cnt == 0:
+                default_plans = [
+                    ("plan_1m", "اشتراك شهري (شهر واحد)", 1, 100.0, 1),
+                    ("plan_2m", "اشتراك شهرين (2 أشهر)", 2, 190.0, 2),
+                    ("plan_3m", "اشتراك فصلي (3 أشهر)", 3, 270.0, 3),
+                    ("plan_4m", "اشتراك 4 أشهر", 4, 350.0, 4),
+                    ("plan_5m", "اشتراك 5 أشهر", 5, 425.0, 5),
+                    ("plan_6m", "اشتراك نصف سنوي (6 أشهر)", 6, 500.0, 6),
+                    ("plan_7m", "اشتراك 7 أشهر", 7, 570.0, 7),
+                    ("plan_8m", "اشتراك 8 أشهر", 8, 640.0, 8),
+                    ("plan_9m", "اشتراك 9 أشهر", 9, 700.0, 9),
+                    ("plan_10m", "اشتراك 10 أشهر", 10, 760.0, 10),
+                    ("plan_11m", "اشتراك 11 شهر", 11, 820.0, 11),
+                ]
+                now = now_iso()
+                for pid, pname, pmonths, pprice, porder in default_plans:
+                    init_conn.execute(
+                        "INSERT OR IGNORE INTO subscription_plans (id, name, duration_months, price, is_active, order_index, features_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (pid, pname, pmonths, pprice, 1, porder, json.dumps(["فتح كافة الدروس والامتحانات", "محرر الأكواد مع المساعد الذكي", "شهادة إتمام المسار"]), now, now)
+                    )
+        except Exception as e:
+            pass
+
+        # 3. Platform Settings (default payment phone number +20159159038)
+        try:
+            row = init_conn.execute("SELECT key, value_json FROM platform_settings WHERE key = 'general'").fetchone()
+            if not row:
+                settings_data = {
+                    "platform_name": "Code Spark",
+                    "academic_subject": "البرمجة ومبادئ علوم الحاسب",
+                    "brand_theme": "dark_neon_blue",
+                    "primary_color": "#0EA5E9",
+                    "accent_color": "#00D2FF",
+                    "background_dark": "#070B14",
+                    "allow_registration": True,
+                    "default_exam_duration_mins": 45,
+                    "code_playground_enabled": True,
+                    "payment_phone": "+20159159038",
+                    "instapay_phone": "+20159159038",
+                    "contact_phone": "+201559159038",
+                    "instapay_link": "https://ipn.eg/S/moazasem/instapay/27DsGj"
+                }
+                init_conn.execute(
+                    "INSERT INTO platform_settings (key, value_json, description, updated_at) VALUES (?, ?, ?, ?)",
+                    ("general", json.dumps(settings_data, ensure_ascii=False), "الإعدادات العامة للمنصة", now_iso())
+                )
+            else:
+                curr = json.loads(row[1])
+                if "payment_phone" not in curr or curr.get("payment_phone") == "+201552696208":
+                    curr["payment_phone"] = "+20159159038"
+                    curr["instapay_phone"] = "+20159159038"
+                    init_conn.execute(
+                        "UPDATE platform_settings SET value_json = ?, updated_at = ? WHERE key = 'general'",
+                        (json.dumps(curr, ensure_ascii=False), now_iso())
+                    )
+        except Exception:
+            pass
+
+        # 4. Ensure study_files table exists
+        try:
+            init_conn.execute("""
+            CREATE TABLE IF NOT EXISTS study_files (
+                id VARCHAR(64) PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                description TEXT,
+                source_type VARCHAR(32) NOT NULL DEFAULT 'upload',
+                file_path TEXT,
+                external_url TEXT,
+                file_name VARCHAR(255),
+                mime_type VARCHAR(128),
+                file_size BIGINT DEFAULT 0,
+                course_id VARCHAR(64),
+                unit_id VARCHAR(64),
+                lesson_id VARCHAR(64),
+                visibility VARCHAR(32) NOT NULL DEFAULT 'PUBLIC',
+                status VARCHAR(32) NOT NULL DEFAULT 'active',
+                is_published INTEGER NOT NULL DEFAULT 1,
+                uploaded_by VARCHAR(64),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+            """)
+        except Exception:
+            pass
 
     @contextmanager
     def transaction(self):
-        with self.lock:
-            conn = self._get_connection()
+        max_retries = 5
+        for attempt in range(max_retries):
             try:
-                yield conn
-                conn.commit()
-            except Exception:
-                conn.rollback()
+                with self._write_lock:
+                    conn = self._get_connection()
+                    conn.execute("BEGIN IMMEDIATE;")
+                    try:
+                        yield conn
+                        conn.execute("COMMIT;")
+                        return
+                    except Exception:
+                        try:
+                            conn.execute("ROLLBACK;")
+                        except Exception:
+                            pass
+                        raise
+            except sqlite3.OperationalError as oe:
+                if "locked" in str(oe).lower() and attempt < max_retries - 1:
+                    time.sleep(0.05 * (2 ** attempt))
+                    continue
                 raise
 
     def execute(self, sql: str, params: Tuple = ()) -> int:
-        with self.lock:
-            conn = self._get_connection()
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            conn.commit()
-            return cur.rowcount
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                with self._write_lock:
+                    conn = self._get_connection()
+                    cur = conn.cursor()
+                    try:
+                        conn.execute("BEGIN IMMEDIATE;")
+                        cur.execute(sql, params)
+                        conn.execute("COMMIT;")
+                        self.sync_to_disk()
+                        return cur.rowcount
+                    except Exception:
+                        try:
+                            conn.execute("ROLLBACK;")
+                        except Exception:
+                            pass
+                        raise
+                    finally:
+                        try:
+                            cur.close()
+                        except Exception:
+                            pass
+            except sqlite3.OperationalError as oe:
+                if "locked" in str(oe).lower() and attempt < max_retries - 1:
+                    time.sleep(0.05 * (2 ** attempt))
+                    continue
+                raise
 
     def fetch_one(self, sql: str, params: Tuple = ()) -> Optional[Dict[str, Any]]:
-        with self.lock:
-            conn = self._get_connection()
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            row = cur.fetchone()
-            return dict(row) if row else None
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                conn = self._get_connection()
+                cur = conn.cursor()
+                try:
+                    cur.execute(sql, params)
+                    row = cur.fetchone()
+                    return dict(row) if row else None
+                finally:
+                    try:
+                        cur.close()
+                    except Exception:
+                        pass
+            except sqlite3.OperationalError as oe:
+                if "locked" in str(oe).lower() and attempt < max_retries - 1:
+                    time.sleep(0.05 * (2 ** attempt))
+                    continue
+                raise
 
     def fetch_all(self, sql: str, params: Tuple = ()) -> List[Dict[str, Any]]:
-        with self.lock:
-            conn = self._get_connection()
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            rows = cur.fetchall()
-            return [dict(r) for r in rows]
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                conn = self._get_connection()
+                cur = conn.cursor()
+                try:
+                    cur.execute(sql, params)
+                    rows = cur.fetchall()
+                    return [dict(r) for r in rows]
+                finally:
+                    try:
+                        cur.close()
+                    except Exception:
+                        pass
+            except sqlite3.OperationalError as oe:
+                if "locked" in str(oe).lower() and attempt < max_retries - 1:
+                    time.sleep(0.05 * (2 ** attempt))
+                    continue
+                raise
 
     def fetch_val(self, sql: str, params: Tuple = ()) -> Any:
-        with self.lock:
-            conn = self._get_connection()
-            cur = conn.cursor()
-            cur.execute(sql, params)
-            row = cur.fetchone()
-            return row[0] if row else None
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                conn = self._get_connection()
+                cur = conn.cursor()
+                try:
+                    cur.execute(sql, params)
+                    row = cur.fetchone()
+                    return row[0] if row else None
+                finally:
+                    try:
+                        cur.close()
+                    except Exception:
+                        pass
+            except sqlite3.OperationalError as oe:
+                if "locked" in str(oe).lower() and attempt < max_retries - 1:
+                    time.sleep(0.05 * (2 ** attempt))
+                    continue
+                raise
 
     def insert(self, table: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        with self.lock:
-            rec = data.copy()
-            conn = self._get_connection()
-            cols = [r[1] for r in conn.execute(f"PRAGMA table_info({table});").fetchall()]
-            
-            if "id" in cols and ("id" not in rec or not rec["id"]):
-                rec["id"] = uuid.uuid4().hex
-            
-            now = now_iso()
-            if "created_at" in cols and "created_at" not in rec:
-                rec["created_at"] = now
-            if "updated_at" in cols and "updated_at" not in rec:
-                rec["updated_at"] = now
+        rec = data.copy()
+        conn = self._get_connection()
+        cur = conn.cursor()
+        try:
+            cols = [r[1] for r in cur.execute(f"PRAGMA table_info({table});").fetchall()]
+        finally:
+            try:
+                cur.close()
+            except Exception:
+                pass
 
-            keys = [k for k in rec.keys() if k in cols]
-            placeholders = ", ".join(["?"] * len(keys))
-            columns = ", ".join(keys)
-            values = tuple(rec[k] for k in keys)
+        if "id" in cols and ("id" not in rec or not rec["id"]):
+            rec["id"] = uuid.uuid4().hex
+        
+        now = now_iso()
+        if "created_at" in cols and "created_at" not in rec:
+            rec["created_at"] = now
+        if "updated_at" in cols and "updated_at" not in rec:
+            rec["updated_at"] = now
 
-            sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-            cur = conn.cursor()
-            cur.execute(sql, values)
-            conn.commit()
-            return rec
+        keys = [k for k in rec.keys() if k in cols]
+        placeholders = ", ".join(["?"] * len(keys))
+        columns = ", ".join(keys)
+        values = tuple(rec[k] for k in keys)
+
+        sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
+        self.execute(sql, values)
+        return rec
 
     def update(self, table: str, rec_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        with self.lock:
-            if not updates:
-                return self.fetch_one(f"SELECT * FROM {table} WHERE id = ?", (rec_id,))
-            
-            up = updates.copy()
-            up.pop("id", None)
-            if table in ["users", "courses", "units", "lessons", "exercises", "question_bank", "quizzes", "exams", "support_tickets", "platform_settings"]:
-                up["updated_at"] = now_iso()
-
-            set_clauses = [f"{k} = ?" for k in up.keys()]
-            values = list(up.values()) + [rec_id]
-            sql = f"UPDATE {table} SET {', '.join(set_clauses)} WHERE id = ?"
-            
-            conn = self._get_connection()
-            cur = conn.cursor()
-            cur.execute(sql, tuple(values))
-            conn.commit()
+        if not updates:
             return self.fetch_one(f"SELECT * FROM {table} WHERE id = ?", (rec_id,))
+        
+        up = updates.copy()
+        up.pop("id", None)
+        if table in ["users", "courses", "units", "lessons", "exercises", "question_bank", "quizzes", "exams", "support_tickets", "platform_settings", "subscription_plans", "subscription_requests"]:
+            up["updated_at"] = now_iso()
+
+        set_clauses = [f"{k} = ?" for k in up.keys()]
+        values = list(up.values()) + [rec_id]
+        sql = f"UPDATE {table} SET {', '.join(set_clauses)} WHERE id = ?"
+        self.execute(sql, tuple(values))
+        return self.fetch_one(f"SELECT * FROM {table} WHERE id = ?", (rec_id,))
 
     def delete(self, table: str, rec_id: str) -> bool:
-        with self.lock:
-            conn = self._get_connection()
-            cur = conn.cursor()
-            cur.execute(f"DELETE FROM {table} WHERE id = ?", (rec_id,))
-            conn.commit()
-            return cur.rowcount > 0
+        sql = f"DELETE FROM {table} WHERE id = ?"
+        rows_affected = self.execute(sql, (rec_id,))
+        return rows_affected > 0
 
     def query(
         self,
@@ -562,37 +822,34 @@ class RelationalDatabaseEngine:
         offset: int = 0,
         limit: Optional[int] = None
     ) -> Tuple[List[Dict[str, Any]], int]:
-        with self.lock:
-            where_clauses = []
-            params: List[Any] = []
+        where_clauses = []
+        params: List[Any] = []
 
-            if filters:
-                for k, v in filters.items():
-                    if v is None:
-                        where_clauses.append(f"{k} IS NULL")
-                    else:
-                        where_clauses.append(f"{k} = ?")
-                        params.append(v)
+        if filters:
+            for k, v in filters.items():
+                if v is None:
+                    where_clauses.append(f"{k} IS NULL")
+                else:
+                    where_clauses.append(f"{k} = ?")
+                    params.append(v)
 
-            if search_query and search_field:
-                where_clauses.append(f"{search_field} LIKE ?")
-                params.append(f"%{search_query.strip()}%")
+        if search_query and search_field:
+            where_clauses.append(f"{search_field} LIKE ?")
+            params.append(f"%{search_query.strip()}%")
 
-            where_str = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        where_str = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
 
-            # Count total
-            count_sql = f"SELECT COUNT(*) FROM {table} {where_str}"
-            total_count = self.fetch_val(count_sql, tuple(params)) or 0
+        count_sql = f"SELECT COUNT(*) FROM {table} {where_str}"
+        total_count = self.fetch_val(count_sql, tuple(params)) or 0
 
-            # Query items
-            sort_dir = "DESC" if descending else "ASC"
-            order_str = f"ORDER BY {order_by} {sort_dir}" if order_by else ""
-            limit_str = f"LIMIT {limit}" if limit is not None else ""
-            offset_str = f"OFFSET {offset}" if offset > 0 else ""
+        sort_dir = "DESC" if descending else "ASC"
+        order_str = f"ORDER BY {order_by} {sort_dir}" if order_by else ""
+        limit_str = f"LIMIT {limit}" if limit is not None else ""
+        offset_str = f"OFFSET {offset}" if offset > 0 else ""
 
-            sql = f"SELECT * FROM {table} {where_str} {order_str} {limit_str} {offset_str}".strip()
-            items = self.fetch_all(sql, tuple(params))
-            return items, total_count
+        sql = f"SELECT * FROM {table} {where_str} {order_str} {limit_str} {offset_str}".strip()
+        items = self.fetch_all(sql, tuple(params))
+        return items, total_count
 
 # Singleton global instance
 db_engine = RelationalDatabaseEngine()

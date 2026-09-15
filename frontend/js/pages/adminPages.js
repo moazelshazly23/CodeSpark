@@ -439,7 +439,7 @@ export class AdminPages {
               <tr>
                 <th>ترتيب</th>
                 <th>عنوان الدرس</th>
-                <th>الوحدة</th>
+                <th>الوحدة / الكورس</th>
                 <th>نوع الفيديو</th>
                 <th>الخصوصية</th>
                 <th>الحالة</th>
@@ -455,29 +455,51 @@ export class AdminPages {
       </div>
     `;
 
-    async function loadLessons() {
-      try {
-        const [lessons, coursesRes] = await Promise.all([
-          ApiClient.get('/lessons'),
-          ApiClient.get('/courses')
-        ]);
+    let cachedUnits = [];
+    let cachedCourses = [];
+    let allLessonsList = [];
 
-        const courses = coursesRes.courses || [];
-        let allUnits = [];
-        if (courses.length > 0) {
-          for (const c of courses) {
-            const uRes = await ApiClient.get(`/units?course_id=${c.id}`).catch(() => ({ units: [] }));
-            if (uRes.units) allUnits = allUnits.concat(uRes.units);
+    // Attach Add Lesson handler immediately so button is never dead!
+    const addBtn = document.getElementById('btn-add-lesson');
+    if (addBtn) {
+      addBtn.onclick = () => openLessonFormModal(null);
+    }
+
+    async function ensureUnitsLoaded() {
+      if (cachedUnits.length > 0) return cachedUnits;
+      try {
+        const coursesRes = await ApiClient.get('/courses').catch(() => ({ courses: [] }));
+        cachedCourses = coursesRes.courses || [];
+        cachedUnits = [];
+        for (const c of cachedCourses) {
+          const uRes = await ApiClient.get(`/units?course_id=${c.id}`).catch(() => ({ units: [] }));
+          if (uRes.units && uRes.units.length > 0) {
+            uRes.units.forEach(u => {
+              cachedUnits.push({ ...u, course_title: c.title });
+            });
           }
         }
+      } catch (err) {
+        console.error("Error fetching units:", err);
+      }
+      return cachedUnits;
+    }
+
+    async function loadLessons() {
+      try {
+        const [lessons, units] = await Promise.all([
+          ApiClient.get('/lessons'),
+          ensureUnitsLoaded()
+        ]);
+        allLessonsList = lessons || [];
 
         // Populate unit dropdown filter
         const unitSelect = document.getElementById('filter-lesson-unit');
         if (unitSelect && unitSelect.options.length <= 1) {
-          allUnits.forEach(u => {
+          units.forEach(u => {
             const opt = document.createElement('option');
             opt.value = u.id;
-            opt.textContent = u.title;
+            opt.textContent = `${u.title} (${u.course_title || 'كورس'})`;
             unitSelect.appendChild(opt);
           });
         }
@@ -486,9 +508,9 @@ export class AdminPages {
         const selectedUnit = document.getElementById('filter-lesson-unit')?.value || '';
         const selectedAccess = document.getElementById('filter-lesson-access')?.value || '';
 
-        let filtered = lessons;
+        let filtered = allLessonsList;
         if (searchQuery) {
-          filtered = filtered.filter(l => l.title.toLowerCase().includes(searchQuery) || (l.description && l.description.toLowerCase().includes(searchQuery)));
+          filtered = filtered.filter(l => (l.title && l.title.toLowerCase().includes(searchQuery)) || (l.description && l.description.toLowerCase().includes(searchQuery)));
         }
         if (selectedUnit) {
           filtered = filtered.filter(l => l.unit_id === selectedUnit);
@@ -499,20 +521,23 @@ export class AdminPages {
 
         const tbody = document.getElementById('lessons-table-body');
         if (!filtered || filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding:2rem;">لا توجد دروس تطابق خيارات البحث.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding:2rem;color:var(--color-text-muted);">لا توجد دروس مطابقة لخيارات البحث. يمكنك النقر على زر <strong>+ إضافة درس جديد</strong> أعلاه.</td></tr>';
           return;
         }
 
         tbody.innerHTML = filtered.map(l => {
-          const unitObj = allUnits.find(u => u.id === l.unit_id);
+          const unitObj = cachedUnits.find(u => u.id === l.unit_id);
           return `
             <tr>
               <td><strong>#${l.order_index || 1}</strong></td>
               <td>
                 <strong style="color:var(--color-text-main);">${l.title}</strong>
-                <div style="font-size:0.75rem;color:var(--color-text-muted);">${l.slug}</div>
+                <div style="font-size:0.75rem;color:var(--color-text-muted);">${l.slug || ''}</div>
               </td>
-              <td><span style="font-size:0.85rem;color:var(--color-text-dim);">${unitObj?.title || 'الوحدة الأساسية'}</span></td>
+              <td>
+                <span style="font-size:0.85rem;color:var(--color-text-dim);">${unitObj?.title || 'الوحدة الأساسية'}</span>
+                ${unitObj?.course_title ? `<div style="font-size:0.75rem;color:var(--color-primary);">${unitObj.course_title}</div>` : ''}
+              </td>
               <td>
                 <span class="badge" style="background:var(--color-bg-secondary);color:var(--color-cyan-accent);">
                   ${l.video_type === 'youtube' ? 'YouTube 🎬' : (l.video_type === 'uploaded' ? 'رفع مباشر 📁' : 'بدون فيديو')}
@@ -544,8 +569,8 @@ export class AdminPages {
         // Bind Edit Lesson
         document.querySelectorAll('.edit-lesson-btn').forEach(btn => {
           btn.addEventListener('click', () => {
-            const les = lessons.find(x => x.id === btn.dataset.id);
-            if (les) openLessonFormModal(les, allUnits, loadLessons);
+            const les = allLessonsList.find(x => x.id === btn.dataset.id);
+            if (les) openLessonFormModal(les);
           });
         });
 
@@ -572,9 +597,9 @@ export class AdminPages {
         // Toggle published state
         document.querySelectorAll('.toggle-pub-btn').forEach(btn => {
           btn.addEventListener('click', async () => {
-            const les = lessons.find(x => x.id === btn.dataset.id);
+            const les = allLessonsList.find(x => x.id === btn.dataset.id);
             if (!les) return;
-            const newPub = les.is_published === 1 ? false : true;
+            const newPub = (les.is_published === 1 || les.is_published === true) ? false : true;
             try {
               await ApiClient.put(`/lessons/${les.id}`, { ...les, is_published: newPub });
               Toast.success(newPub ? 'تم نشر الدرس' : 'تم إلغاء نشر الدرس');
@@ -585,42 +610,79 @@ export class AdminPages {
           });
         });
 
-        document.getElementById('btn-add-lesson').onclick = () => openLessonFormModal(null, allUnits, loadLessons);
-
       } catch (err) {
         console.error(err);
         Toast.error('فشل تحميل قائمة الدروس');
       }
     }
 
-    function openLessonFormModal(lesson, units, onSaved) {
+    async function openLessonFormModal(lesson) {
       const isEdit = !!lesson;
+      Toast.info('جاري تجهيز نموذج الدرس والوحدات الدراسية...');
+      const units = await ensureUnitsLoaded();
+
+      if (!units || units.length === 0) {
+        Modal.open({
+          title: 'تنبيه: لا توجد وحدات دراسية',
+          contentHtml: `
+            <div style="text-align:center;padding:1.5rem;">
+              <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
+              <h3 style="color:var(--color-text-main);margin-bottom:0.75rem;font-weight:800;">لا توجد وحدات دراسية منشأة حالياً</h3>
+              <p style="color:var(--color-text-muted);margin-bottom:1.5rem;line-height:1.6;">
+                لا يمكن إضافة درس تعليمي دون تحديد الوحدة الدراسية التابع لها. يرجى التوجه إلى قسم المناهج والكورسات، وإنشاء وحدة دراسية أولاً ثم العودة لإضافة الدروس.
+              </p>
+              <button id="btn-goto-courses-modal" class="btn btn-primary" style="padding:0.75rem 1.5rem;font-weight:700;">📚 الانتقال لإدارة الكورسات والوحدات</button>
+            </div>
+          `
+        });
+        document.getElementById('btn-goto-courses-modal')?.addEventListener('click', () => {
+          Modal.close();
+          window.location.hash = '#/admin/courses';
+        });
+        return;
+      }
+
+      // Group units by course
+      const coursesMap = {};
+      units.forEach(u => {
+        const cName = u.course_title || 'الكورسات المتاحة';
+        if (!coursesMap[cName]) coursesMap[cName] = [];
+        coursesMap[cName].push(u);
+      });
+
+      let unitOptionsHtml = '';
+      for (const [cName, uList] of Object.entries(coursesMap)) {
+        unitOptionsHtml += `<optgroup label="كورس: ${cName}">`;
+        uList.forEach(u => {
+          unitOptionsHtml += `<option value="${u.id}" ${lesson?.unit_id === u.id ? 'selected' : ''}>${u.title}</option>`;
+        });
+        unitOptionsHtml += `</optgroup>`;
+      }
+
       Modal.open({
-        title: isEdit ? `تعديل الدرس: ${lesson.title}` : 'إضافة درس تعليمي جديد',
+        title: isEdit ? `تعديل الدرس: ${lesson.title}` : 'إضافة درس تعليمي جديد 🎬',
         contentHtml: `
           <form id="form-lesson-save">
             <div class="form-group">
-              <label class="form-label">الوحدة التعليمية التابع لها الدرس</label>
+              <label class="form-label">الوحدة الدراسية التابع لها الدرس <span style="color:var(--color-danger);">*</span></label>
               <select id="m-les-unit" class="form-input" required>
-                ${units.map(u => `
-                  <option value="${u.id}" ${lesson?.unit_id === u.id ? 'selected' : ''}>${u.title}</option>
-                `).join('')}
+                ${unitOptionsHtml}
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">عنوان الدرس</label>
-              <input type="text" id="m-les-title" class="form-input" required value="${lesson?.title || ''}" placeholder="مثال: جمل الشروط والقرارات المنطقية">
+              <label class="form-label">عنوان الدرس <span style="color:var(--color-danger);">*</span></label>
+              <input type="text" id="m-les-title" class="form-input" required value="${lesson?.title || ''}" placeholder="مثال: الدرس الأول: المتغيرات وأنواع البيانات في بايثون">
             </div>
             <div class="form-group">
-              <label class="form-label">الاسم التعريفي (Slug)</label>
-              <input type="text" id="m-les-slug" class="form-input" required value="${lesson?.slug || ''}" placeholder="conditional-statements">
+              <label class="form-label">الاسم التعريفي في الرابط (Slug) <span style="color:var(--color-danger);">*</span></label>
+              <input type="text" id="m-les-slug" class="form-input" required value="${lesson?.slug || ''}" placeholder="variables-and-data-types">
             </div>
             <div class="form-group">
               <label class="form-label">نوع الفيديو ومصدره</label>
               <select id="m-les-vtype" class="form-input">
                 <option value="youtube" ${lesson?.video_type === 'youtube' ? 'selected' : ''}>يوتيوب (YouTube URL)</option>
-                <option value="uploaded" ${lesson?.video_type === 'uploaded' ? 'selected' : ''}>رفع فيديو مباشر من الجهاز (Upload Video File)</option>
-                <option value="none" ${lesson?.video_type === 'none' ? 'selected' : ''}>بدون فيديو (نص ومذكرات فقط)</option>
+                <option value="uploaded" ${lesson?.video_type === 'uploaded' ? 'selected' : ''}>رفع فيديو مباشر من الجهاز (MP4, WebM)</option>
+                <option value="none" ${lesson?.video_type === 'none' ? 'selected' : ''}>بدون فيديو (شرح نصي ومذكرات فقط)</option>
               </select>
             </div>
             <div class="form-group" id="video-url-container">
@@ -628,14 +690,14 @@ export class AdminPages {
               <input type="text" id="m-les-vurl" class="form-input" value="${lesson?.video_url || ''}" placeholder="https://www.youtube.com/watch?v=...">
             </div>
             <div class="form-group" id="video-upload-container" style="display:none;">
-              <label class="form-label">رفع ملف الفيديو مباشرة (MP4, WebM)</label>
+              <label class="form-label">رفع ملف الفيديو مباشرة من جهازك (MP4, WebM)</label>
               <input type="file" id="m-les-vfile" class="form-input" accept="video/mp4,video/webm">
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
               <div class="form-group">
                 <label class="form-label">مستوى الوصول</label>
                 <select id="m-les-access" class="form-input">
-                  <option value="PUBLIC" ${lesson?.access_type === 'PUBLIC' ? 'selected' : ''}>متاح للجميع (PUBLIC)</option>
+                  <option value="PUBLIC" ${lesson?.access_type === 'PUBLIC' ? 'selected' : ''}>متاح للجميع (مجاني)</option>
                   <option value="SUBSCRIBERS_ONLY" ${lesson?.access_type === 'SUBSCRIBERS_ONLY' ? 'selected' : ''}>للمشتركين فقط 🔑</option>
                 </select>
               </div>
@@ -649,94 +711,127 @@ export class AdminPages {
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">شرح الدرس وملاحظات المحاضرة (Markdown)</label>
-              <textarea id="m-les-content" class="form-input" rows="4" placeholder="اكتب الشرح والملاحظات البرمجية والأكواد التوضيحية...">${lesson?.content_markdown || ''}</textarea>
+              <label class="form-label">شرح الدرس وملاحظات المحاضرة والأكواد (Markdown)</label>
+              <textarea id="m-les-content" class="form-input" rows="5" placeholder="اكتب شرح الدرس والملاحظات البرمجية والأمثلة التوضيحية...">${lesson?.content_markdown || ''}</textarea>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.5rem;">
-              ${isEdit ? 'حفظ تعديلات الدرس' : 'إضافة ونشر الدرس الآن 🎬'}
+            <button type="submit" id="submit-lesson-save-btn" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.5rem;padding:0.85rem;">
+              ${isEdit ? 'حفظ تعديلات الدرس 💾' : 'إضافة ونشر الدرس الآن 🎬'}
             </button>
           </form>
         `
       });
+
+      // Auto-generate slug from title
+      const titleInput = document.getElementById('m-les-title');
+      const slugInput = document.getElementById('m-les-slug');
+      if (titleInput && slugInput && !isEdit) {
+        titleInput.addEventListener('input', () => {
+          if (!slugInput.value || slugInput.value.startsWith('lesson-')) {
+            const raw = titleInput.value.toLowerCase().trim();
+            const slug = raw.replace(/[^a-z0-9؀-ۿ]+/g, '-').replace(/^-+|-+$/g, '');
+            slugInput.value = slug || 'lesson-' + Date.now();
+          }
+        });
+      }
 
       // Video type toggle
       const vtypeSelect = document.getElementById('m-les-vtype');
       const vurlBox = document.getElementById('video-url-container');
       const vfileBox = document.getElementById('video-upload-container');
 
-      vtypeSelect.addEventListener('change', () => {
-        if (vtypeSelect.value === 'uploaded') {
-          vurlBox.style.display = 'none';
-          vfileBox.style.display = 'block';
-        } else if (vtypeSelect.value === 'youtube') {
-          vurlBox.style.display = 'block';
-          vfileBox.style.display = 'none';
-        } else {
-          vurlBox.style.display = 'none';
-          vfileBox.style.display = 'none';
+      if (vtypeSelect && vurlBox && vfileBox) {
+        vtypeSelect.addEventListener('change', () => {
+          if (vtypeSelect.value === 'uploaded') {
+            vurlBox.style.display = 'none';
+            vfileBox.style.display = 'block';
+          } else if (vtypeSelect.value === 'youtube') {
+            vurlBox.style.display = 'block';
+            vfileBox.style.display = 'none';
+          } else {
+            vurlBox.style.display = 'none';
+            vfileBox.style.display = 'none';
+          }
+        });
+        if (lesson?.video_type === 'uploaded') {
+          vtypeSelect.dispatchEvent(new Event('change'));
         }
-      });
-      if (lesson?.video_type === 'uploaded') {
-        vtypeSelect.dispatchEvent(new Event('change'));
       }
 
-      document.getElementById('form-lesson-save').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        let vUrl = document.getElementById('m-les-vurl').value.trim();
-        let vId = null;
+      const form = document.getElementById('form-lesson-save');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const saveBtn = document.getElementById('submit-lesson-save-btn');
+          if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'جاري الحفظ والتحقق...';
+          }
 
-        // Check if uploaded video
-        const vFile = document.getElementById('m-les-vfile')?.files[0];
-        if (vtypeSelect.value === 'uploaded' && vFile) {
-          const fd = new FormData();
-          fd.append('file', vFile);
-          Toast.info('جاري رفع ملف الفيديو...');
+          let vUrl = document.getElementById('m-les-vurl')?.value.trim() || '';
+          let vId = null;
+
+          // Check if uploaded video file
+          const vFile = document.getElementById('m-les-vfile')?.files[0];
+          if (vtypeSelect && vtypeSelect.value === 'uploaded' && vFile) {
+            const fd = new FormData();
+            fd.append('file', vFile);
+            Toast.info('جاري رفع ملف الفيديو...');
+            try {
+              const upRes = await ApiClient.upload('/resources/upload', fd);
+              vUrl = upRes.file_url;
+            } catch (err) {
+              Toast.error('فشل رفع الفيديو: ' + err.message);
+              if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'حفظ'; }
+              return;
+            }
+          } else if (vtypeSelect && vtypeSelect.value === 'youtube' && vUrl) {
+            if (vUrl.includes('v=')) {
+              vId = vUrl.split('v=')[1].split('&')[0];
+            } else if (vUrl.includes('youtu.be/')) {
+              vId = vUrl.split('youtu.be/')[1].split('?')[0];
+            } else if (vUrl.length === 11 && !vUrl.includes('/')) {
+              vId = vUrl;
+            }
+          }
+
+          const rawSlug = document.getElementById('m-les-slug')?.value.trim();
+          const safeSlug = rawSlug || ('lesson-' + Date.now());
+
+          const payload = {
+            unit_id: document.getElementById('m-les-unit').value,
+            title: document.getElementById('m-les-title').value.trim(),
+            slug: safeSlug,
+            description: document.getElementById('m-les-title').value.trim(),
+            content_markdown: document.getElementById('m-les-content').value,
+            video_type: vtypeSelect ? vtypeSelect.value : 'none',
+            video_url: vUrl,
+            video_id: vId,
+            duration_seconds: (parseFloat(document.getElementById('m-les-dur').value) || 10) * 60,
+            order_index: parseInt(document.getElementById('m-les-ord').value) || 1,
+            access_type: document.getElementById('m-les-access').value,
+            is_published: true
+          };
+
           try {
-            const upRes = await ApiClient.upload('/resources/upload', fd);
-            vUrl = upRes.file_url;
+            if (isEdit) {
+              await ApiClient.put(`/lessons/${lesson.id}`, payload);
+              Toast.success('تم تعديل الدرس بنجاح ✅');
+            } else {
+              await ApiClient.post('/lessons', payload);
+              Toast.success('تمت إضافة ونشر الدرس بنجاح 🎉');
+            }
+            Modal.close();
+            await loadLessons();
           } catch (err) {
-            Toast.error('فشل رفع الفيديو: ' + err.message);
-            return;
+            Toast.error(err.message || 'حدث خطأ أثناء حفظ الدرس');
+          } finally {
+            if (saveBtn) {
+              saveBtn.disabled = false;
+              saveBtn.textContent = isEdit ? 'حفظ تعديلات الدرس 💾' : 'إضافة ونشر الدرس الآن 🎬';
+            }
           }
-        } else if (vtypeSelect.value === 'youtube') {
-          if (vUrl.includes('v=')) {
-            vId = vUrl.split('v=')[1].split('&')[0];
-          } else if (vUrl.includes('youtu.be/')) {
-            vId = vUrl.split('youtu.be/')[1].split('?')[0];
-          } else if (vUrl.length === 11 && !vUrl.includes('/')) {
-            vId = vUrl;
-          }
-        }
-
-        const payload = {
-          unit_id: document.getElementById('m-les-unit').value,
-          title: document.getElementById('m-les-title').value.trim(),
-          slug: document.getElementById('m-les-slug').value.trim() || 'lesson-' + Date.now(),
-          description: document.getElementById('m-les-title').value.trim(),
-          content_markdown: document.getElementById('m-les-content').value,
-          video_type: vtypeSelect.value,
-          video_url: vUrl,
-          video_id: vId,
-          duration_seconds: (parseFloat(document.getElementById('m-les-dur').value) || 10) * 60,
-          order_index: parseInt(document.getElementById('m-les-ord').value) || 1,
-          access_type: document.getElementById('m-les-access').value,
-          is_published: true
-        };
-
-        try {
-          if (isEdit) {
-            await ApiClient.put(`/lessons/${lesson.id}`, payload);
-            Toast.success('تم تعديل الدرس بنجاح');
-          } else {
-            await ApiClient.post('/lessons', payload);
-            Toast.success('تمت إضافة ونشر الدرس بنجاح 🎉');
-          }
-          Modal.close();
-          onSaved();
-        } catch (err) {
-          Toast.error(err.message);
-        }
-      });
+        });
+      }
     }
 
     document.getElementById('filter-lesson-search')?.addEventListener('input', debounce(loadLessons, 300));
@@ -745,10 +840,6 @@ export class AdminPages {
 
     await loadLessons();
   }
-
-  /* ===================================================================
-     4. QUESTION BANK MANAGEMENT (Full CRUD for Admin & Assistants)
-  =================================================================== */
   static async renderQuestionBank(container) {
     container.innerHTML = `
       <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
@@ -1749,9 +1840,10 @@ export class AdminPages {
           <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
             <span>💳</span> مراجعة واعتماد طلبات تفعيل الاشتراكات
           </h2>
-          <p style="color:var(--color-text-muted);">متابعة تحويلات InstaPay واعتماد تفعيل حسابات الطلاب فورياً</p>
+          <p style="color:var(--color-text-muted);">متابعة تحويلات InstaPay وإيصالات الطلاب واعتماد تفعيل الحسابات فورياً</p>
         </div>
         <div style="display:flex;gap:0.5rem;">
+          <a href="#/admin/settings" class="btn btn-primary btn-sm">⚙️ إعدادات الباقات وأرقام الدفع</a>
           <a href="#/admin/subscriptions" class="btn btn-secondary btn-sm">🔑 أكواد الاشتراكات</a>
         </div>
       </div>
@@ -1774,20 +1866,46 @@ export class AdminPages {
               <tr>
                 <th>الطالب</th>
                 <th>الهاتف</th>
-                <th>الباقة والمبلغ</th>
+                <th>الباقة والمدة</th>
+                <th>المبلغ المسدد</th>
                 <th>رقم العملية / المرجع</th>
+                <th>الإيصال المرفق</th>
                 <th>تاريخ التحويل</th>
                 <th>الحالة</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody id="sub-req-table-body">
-              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="9" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
+
+      <!-- Screenshot Preview Modal -->
+      <div id="proof-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:1.5rem;">
+        <div class="card" style="max-width:650px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:1rem;position:relative;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+            <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.1rem;">معاينة إيصال التحويل 🖼️</h3>
+            <button id="close-proof-modal" class="btn btn-secondary btn-sm" style="padding:2px 8px;">✕ إغلاق</button>
+          </div>
+          <div style="flex:1;overflow:auto;text-align:center;background:#030712;padding:0.5rem;border-radius:6px;">
+            <img id="proof-modal-img" src="" alt="صورة الإيصال" style="max-width:100%;max-height:70vh;object-fit:contain;">
+          </div>
+          <div id="proof-modal-caption" style="margin-top:0.75rem;font-size:0.85rem;color:var(--color-text-muted);text-align:center;"></div>
+        </div>
+      </div>
     `;
+
+    const proofModal = document.getElementById('proof-modal');
+    const proofImg = document.getElementById('proof-modal-img');
+    const proofCaption = document.getElementById('proof-modal-caption');
+    document.getElementById('close-proof-modal')?.addEventListener('click', () => {
+      if (proofModal) proofModal.style.display = 'none';
+    });
+    proofModal?.addEventListener('click', (e) => {
+      if (e.target === proofModal) proofModal.style.display = 'none';
+    });
 
     async function loadRequests() {
       const status = document.getElementById('filter-sub-req-status')?.value || '';
@@ -1811,7 +1929,7 @@ export class AdminPages {
         }
 
         if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد طلبات تطابق الفلتر المحدد.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:2rem;">لا توجد طلبات تطابق الفلتر المحدد.</td></tr>';
           return;
         }
 
@@ -1824,11 +1942,21 @@ export class AdminPages {
             <td style="font-family:var(--font-mono);">${r.phone || '—'}</td>
             <td>
               <span style="font-weight:700;color:var(--color-primary);">${r.package_name}</span>
-              ${r.amount ? `<div style="font-size:0.75rem;color:#10B981;">${r.amount} ج.م</div>` : ''}
+              ${r.duration_months ? `<div style="font-size:0.75rem;color:var(--color-text-muted);">${r.duration_months} أشهر</div>` : ''}
+            </td>
+            <td style="font-family:var(--font-mono);color:#10B981;font-weight:800;font-size:1.05rem;">
+              ${r.amount ? `${r.amount} ج.م` : '—'}
             </td>
             <td>
               <code style="font-family:var(--font-mono);color:var(--color-cyan-accent);background:var(--color-bg-surface);padding:2px 6px;border-radius:4px;">${r.payment_reference}</code>
               ${r.admin_notes ? `<div style="font-size:0.75rem;color:var(--color-text-dim);">ملاحظة: ${r.admin_notes}</div>` : ''}
+            </td>
+            <td>
+              ${r.proof_file_url ? `
+                <button class="btn btn-secondary btn-sm view-proof-btn" data-url="${r.proof_file_url}" data-name="${r.student_name}" data-ref="${r.payment_reference}" style="padding:2px 7px;font-size:0.75rem;">
+                  🖼️ عرض الإيصال
+                </button>
+              ` : '<span style="color:var(--color-text-dim);font-size:0.75rem;">بدون إيصال</span>'}
             </td>
             <td>${r.transfer_date || r.created_at?.substring(0, 10)}</td>
             <td>
@@ -1849,7 +1977,16 @@ export class AdminPages {
           </tr>
         `).join('');
 
-        // Approve Request
+        document.querySelectorAll('.view-proof-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            if (proofImg && proofModal) {
+              proofImg.src = btn.dataset.url;
+              if (proofCaption) proofCaption.textContent = `إيصال الطالب: ${btn.dataset.name} | رقم المرجع: ${btn.dataset.ref}`;
+              proofModal.style.display = 'flex';
+            }
+          });
+        });
+
         document.querySelectorAll('.approve-req-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const reqId = btn.dataset.id;
@@ -1869,7 +2006,6 @@ export class AdminPages {
           });
         });
 
-        // Reject Request
         document.querySelectorAll('.reject-req-btn').forEach(btn => {
           btn.addEventListener('click', () => {
             const reqId = btn.dataset.id;
@@ -1898,11 +2034,725 @@ export class AdminPages {
   }
 
   /* ===================================================================
-     11. ADMIN ACCOUNT SETTINGS
+     11. ADMIN PLATFORM SETTINGS & 11-PLAN SUBSCRIPTION MANAGEMENT
   =================================================================== */
   static async renderSettings(container) {
-    const { StudentPages } = await import('./studentPages.js');
-    return StudentPages.renderSettings(container);
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;">
+        <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
+          <span>⚙️</span> إعدادات المنصة وإدارة باقات الاشتراكات
+        </h2>
+        <p style="color:var(--color-text-muted);">تحكم كامل في أرقام التحويل المعتمدة وتعديل أسعار ومدد باقات الاشتراكات (1 إلى 11 شهراً)</p>
+      </div>
+
+      <!-- 1. Payment & Transfer Number Settings Section -->
+      <div class="card" style="margin-bottom:1.5rem;border-right:4px solid var(--color-primary);">
+        <h3 style="font-size:1.25rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;">
+          <span>📱</span> رقم التحويل وبيانات السداد (InstaPay / المحافظ)
+        </h3>
+        <p style="color:var(--color-text-muted);font-size:0.88rem;line-height:1.6;margin-bottom:1.25rem;">
+          الرقم الذي يظهر لجميع الطلاب في صفحة الاشتراك. عند تعديل هذا الرقم يتم حفظه في قاعدة البيانات ويظهر تلقائياً للطلاب فوراً دون الحاجة لتعديل أي كود برمجي.
+        </p>
+
+        <form id="admin-payment-settings-form">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;margin-bottom:1rem;">
+            <div class="form-group">
+              <label class="form-label">رقم التحويل المعتمد للطلاب (Transfer/Payment Phone) <span style="color:#EF4444;">*</span></label>
+              <input type="text" id="admin-set-payment-phone" class="form-input" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--color-cyan-accent);" required placeholder="+20159159038">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">رقم التواصل والدعم الفني (WhatsApp Phone)</label>
+              <input type="text" id="admin-set-contact-phone" class="form-input" style="font-family:var(--font-mono);" placeholder="+201559159038">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الرابط المباشر لتطبيق InstaPay</label>
+              <input type="url" id="admin-set-instapay-link" class="form-input" style="font-family:var(--font-mono);font-size:0.85rem;" placeholder="https://ipn.eg/S/moazasem/instapay/...">
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;">
+            <button type="submit" id="btn-save-payment-settings" class="btn btn-primary" style="font-weight:800;padding:0.6rem 1.5rem;">
+              💾 حفظ بيانات الدفع في قاعدة البيانات
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 2. Subscription Plans Management Section (11 Plans) -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem;">
+          <div>
+            <h3 style="font-size:1.25rem;font-weight:800;color:var(--color-text-main);display:flex;align-items:center;gap:0.4rem;">
+              <span>💳</span> إدارة باقات الاشتراكات الأكاديمية (11 باقة معتمدة)
+            </h3>
+            <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">
+              يمكنك تعديل أسعار الباقات أو تفعيلها/تعطيلها. المعاملات السابقة تظل محمية بالمبلغ الأصلي المسدد.
+            </p>
+          </div>
+          <button id="btn-open-add-plan-modal" class="btn btn-primary btn-sm" style="font-weight:700;">
+            + إضافة باقة اشتراك جديدة
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table class="table" style="width:100%;">
+            <thead>
+              <tr>
+                <th>المدة (شهور)</th>
+                <th>اسم الباقة</th>
+                <th>السعر (ج.م)</th>
+                <th>ترتيب العرض</th>
+                <th>الحالة</th>
+                <th>إجمالي الطلبات</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="admin-plans-table-body">
+              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري تحميل الباقات...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add New Plan Modal -->
+      <div id="add-plan-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:1.5rem;">
+        <div class="card" style="max-width:500px;width:100%;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+            <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.15rem;">إضافة باقة اشتراك جديدة</h3>
+            <button id="close-add-plan-modal" class="btn btn-secondary btn-sm" style="padding:2px 8px;">✕</button>
+          </div>
+          <form id="form-add-new-plan">
+            <div class="form-group">
+              <label class="form-label">اسم الباقة <span style="color:#EF4444;">*</span></label>
+              <input type="text" id="new-plan-name" class="form-input" required placeholder="مثال: اشتراك فصلي مميز">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">المدة بالشهور <span style="color:#EF4444;">*</span></label>
+                <input type="number" id="new-plan-months" class="form-input" required min="1" max="60" value="1">
+              </div>
+              <div class="form-group">
+                <label class="form-label">السعر (ج.م) <span style="color:#EF4444;">*</span></label>
+                <input type="number" id="new-plan-price" class="form-input" required min="0" step="0.5" placeholder="100">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ترتيب العرض</label>
+              <input type="number" id="new-plan-order" class="form-input" min="0" value="0">
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1.25rem;">
+              <button type="button" id="cancel-add-plan" class="btn btn-secondary">إلغاء</button>
+              <button type="submit" class="btn btn-primary" style="font-weight:700;">حفظ الباقة الجديدة ✨</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    async function loadPaymentSettings() {
+      try {
+        const sett = await ApiClient.get('/subscriptions/payment-info');
+        const phoneInput = document.getElementById('admin-set-payment-phone');
+        const contactInput = document.getElementById('admin-set-contact-phone');
+        const linkInput = document.getElementById('admin-set-instapay-link');
+
+        if (phoneInput && sett.payment_phone) phoneInput.value = sett.payment_phone;
+        if (contactInput && sett.contact_phone) contactInput.value = sett.contact_phone;
+        if (linkInput && sett.instapay_link) linkInput.value = sett.instapay_link;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    document.getElementById('admin-payment-settings-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const phoneVal = document.getElementById('admin-set-payment-phone').value.trim();
+      const contactVal = document.getElementById('admin-set-contact-phone').value.trim();
+      const linkVal = document.getElementById('admin-set-instapay-link').value.trim();
+      const btn = document.getElementById('btn-save-payment-settings');
+
+      btn.disabled = true;
+      btn.textContent = 'جاري الحفظ...';
+
+      try {
+        const res = await ApiClient.put('/subscriptions/admin/payment-info', {
+          payment_phone: phoneVal,
+          contact_phone: contactVal,
+          instapay_link: linkVal
+        });
+        Toast.success(res.message || 'تم تحديث بيانات التحويل بنجاح! ستظهر للطلاب فوراً.');
+      } catch (err) {
+        Toast.error(err.message || 'تعذر تحديث بيانات التحويل');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '💾 حفظ بيانات الدفع في قاعدة البيانات';
+      }
+    });
+
+    async function loadAdminPlans() {
+      const tbody = document.getElementById('admin-plans-table-body');
+      try {
+        const plans = await ApiClient.get('/subscriptions/admin/plans');
+        if (!plans || plans.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد باقات معرفة.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = plans.map(p => `
+          <tr data-plan-id="${p.id}">
+            <td style="font-family:var(--font-mono);font-weight:800;font-size:1.1rem;color:var(--color-primary);">${p.duration_months} شهر</td>
+            <td>
+              <input type="text" class="form-input plan-name-input" value="${p.name}" style="padding:0.3rem 0.5rem;font-size:0.88rem;min-width:180px;">
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:0.3rem;">
+                <input type="number" class="form-input plan-price-input" value="${p.price}" min="0" step="0.5" style="width:100px;font-family:var(--font-mono);font-weight:700;color:#10B981;padding:0.3rem 0.5rem;">
+                <span style="font-size:0.75rem;color:var(--color-text-dim);">ج.م</span>
+              </div>
+            </td>
+            <td>
+              <input type="number" class="form-input plan-order-input" value="${p.order_index || p.duration_months}" min="0" style="width:60px;padding:0.3rem 0.5rem;font-family:var(--font-mono);">
+            </td>
+            <td>
+              <button class="btn btn-sm toggle-plan-active-btn ${p.is_active ? 'btn-secondary' : 'btn-danger'}" data-active="${p.is_active ? '1' : '0'}" style="font-size:0.75rem;padding:2px 8px;">
+                ${p.is_active ? 'مفعلة ✅' : 'معطلة ❌'}
+              </button>
+            </td>
+            <td style="font-family:var(--font-mono);text-align:center;">
+              <span class="badge badge-public">${p.total_requests || 0} طلب</span>
+            </td>
+            <td>
+              <div style="display:flex;gap:0.3rem;">
+                <button class="btn btn-primary btn-sm save-plan-row-btn" style="font-size:0.75rem;padding:2px 8px;font-weight:700;">حفظ 💾</button>
+                <button class="btn btn-danger btn-sm delete-plan-row-btn" style="font-size:0.75rem;padding:2px 7px;">حذف 🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('tr').forEach(tr => {
+          const planId = tr.dataset.planId;
+          const nameInput = tr.querySelector('.plan-name-input');
+          const priceInput = tr.querySelector('.plan-price-input');
+          const orderInput = tr.querySelector('.plan-order-input');
+          const toggleBtn = tr.querySelector('.toggle-plan-active-btn');
+          const saveBtn = tr.querySelector('.save-plan-row-btn');
+          const delBtn = tr.querySelector('.delete-plan-row-btn');
+
+          toggleBtn?.addEventListener('click', async () => {
+            const currentActive = toggleBtn.dataset.active === '1';
+            const newActive = !currentActive;
+            try {
+              await ApiClient.put(`/subscriptions/admin/plans/${planId}`, { is_active: newActive });
+              Toast.success(newActive ? 'تم تفعيل الباقة بنجاح' : 'تم تعطيل الباقة بنجاح');
+              loadAdminPlans();
+            } catch (err) {
+              Toast.error(err.message);
+            }
+          });
+
+          saveBtn?.addEventListener('click', async () => {
+            const newName = nameInput.value.trim();
+            const newPrice = parseFloat(priceInput.value);
+            const newOrder = parseInt(orderInput.value) || 0;
+
+            if (!newName || isNaN(newPrice) || newPrice < 0) {
+              Toast.error('يرجى إدخال اسم وسعر صحيح');
+              return;
+            }
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = '...';
+
+            try {
+              await ApiClient.put(`/subscriptions/admin/plans/${planId}`, {
+                name: newName,
+                price: newPrice,
+                order_index: newOrder
+              });
+              Toast.success('تم حفظ تعديلات الباقة بنجاح!');
+            } catch (err) {
+              Toast.error(err.message);
+            } finally {
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'حفظ 💾';
+            }
+          });
+
+          delBtn?.addEventListener('click', () => {
+            Modal.confirm({
+              title: 'تأكيد إزالة أو تعطيل الباقة',
+              message: 'هل تريد إزالة هذه الباقة؟ إذا كانت هناك طلبات سابقة مسجلة بها، فسيتم تعطيلها بأمان للحفاظ على سجلات الطلاب.',
+              onConfirm: async () => {
+                try {
+                  const res = await ApiClient.delete(`/subscriptions/admin/plans/${planId}`);
+                  Toast.success(res.message || 'تم حذف الباقة بنجاح');
+                  loadAdminPlans();
+                } catch (err) {
+                  Toast.error(err.message);
+                }
+              }
+            });
+          });
+        });
+
+      } catch (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:#EF4444;padding:2rem;">فشل تحميل الباقات</td></tr>';
+      }
+    }
+
+    const addPlanModal = document.getElementById('add-plan-modal');
+    document.getElementById('btn-open-add-plan-modal')?.addEventListener('click', () => {
+      if (addPlanModal) addPlanModal.style.display = 'flex';
+    });
+    document.getElementById('close-add-plan-modal')?.addEventListener('click', () => {
+      if (addPlanModal) addPlanModal.style.display = 'none';
+    });
+    document.getElementById('cancel-add-plan')?.addEventListener('click', () => {
+      if (addPlanModal) addPlanModal.style.display = 'none';
+    });
+
+    document.getElementById('form-add-new-plan')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('new-plan-name').value.trim();
+      const months = parseInt(document.getElementById('new-plan-months').value);
+      const price = parseFloat(document.getElementById('new-plan-price').value);
+      const order = parseInt(document.getElementById('new-plan-order').value) || months;
+
+      if (!name || isNaN(months) || isNaN(price)) {
+        Toast.error('يرجى ملء جميع الحقول المطلوبة بشكل صحيح');
+        return;
+      }
+
+      try {
+        const res = await ApiClient.post('/subscriptions/admin/plans', {
+          name: name,
+          duration_months: months,
+          price: price,
+          order_index: order
+        });
+        Toast.success(res.message || 'تمت إضافة الباقة بنجاح! ✨');
+        if (addPlanModal) addPlanModal.style.display = 'none';
+        document.getElementById('form-add-new-plan').reset();
+        loadAdminPlans();
+      } catch (err) {
+        Toast.error(err.message || 'تعذر إنشاء الباقة');
+      }
+    });
+
+    await Promise.all([loadPaymentSettings(), loadAdminPlans()]);
   }
 
+  /* ===================================================================
+     11. EDUCATIONAL FILES MANAGEMENT (الملفات والمذكرات الدراسية)
+  =================================================================== */
+  static async renderStudyFiles(container) {
+    container.innerHTML = `
+      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة الملفات والمذكرات الدراسية 📁</h2>
+          <p style="color:var(--color-text-muted);">رفع المذكرات، ملخصات الدروس، شرائح العرض (PDF, Word, PPT, Excel, ZIP) أو مشاركة روابط Google Drive مع الطلاب</p>
+        </div>
+        <button id="btn-add-study-file" class="btn btn-primary btn-sm" style="font-weight:700;">+ إضافة ملف دراسي جديد</button>
+      </div>
+
+      <!-- Filter Controls -->
+      <div class="card" style="margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;padding:1rem;">
+        <input type="text" id="filter-file-search" class="form-input" placeholder="بحث في اسم أو وصف أو نوع الملف..." style="flex:1;min-width:200px;">
+        <select id="filter-file-course" class="form-input" style="width:auto;min-width:180px;">
+          <option value="">جميع الكورسات والمناهج</option>
+        </select>
+        <select id="filter-file-access" class="form-input" style="width:auto;">
+          <option value="">كافة مستويات الوصول</option>
+          <option value="PUBLIC">متاح للجميع (عام)</option>
+          <option value="SUBSCRIBERS_ONLY">للمشتركين فقط 🔑</option>
+        </select>
+        <select id="filter-file-source" class="form-input" style="width:auto;">
+          <option value="">كافة المصادر</option>
+          <option value="upload">ملفات مرفوعة مباشرة 📁</option>
+          <option value="google_drive">Google Drive 🌐</option>
+        </select>
+      </div>
+
+      <!-- Files Data Table -->
+      <div class="card">
+        <div class="table-container">
+          <table class="table" style="width:100%;">
+            <thead>
+              <tr>
+                <th>الملف</th>
+                <th>الكورس / المنهج</th>
+                <th>المصدر والصيغة</th>
+                <th>الحجم</th>
+                <th>الوصول</th>
+                <th>الحالة</th>
+                <th>تاريخ الإضافة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="study-files-table-body">
+              <tr><td colspan="8" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    let allFiles = [];
+    let cachedCourses = [];
+
+    const addBtn = document.getElementById('btn-add-study-file');
+    if (addBtn) {
+      addBtn.onclick = () => openFileModal(null);
+    }
+
+    async function loadCoursesDropdown() {
+      try {
+        const cRes = await ApiClient.get('/courses').catch(() => ({ courses: [] }));
+        cachedCourses = cRes.courses || [];
+        const sel = document.getElementById('filter-file-course');
+        if (sel && sel.options.length <= 1) {
+          cachedCourses.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.title;
+            sel.appendChild(opt);
+          });
+        }
+      } catch (_) {}
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '-';
+      const k = 1024;
+      const sizes = ['بايت', 'ك.ب', 'م.ب', 'ج.ب'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    function getFileIcon(fileName, sourceType) {
+      if (sourceType === 'google_drive') return '🌐';
+      const ext = (fileName || '').split('.').pop().toLowerCase();
+      if (ext === 'pdf') return '📄';
+      if (['doc', 'docx'].includes(ext)) return '📝';
+      if (['ppt', 'pptx'].includes(ext)) return '📊';
+      if (['xls', 'xlsx'].includes(ext)) return '📈';
+      if (ext === 'zip') return '🗜️';
+      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return '🖼️';
+      if (ext === 'py') return '🐍';
+      return '📁';
+    }
+
+    async function loadStudyFiles() {
+      try {
+        const res = await ApiClient.get('/study-files');
+        allFiles = res.files || [];
+
+        const searchVal = document.getElementById('filter-file-search')?.value.toLowerCase().trim() || '';
+        const courseVal = document.getElementById('filter-file-course')?.value || '';
+        const accessVal = document.getElementById('filter-file-access')?.value || '';
+        const sourceVal = document.getElementById('filter-file-source')?.value || '';
+
+        let filtered = allFiles;
+        if (searchVal) {
+          filtered = filtered.filter(f =>
+            (f.title && f.title.toLowerCase().includes(searchVal)) ||
+            (f.description && f.description.toLowerCase().includes(searchVal)) ||
+            (f.file_name && f.file_name.toLowerCase().includes(searchVal))
+          );
+        }
+        if (courseVal) {
+          filtered = filtered.filter(f => f.course_id === courseVal);
+        }
+        if (accessVal) {
+          filtered = filtered.filter(f => f.visibility === accessVal);
+        }
+        if (sourceVal) {
+          filtered = filtered.filter(f => f.source_type === sourceVal);
+        }
+
+        const tbody = document.getElementById('study-files-table-body');
+        if (!filtered || filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding:2.5rem;color:var(--color-text-muted);">لا توجد ملفات دراسية مطابقة. انقر على زر <strong>+ إضافة ملف دراسي جديد</strong> للبدء برفع مذكراتك أو مشاركة روابط Google Drive.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(f => {
+          const icon = getFileIcon(f.file_name, f.source_type);
+          const formattedDate = f.created_at ? f.created_at.substring(0, 10) : '-';
+          const dlUrl = f.source_type === 'upload' ? `/api/study-files/download/${f.id}` : f.external_url;
+
+          return `
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:0.75rem;">
+                  <span style="font-size:1.6rem;">${icon}</span>
+                  <div>
+                    <strong style="color:var(--color-text-main);font-size:0.95rem;">${f.title}</strong>
+                    ${f.description ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${f.description}</div>` : ''}
+                    <div style="font-size:0.75rem;color:var(--color-text-dim);">${f.file_name || ''}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <span style="color:var(--color-primary);font-weight:600;font-size:0.85rem;">${f.course_title || 'كورس عام'}</span>
+                ${f.unit_title ? `<div style="font-size:0.75rem;color:var(--color-text-muted);">${f.unit_title}</div>` : ''}
+              </td>
+              <td>
+                <span class="badge" style="background:var(--color-bg-secondary);color:var(--color-cyan-accent);">
+                  ${f.source_type === 'google_drive' ? 'Google Drive 🌐' : 'مرفوع محلياً 📁'}
+                </span>
+              </td>
+              <td>${formatBytes(f.file_size)}</td>
+              <td>
+                <span class="badge ${f.visibility === 'PUBLIC' ? 'badge-public' : 'badge-subscribers'}">
+                  ${f.visibility === 'PUBLIC' ? 'عام للجميع' : 'للمشتركين فقط 🔑'}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm toggle-file-pub-btn" data-id="${f.id}" data-pub="${f.is_published}" style="padding:2px 8px;border:none;">
+                  <span class="badge ${f.is_published ? 'badge-public' : 'badge-danger'}">
+                    ${f.is_published ? 'منشور ✅' : 'مسودة ⏸️'}
+                  </span>
+                </button>
+              </td>
+              <td style="font-size:0.85rem;color:var(--color-text-muted);">${formattedDate}</td>
+              <td>
+                <div style="display:flex;gap:0.4rem;">
+                  ${dlUrl ? `<a href="${dlUrl}" target="_blank" class="btn btn-primary btn-sm" title="فتح أو تحميل">فتح ↗️</a>` : ''}
+                  <button class="btn btn-secondary btn-sm edit-file-btn" data-id="${f.id}" title="تعديل">تعديل ✏️</button>
+                  <button class="btn btn-danger btn-sm del-file-btn" data-id="${f.id}" title="حذف">حذف 🗑️</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        // Bind Edit Buttons
+        document.querySelectorAll('.edit-file-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const fItem = allFiles.find(x => x.id === btn.dataset.id);
+            if (fItem) openFileModal(fItem);
+          });
+        });
+
+        // Bind Delete Buttons
+        document.querySelectorAll('.del-file-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const fileId = btn.dataset.id;
+            Modal.confirm({
+              title: 'تأكيد حذف الملف الدراسي',
+              message: 'هل أنت متأكد من رغبتك في حذف هذا الملف التعليمي نهائياً؟',
+              onConfirm: async () => {
+                try {
+                  await ApiClient.delete(`/study-files/${fileId}`);
+                  Toast.success('تم حذف الملف بنجاح ✅');
+                  loadStudyFiles();
+                } catch (err) {
+                  Toast.error(err.message || 'فشل حذف الملف');
+                }
+              }
+            });
+          });
+        });
+
+        // Bind Toggle Published
+        document.querySelectorAll('.toggle-file-pub-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const fItem = allFiles.find(x => x.id === btn.dataset.id);
+            if (!fItem) return;
+            const newPub = !fItem.is_published;
+            try {
+              await ApiClient.put(`/study-files/${fItem.id}`, { is_published: newPub });
+              Toast.success(newPub ? 'تم نشر الملف للطلاب' : 'تم إلغاء نشر الملف');
+              loadStudyFiles();
+            } catch (err) {
+              Toast.error(err.message);
+            }
+          });
+        });
+
+      } catch (err) {
+        console.error(err);
+        Toast.error('فشل تحميل قائمة الملفات الدراسية');
+      }
+    }
+
+    async function openFileModal(fileItem) {
+      const isEdit = !!fileItem;
+
+      // Ensure courses loaded
+      if (cachedCourses.length === 0) {
+        const cRes = await ApiClient.get('/courses').catch(() => ({ courses: [] }));
+        cachedCourses = cRes.courses || [];
+      }
+
+      Modal.open({
+        title: isEdit ? `تعديل الملف: ${fileItem.title}` : 'إضافة ملف أو مذكرة دراسية جديدة 📁',
+        contentHtml: `
+          <form id="form-study-file-save">
+            ${!isEdit ? `
+              <!-- Source Selection Tabs -->
+              <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;">
+                <label style="flex:1;cursor:pointer;">
+                  <input type="radio" name="file-source-type" value="upload" checked style="margin-left:0.5rem;">
+                  <strong>رفع ملف مباشر من الجهاز 📁</strong>
+                </label>
+                <label style="flex:1;cursor:pointer;">
+                  <input type="radio" name="file-source-type" value="google_drive" style="margin-left:0.5rem;">
+                  <strong>رابط Google Drive 🌐</strong>
+                </label>
+              </div>
+
+              <!-- Upload File Picker -->
+              <div class="form-group" id="file-upload-input-group">
+                <label class="form-label">اختر الملف من جهازك (PDF, Word, PPT, Excel, ZIP, صور) <span style="color:var(--color-danger);">*</span></label>
+                <input type="file" id="modal-file-upload-picker" class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.webp,.txt,.py">
+                <div style="font-size:0.75rem;color:var(--color-text-muted);margin-top:0.3rem;">الحد الأقصى لحجم الملف المرفوع: 50 ميجابايت.</div>
+              </div>
+
+              <!-- Google Drive Input -->
+              <div class="form-group" id="file-drive-input-group" style="display:none;">
+                <label class="form-label">رابط Google Drive للملف أو المستند <span style="color:var(--color-danger);">*</span></label>
+                <input type="url" id="modal-file-drive-url" class="form-input" placeholder="https://drive.google.com/file/d/.../view?usp=sharing">
+                <div style="font-size:0.75rem;color:var(--color-text-muted);margin-top:0.3rem;">تأكد من ضبط أذونات مشاركة الرابط على Google Drive ليكون متاحاً لمن يملك الرابط (Anyone with the link).</div>
+              </div>
+            ` : ''}
+
+            <div class="form-group">
+              <label class="form-label">عنوان الملف أو المذكرة <span style="color:var(--color-danger);">*</span></label>
+              <input type="text" id="modal-file-title" class="form-input" required value="${fileItem?.title || ''}" placeholder="مثال: مذكرة شرح لغة بايثون - الوحدة الأولى">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">وصف إضافي أو تعليمات دراسية</label>
+              <textarea id="modal-file-desc" class="form-input" rows="2" placeholder="وصف محتوى المذكرة، وما تحتويه من ملخصات وأسئلة...">${fileItem?.description || ''}</textarea>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">الكورس التابع له الملف</label>
+                <select id="modal-file-course" class="form-input">
+                  <option value="">عام لكافة الكورسات</option>
+                  ${cachedCourses.map(c => `<option value="${c.id}" ${fileItem?.course_id === c.id ? 'selected' : ''}>${c.title}</option>`).join('')}
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">مستوى الوصول للملف</label>
+                <select id="modal-file-visibility" class="form-input">
+                  <option value="PUBLIC" ${fileItem?.visibility === 'PUBLIC' ? 'selected' : ''}>عام ومتاح لجميع الطلاب (مجاني)</option>
+                  <option value="SUBSCRIBERS_ONLY" ${fileItem?.visibility === 'SUBSCRIBERS_ONLY' ? 'selected' : ''}>للمشتركين أصحاب الاشتراكات النشطة فقط 🔑</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" id="submit-study-file-btn" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.75rem;padding:0.85rem;">
+              ${isEdit ? 'حفظ تعديلات الملف 💾' : 'إضافة ونشر الملف الدراسي الآن 🚀'}
+            </button>
+          </form>
+        `
+      });
+
+      // Source Toggle listener
+      const uploadGrp = document.getElementById('file-upload-input-group');
+      const driveGrp = document.getElementById('file-drive-input-group');
+      document.querySelectorAll('input[name="file-source-type"]').forEach(r => {
+        r.addEventListener('change', () => {
+          if (r.value === 'upload') {
+            if (uploadGrp) uploadGrp.style.display = 'block';
+            if (driveGrp) driveGrp.style.display = 'none';
+          } else {
+            if (uploadGrp) uploadGrp.style.display = 'none';
+            if (driveGrp) driveGrp.style.display = 'block';
+          }
+        });
+      });
+
+      // Form submission
+      const form = document.getElementById('form-study-file-save');
+      if (form) {
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const submitBtn = document.getElementById('submit-study-file-btn');
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'جاري المعالجة والرفع...';
+          }
+
+          const title = document.getElementById('modal-file-title').value.trim();
+          const description = document.getElementById('modal-file-desc').value.trim();
+          const courseId = document.getElementById('modal-file-course').value || null;
+          const visibility = document.getElementById('modal-file-visibility').value;
+
+          try {
+            if (isEdit) {
+              await ApiClient.put(`/study-files/${fileItem.id}`, {
+                title,
+                description,
+                course_id: courseId,
+                visibility
+              });
+              Toast.success('تم تحديث بيانات الملف بنجاح ✅');
+            } else {
+              const selectedSource = document.querySelector('input[name="file-source-type"]:checked')?.value || 'upload';
+              if (selectedSource === 'upload') {
+                const filePicker = document.getElementById('modal-file-upload-picker');
+                const file = filePicker?.files[0];
+                if (!file) {
+                  Toast.error('يرجى اختيار ملف من جهازك للرفع');
+                  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'إضافة الملف'; }
+                  return;
+                }
+                const fd = new FormData();
+                fd.append('title', title);
+                fd.append('description', description);
+                if (courseId) fd.append('course_id', courseId);
+                fd.append('visibility', visibility);
+                fd.append('file', file);
+
+                Toast.info('جاري رفع الملف وحفظه بأمان...');
+                await ApiClient.upload('/study-files/upload', fd);
+                Toast.success('تم رفع وحفظ الملف الدراسي بنجاح! 🎉');
+              } else {
+                const driveUrl = document.getElementById('modal-file-drive-url')?.value.trim();
+                if (!driveUrl) {
+                  Toast.error('يرجى إدخال رابط Google Drive للملف');
+                  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'إضافة الملف'; }
+                  return;
+                }
+                await ApiClient.post('/study-files/link', {
+                  title,
+                  description,
+                  external_url: driveUrl,
+                  course_id: courseId,
+                  visibility
+                });
+                Toast.success('تم ربط ملف Google Drive بنجاح! 🌐');
+              }
+            }
+            Modal.close();
+            loadStudyFiles();
+          } catch (err) {
+            Toast.error(err.message || 'فشلت عملية حفظ الملف');
+          } finally {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = isEdit ? 'حفظ تعديلات الملف 💾' : 'إضافة ونشر الملف الدراسي الآن 🚀';
+            }
+          }
+        });
+      }
+    }
+
+    document.getElementById('filter-file-search')?.addEventListener('input', debounce(loadStudyFiles, 300));
+    document.getElementById('filter-file-course')?.addEventListener('change', loadStudyFiles);
+    document.getElementById('filter-file-access')?.addEventListener('change', loadStudyFiles);
+    document.getElementById('filter-file-source')?.addEventListener('change', loadStudyFiles);
+
+    await Promise.all([loadCoursesDropdown(), loadStudyFiles()]);
+  }
 }
