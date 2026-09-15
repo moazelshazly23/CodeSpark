@@ -1,0 +1,644 @@
+{
+  "users": {
+    "8032b5eed0cc4631a1a336f15c6a83a3": {
+      "username": "admin",
+      "email": "admin@codespark.edu",
+      "full_name": "الأستاذ المشرف - مدير كود سبارك",
+      "role": "admin",
+      "phone": "01000000001",
+      "hashed_password": "99S6tlDZly/7thSsoqtBmNmL3KHImit8jvW0zbKV3FyMOaJyLeo2I4VYplMrstgR",
+      "is_active": true,
+      "id": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "created_at": "2026-09-12T05:58:06.849550+00:00",
+      "updated_at": "2026-09-12T05:58:06.849550+00:00"
+    },
+    "37babb0519b647d8bd69a5535d4d4e0a": {
+      "username": "student",
+      "email": "student@codespark.edu",
+      "full_name": "زياد الشاذلي (طالب مادة البرمجة)",
+      "role": "student",
+      "phone": "01000000002",
+      "hashed_password": "JXGY2mvxuBFlXMjKWU8y+j7V//grvI6NgmUi40SHjmtZaWzDJJmHGZEp1Hownc5C",
+      "is_active": true,
+      "id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "created_at": "2026-09-12T05:58:07.157037+00:00",
+      "updated_at": "2026-09-12T05:58:07.157037+00:00"
+    }
+  },
+  "roles": {
+    "role_admin": {
+      "id": "role_admin",
+      "name": "admin",
+      "description": "مدير النظام مع صلاحيات تحكم شاملة",
+      "permissions": [
+        "all"
+      ],
+      "created_at": "2026-09-12T05:58:06.301346+00:00"
+    },
+    "role_teacher": {
+      "id": "role_teacher",
+      "name": "teacher",
+      "description": "معلم مادة البرمجة (إنشاء الدروس، بنك الأسئلة، الامتحانات، والتصحيح)",
+      "permissions": [
+        "lessons.manage",
+        "questions.manage",
+        "exams.manage",
+        "assignments.manage",
+        "grading.manage",
+        "reports.view"
+      ],
+      "created_at": "2026-09-12T05:58:06.409070+00:00"
+    },
+    "role_assistant": {
+      "id": "role_assistant",
+      "name": "assistant",
+      "description": "مساعد تعليمي (متابعة الطلاب ومراجعة الواجبات)",
+      "permissions": [
+        "assignments.grade",
+        "students.view",
+        "reports.view"
+      ],
+      "created_at": "2026-09-12T05:58:06.547301+00:00"
+    },
+    "role_student": {
+      "id": "role_student",
+      "name": "student",
+      "description": "طالب مسجل في مادة البرمجة",
+      "permissions": [
+        "lessons.view",
+        "exams.take",
+        "assignments.submit",
+        "playground.use"
+      ],
+      "created_at": "2026-09-12T05:58:06.650777+00:00"
+    }
+  },
+  "permissions": {},
+  "lessons": {
+    "c81f207272ea4ec781f1e69bd0131bc1": {
+      "title": "الوحدة الأولى: مدخل إلى التفكير الخوارزمي ومخططات التدفق",
+      "slug": "unit-1-algorithmic-thinking",
+      "description": "استكشاف مفهوم الخوارزمية كخطوات منطقية لحل المشكلات، وبناء مخططات التدفق (Flowcharts) للمسائل الأكاديمية.",
+      "content": "# الوحدة الأولى: التفكير الخوارزمي ومخططات الانسياب\n\n### 1. ما هي الخوارزمية؟\nالخوارزمية (Algorithm) هي مجموعة مرتبة ومنتهية من الخطوات المنطقية الواضحة التي يتم اتباعها خطوة بخطوة لحل مشكلة محددة أو أداء مهمة معينة.\n\n### 2. خصائص الخوارزمية السليمة:\n1. **الوضوح (Definiteness):** كل خطوة يجب أن تكون محددة ولا تقبل التأويل.\n2. **المدخلات (Inputs):** قد تحتوي الخوارزمية على مدخلات محددة أو تبدأ ببيانات أولية.\n3. **المخرجات (Outputs):** يجب أن تنتج الخوارزمية نتيجة واحدة على الأقل.\n4. **النهاية (Finiteness):** يجب أن تنتهي الخوارزمية بعد عدد محدد من الخطوات ولا تدخل في حلقة لا نهائية غير مقصودة.\n5. **الفاعلية (Effectiveness):** أن تكون العمليات قابلة للتنفيذ عمليًا في وقت معقول.\n\n### 3. مخططات الانسياب (Flowcharts):\n- **المستطيل:** يمثل عملية معالجة (Processing) أو حساب.\n- **المعين:** يمثل اتخاذ قرار أو شرط (Decision).\n- **متوازي الأضلاع:** يمثل الإدخال أو الإخراج (I/O).\n- **الشكل البيضاوي:** يمثل البداية أو النهاية (Start/End).",
+      "order_index": 1,
+      "is_published": true,
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "c81f207272ea4ec781f1e69bd0131bc1",
+      "created_at": "2026-09-12T05:58:07.339660+00:00",
+      "updated_at": "2026-09-12T05:58:07.339660+00:00"
+    },
+    "d758fbd206e74e5ea75b46b5c5076463": {
+      "title": "الوحدة الثانية: المتغيرات وأنواع البيانات ونظم التخزين في الذاكرة",
+      "slug": "unit-2-variables-and-datatypes",
+      "description": "دراسة أنواع البيانات الأساسية (الأعداد الصحيحة، العشرية، الحروف، السلاسل النصية، والقيم المنطقية) وكيفية حجز المتغيرات في الذاكرة.",
+      "content": "# الوحدة الثانية: المتغيرات وأنواع البيانات\n\n### 1. مفهوم المتغير في البرمجة:\nالمتغير هو موقع مسمى في ذاكرة الحاسوب (RAM) مخصص لتخزين قيمة يمكن تغييرها أثناء تنفيذ البرنامج.\n\n### 2. أنواع البيانات الأساسية:\n- **الأعداد الصحيحة (Integers):** أرقام بدون كسور مثل -5, 0, 42.\n- **الأعداد الحقيقية/العشرية (Floating Point):** أرقام تحتوي على علامة عشرية مثل 3.14.\n- **القيم المنطقية (Booleans):** تحتمل قيمتين فقط: صواب (True) أو خطأ (False).\n- **المحارف والنصوص (Strings/Chars):** تسلسل من الأحرف والرموز.",
+      "order_index": 2,
+      "is_published": true,
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "d758fbd206e74e5ea75b46b5c5076463",
+      "created_at": "2026-09-12T05:58:07.637596+00:00",
+      "updated_at": "2026-09-12T05:58:07.637596+00:00"
+    },
+    "d78fca6579864456a01a75eda4c09e90": {
+      "title": "الوحدة الثالثة: جمل التحكم والشروط والتكرار (Loops)",
+      "slug": "unit-3-control-flow-and-loops",
+      "description": "صناعة القرار البرمجي من خلال الجمل الشرطية (If-Else) وبناء حلقات التكرار (For / While) وتجنب الحلقات اللانهائية.",
+      "content": "# الوحدة الثالثة: جمل التحكم والتكرار\n\n### 1. الشروط وصنع القرار (Conditional Statements):\nتمكن البرنامج من اختيار المسار البرمجي المناسب بناءً على تحقق شرط معين.\n\n### 2. حلقات التكرار (Loops):\n- **حلقة محددة (For Loop):** تستخدم عندما يكون عدد مرات التكرار معروفًا مسبقًا.\n- **حلقة شرطية (While Loop):** تستمر في التكرار طالما أن الشرط صحيح (True).",
+      "order_index": 3,
+      "is_published": true,
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "d78fca6579864456a01a75eda4c09e90",
+      "created_at": "2026-09-12T05:58:07.842697+00:00",
+      "updated_at": "2026-09-12T05:58:07.842697+00:00"
+    }
+  },
+  "videos": {
+    "5e283d6ce3e6488b90eb9817b0843ddc": {
+      "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1",
+      "title": "شرح التفكير الخوارزمي ومخططات الانسياب",
+      "video_type": "youtube",
+      "url": "https://www.youtube.com/watch?v=kM9ASKAni_s",
+      "duration_seconds": 900,
+      "id": "5e283d6ce3e6488b90eb9817b0843ddc",
+      "created_at": "2026-09-12T05:58:07.440499+00:00"
+    },
+    "b01b5d141275454fa86387c9961e1985": {
+      "lesson_id": "d758fbd206e74e5ea75b46b5c5076463",
+      "title": "المتغيرات والذاكرة وعمليات التعيين",
+      "video_type": "youtube",
+      "url": "https://www.youtube.com/watch?v=zOjov-2OZ0E",
+      "duration_seconds": 1200,
+      "id": "b01b5d141275454fa86387c9961e1985",
+      "created_at": "2026-09-12T05:58:07.739831+00:00"
+    }
+  },
+  "lesson_progress": {
+    "7a0f66b6203043b997d980f98955bd03": {
+      "student_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1",
+      "started_at": "2026-09-12T05:58:09.999939+00:00",
+      "last_accessed_at": "2026-09-12T05:58:10.213948+00:00",
+      "is_completed": true,
+      "completed_at": "2026-09-12T05:58:10.213948+00:00",
+      "last_video_position_seconds": 900.0,
+      "watch_percentage": 100.0,
+      "id": "7a0f66b6203043b997d980f98955bd03",
+      "created_at": "2026-09-12T05:58:10.000047+00:00"
+    }
+  },
+  "study_files": {
+    "4186e853c2c94716ad1b86a89d67f257": {
+      "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1",
+      "name": "ملخص الوحدة الأولى - الخوارزميات ومخططات الانسياب.pdf",
+      "description": "دليل دراسي شامل لمادة البرمجة مع أمثلة لمخططات التدفق",
+      "file_type": "PDF",
+      "file_source": "google_drive",
+      "external_url": "https://drive.google.com/file/d/codespark_unit1_summary/view",
+      "file_size_bytes": 2450000,
+      "is_public": true,
+      "id": "4186e853c2c94716ad1b86a89d67f257",
+      "created_at": "2026-09-12T05:58:07.534755+00:00"
+    }
+  },
+  "question_bank": {
+    "52170071126240249966ae90d86defbe": {
+      "question_type": "multiple_choice",
+      "question_text": "أي من الأشكال الهندسية التالية يمثل اتخاذ القرار أو الشرط في مخططات الانسياب (Flowcharts)؟",
+      "options": [
+        {
+          "id": "opt1",
+          "text": "المستطيل",
+          "is_correct": false
+        },
+        {
+          "id": "opt2",
+          "text": "المعين",
+          "is_correct": true
+        },
+        {
+          "id": "opt3",
+          "text": "متوازي الأضلاع",
+          "is_correct": false
+        },
+        {
+          "id": "opt4",
+          "text": "الدائرة",
+          "is_correct": false
+        }
+      ],
+      "correct_answer": "opt2",
+      "explanation": "المعين في مخططات الانسياب مخصص لتمثيل القرارات والشروط التي تتفرع إلى نعم (Yes) أو لا (No).",
+      "marks": 2.0,
+      "difficulty": "easy",
+      "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1",
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "52170071126240249966ae90d86defbe",
+      "created_at": "2026-09-12T05:58:07.947123+00:00",
+      "updated_at": "2026-09-12T05:58:07.947123+00:00"
+    },
+    "176531f811e849a698b9aed2b4ad97bd": {
+      "question_type": "true_false",
+      "question_text": "يجب أن تنتهي أي خوارزمية سليمة بعد عدد محدد من الخطوات ولا تظل تعمل إلى ما لا نهاية.",
+      "correct_answer": "true",
+      "explanation": "خاصية النهاية (Finiteness) شرط أساسي من شروط الخوارزمية السليمة.",
+      "marks": 2.0,
+      "difficulty": "easy",
+      "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1",
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "176531f811e849a698b9aed2b4ad97bd",
+      "created_at": "2026-09-12T05:58:08.041114+00:00",
+      "updated_at": "2026-09-12T05:58:08.041114+00:00"
+    },
+    "fc405865382747408e8edae2fd2bed89": {
+      "question_type": "essay",
+      "question_text": "قارن بين حلقة التكرار المحددة (For Loop) والحلقة الشرطية (While Loop) من حيث الاستخدام ومتى يفضل كل منهما.",
+      "correct_answer": "تستخدم For عندما يكون عدد مرات التكرار معلومًا، وتستخدم While عندما يتوقف التكرار على تحقق شرط معين.",
+      "explanation": "إجابة مقالية نموذجية تتناول الفروق الجوهرية وحالات الاستخدام العملي.",
+      "marks": 5.0,
+      "difficulty": "medium",
+      "lesson_id": "d78fca6579864456a01a75eda4c09e90",
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "fc405865382747408e8edae2fd2bed89",
+      "created_at": "2026-09-12T05:58:08.144411+00:00",
+      "updated_at": "2026-09-12T05:58:08.144411+00:00"
+    },
+    "c302e335c3f440228cbd3271e1a7367c": {
+      "question_type": "multiple_choice",
+      "question_text": "ما هو نوع البيانات الأنسب لتخزين قيمة النسبة المئوية لدرجات طالب (مثل 87.5%)؟",
+      "options": [
+        {
+          "id": "opt_int",
+          "text": "Integer (عدد صحيح)",
+          "is_correct": false
+        },
+        {
+          "id": "opt_float",
+          "text": "Float (عدد عشري)",
+          "is_correct": true
+        },
+        {
+          "id": "opt_bool",
+          "text": "Boolean (قيمة منطقية)",
+          "is_correct": false
+        },
+        {
+          "id": "opt_char",
+          "text": "Char (رمز فردي)",
+          "is_correct": false
+        }
+      ],
+      "correct_answer": "opt_float",
+      "explanation": "النسب المئوية تتطلب وجود جزء كسري عشري، وبالتالي Float أو Double هو النوع الأنسب.",
+      "marks": 2.0,
+      "difficulty": "easy",
+      "lesson_id": "d758fbd206e74e5ea75b46b5c5076463",
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "c302e335c3f440228cbd3271e1a7367c",
+      "created_at": "2026-09-12T05:58:08.245584+00:00",
+      "updated_at": "2026-09-12T05:58:08.245584+00:00"
+    },
+    "5c89fb036fcc44fa967bc47adaf2481b": {
+      "question_type": "code",
+      "question_text": "اكتب برنامجًا يطبع مجموع الأعداد من 1 إلى 5 باستخدام أي لغة تفضلها (مثل Python). الناتج المتوقع هو: 15",
+      "options": [],
+      "code_metadata": {
+        "language": "python",
+        "starter_code": "# اكتب الكود هنا لحساب وطباعة المجموع\n",
+        "expected_output": "15"
+      },
+      "correct_answer": "15",
+      "explanation": "1 + 2 + 3 + 4 + 5 = 15",
+      "marks": 4.0,
+      "difficulty": "medium",
+      "lesson_id": "d78fca6579864456a01a75eda4c09e90",
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "5c89fb036fcc44fa967bc47adaf2481b",
+      "created_at": "2026-09-12T05:58:08.346515+00:00",
+      "updated_at": "2026-09-12T05:58:08.346515+00:00"
+    }
+  },
+  "exams": {
+    "aa7341c44a8d4e15ba6428a151f28169": {
+      "title": "الامتحان الأسبوعي الأول: التفكير الخوارزمي والمفاهيم الأساسية",
+      "slug": "weekly-exam-1-algorithms",
+      "description": "امتحان أسبوعي تقييمي لقياس استيعاب مبادئ الخوارزميات ومخططات التدفق وأنواع البيانات.",
+      "exam_type": "weekly",
+      "duration_minutes": 25,
+      "total_marks": 15.0,
+      "passing_marks": 8.0,
+      "max_attempts": 2,
+      "allow_retake": true,
+      "is_published": true,
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "aa7341c44a8d4e15ba6428a151f28169",
+      "created_at": "2026-09-12T05:58:08.444570+00:00",
+      "updated_at": "2026-09-12T05:58:08.444570+00:00"
+    }
+  },
+  "exam_questions": {
+    "7808f78d94614a32aec6070bac3cdd7c": {
+      "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+      "question_id": "52170071126240249966ae90d86defbe",
+      "order_index": 1,
+      "marks": 2.0,
+      "id": "7808f78d94614a32aec6070bac3cdd7c",
+      "created_at": "2026-09-12T05:58:08.532125+00:00"
+    },
+    "7a6fad9dc713478c8697713db507869c": {
+      "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+      "question_id": "176531f811e849a698b9aed2b4ad97bd",
+      "order_index": 2,
+      "marks": 2.0,
+      "id": "7a6fad9dc713478c8697713db507869c",
+      "created_at": "2026-09-12T05:58:08.623037+00:00"
+    },
+    "2cbb44b370334cc08198bfee33973fd5": {
+      "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+      "question_id": "c302e335c3f440228cbd3271e1a7367c",
+      "order_index": 3,
+      "marks": 2.0,
+      "id": "2cbb44b370334cc08198bfee33973fd5",
+      "created_at": "2026-09-12T05:58:08.724039+00:00"
+    },
+    "bf4dc53ca29f41288586a5cb837c421e": {
+      "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+      "question_id": "fc405865382747408e8edae2fd2bed89",
+      "order_index": 4,
+      "marks": 5.0,
+      "id": "bf4dc53ca29f41288586a5cb837c421e",
+      "created_at": "2026-09-12T05:58:08.827691+00:00"
+    },
+    "a7ec358b0bcb4c27b04a8ff4ba8134b4": {
+      "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+      "question_id": "5c89fb036fcc44fa967bc47adaf2481b",
+      "order_index": 5,
+      "marks": 4.0,
+      "id": "a7ec358b0bcb4c27b04a8ff4ba8134b4",
+      "created_at": "2026-09-12T05:58:08.932749+00:00"
+    }
+  },
+  "exam_attempts": {
+    "a65d7b6b7fb64d599a2c3473ac859bfa": {
+      "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+      "student_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "attempt_number": 1,
+      "started_at": "2026-09-12T05:58:11.324637+00:00",
+      "expires_at": "2026-09-12T06:23:11.324637+00:00",
+      "submitted_at": "2026-09-12T05:58:11.669157+00:00",
+      "status": "graded",
+      "answers": {
+        "test_q": "opt2",
+        "52170071126240249966ae90d86defbe": "opt2",
+        "176531f811e849a698b9aed2b4ad97bd": "true",
+        "c302e335c3f440228cbd3271e1a7367c": "opt_float",
+        "fc405865382747408e8edae2fd2bed89": "تستخدم For عند معرفة عدد التكرارات بينما While تستخدم حسب تحقق شرط.",
+        "5c89fb036fcc44fa967bc47adaf2481b": "15"
+      },
+      "score": 15.0,
+      "total_possible": 15.0,
+      "percentage": 100.0,
+      "feedback": "إجابة نموذجية ممتازة",
+      "id": "a65d7b6b7fb64d599a2c3473ac859bfa",
+      "created_at": "2026-09-12T05:58:11.324734+00:00",
+      "last_saved_at": "2026-09-12T05:58:11.536961+00:00",
+      "graded_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "graded_at": "2026-09-12T05:58:11.981833+00:00"
+    }
+  },
+  "assignments": {
+    "ab0cb6123e504628bc358e8f7ccde4e8": {
+      "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1",
+      "title": "واجب الوحدة الأولى: تحليل خطوات خوارزمية إيجاد العدد الأكبر",
+      "description": "قم بحل المسائل التدريبية المرفقة لتثبيت مهارة التفكير التسلسلي والمنطقي.",
+      "total_marks": 10.0,
+      "is_published": true,
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "ab0cb6123e504628bc358e8f7ccde4e8",
+      "created_at": "2026-09-12T05:58:09.030513+00:00",
+      "updated_at": "2026-09-12T05:58:09.030513+00:00"
+    }
+  },
+  "assignment_questions": {
+    "e03fcdc92e14456bbbbcf0c5f63d5bc6": {
+      "assignment_id": "ab0cb6123e504628bc358e8f7ccde4e8",
+      "question_id": "52170071126240249966ae90d86defbe",
+      "order_index": 1,
+      "marks": 5.0,
+      "id": "e03fcdc92e14456bbbbcf0c5f63d5bc6",
+      "created_at": "2026-09-12T05:58:09.124785+00:00"
+    },
+    "ed015867e9be44cdbdbeea327c379ba0": {
+      "assignment_id": "ab0cb6123e504628bc358e8f7ccde4e8",
+      "question_id": "176531f811e849a698b9aed2b4ad97bd",
+      "order_index": 2,
+      "marks": 5.0,
+      "id": "ed015867e9be44cdbdbeea327c379ba0",
+      "created_at": "2026-09-12T05:58:09.238084+00:00"
+    }
+  },
+  "assignment_submissions": {
+    "750a8c40cc0d47edacf8e6285105b12c": {
+      "assignment_id": "ab0cb6123e504628bc358e8f7ccde4e8",
+      "student_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "answers": {
+        "opt1": "opt2",
+        "opt2": "true"
+      },
+      "status": "graded",
+      "score": 9.5,
+      "total_possible": 10.0,
+      "last_saved_at": "2026-09-12T05:58:10.552074+00:00",
+      "id": "750a8c40cc0d47edacf8e6285105b12c",
+      "created_at": "2026-09-12T05:58:10.552251+00:00",
+      "submitted_at": "2026-09-12T05:58:10.670931+00:00",
+      "feedback": "حل ممتاز وشرح وافٍ للخطوات المنطقية",
+      "graded_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "graded_at": "2026-09-12T05:58:10.960029+00:00"
+    }
+  },
+  "notifications": {
+    "edc654d8000344efb3122e676f221e10": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "type": "lesson",
+      "title": "إتمام درس",
+      "message": "أحسنت! أكملت دراسة الدرس بنجاح.",
+      "link": "/lessons/c81f207272ea4ec781f1e69bd0131bc1",
+      "is_read": false,
+      "read_at": null,
+      "id": "edc654d8000344efb3122e676f221e10",
+      "created_at": "2026-09-12T05:58:10.313659+00:00"
+    },
+    "921e5c696c794c3cb905eec320a04db1": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "type": "assignment",
+      "title": "تم تسليم الواجب",
+      "message": "تم تسليم حل واجب 'واجب الوحدة الأولى: تحليل خطوات خوارزمية إيجاد العدد الأكبر' بنجاح.",
+      "link": "/assignments/ab0cb6123e504628bc358e8f7ccde4e8",
+      "is_read": false,
+      "read_at": null,
+      "id": "921e5c696c794c3cb905eec320a04db1",
+      "created_at": "2026-09-12T05:58:10.854503+00:00"
+    },
+    "6e5b1e5077c646358d72cbc27876abf9": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "type": "grade",
+      "title": "تم تصحيح الواجب",
+      "message": "تم تصحيح واجبك بنتيجة: 9.5 / 10.0",
+      "link": "/assignments/ab0cb6123e504628bc358e8f7ccde4e8",
+      "is_read": false,
+      "read_at": null,
+      "id": "6e5b1e5077c646358d72cbc27876abf9",
+      "created_at": "2026-09-12T05:58:11.067096+00:00"
+    },
+    "184ae0ccf071477c8554f5de3819d7dd": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "type": "exam",
+      "title": "تم تسليم الامتحان",
+      "message": "تم تسليم امتحان 'الامتحان الأسبوعي الأول: التفكير الخوارزمي والمفاهيم الأساسية' وهو قيد المراجعة.",
+      "link": "/exams/aa7341c44a8d4e15ba6428a151f28169/results",
+      "is_read": false,
+      "read_at": null,
+      "id": "184ae0ccf071477c8554f5de3819d7dd",
+      "created_at": "2026-09-12T05:58:11.874170+00:00"
+    },
+    "1246489736ac4479a204f7b9476c451d": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "type": "grade",
+      "title": "تم رصد نتيجة الامتحان",
+      "message": "تم تصحيح امتحانك وحصولك على نسبة 100.0%",
+      "link": "/exams/aa7341c44a8d4e15ba6428a151f28169/results",
+      "is_read": true,
+      "read_at": "2026-09-12T05:58:12.300553+00:00",
+      "id": "1246489736ac4479a204f7b9476c451d",
+      "created_at": "2026-09-12T05:58:12.086548+00:00"
+    }
+  },
+  "announcements": {
+    "1f2c2b81791f4a0a9b746ff3cebaa863": {
+      "title": "مرحبًا بكم في منصة كود سبارك لمادة البرمجة",
+      "content": "نرحب بجميع أبنائنا الطلاب في الفصل الدراسي الجديد. تم رفع الدروس الأولى والواجب الأسبوعي. يرجى البدء بمشاهدة الدروس وحل التمارين التفاعلية.",
+      "target_audience": "all",
+      "created_by": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "id": "1f2c2b81791f4a0a9b746ff3cebaa863",
+      "created_at": "2026-09-12T05:58:09.343100+00:00"
+    }
+  },
+  "activities": {
+    "c0be18a7944645e4855437519591880c": {
+      "user_id": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "action_type": "register",
+      "details": {
+        "username": "admin",
+        "role": "admin"
+      },
+      "id": "c0be18a7944645e4855437519591880c",
+      "created_at": "2026-09-12T05:58:06.955153+00:00"
+    },
+    "1bdc2082997744efa127fad0b1f20d75": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "register",
+      "details": {
+        "username": "student",
+        "role": "student"
+      },
+      "id": "1bdc2082997744efa127fad0b1f20d75",
+      "created_at": "2026-09-12T05:58:07.245110+00:00"
+    },
+    "27371daa58904d10aac2fe7eb99613bd": {
+      "user_id": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "action_type": "login",
+      "details": {
+        "timestamp": "2026-09-12T05:58:09.618679+00:00"
+      },
+      "id": "27371daa58904d10aac2fe7eb99613bd",
+      "created_at": "2026-09-12T05:58:09.618915+00:00"
+    },
+    "c40c5bb7586943b399718ed37a069b87": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "login",
+      "details": {
+        "timestamp": "2026-09-12T05:58:09.854355+00:00"
+      },
+      "id": "c40c5bb7586943b399718ed37a069b87",
+      "created_at": "2026-09-12T05:58:09.854577+00:00"
+    },
+    "2da5976c71b3465bbbe51f1aebc68929": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "lesson_start",
+      "details": {
+        "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1"
+      },
+      "id": "2da5976c71b3465bbbe51f1aebc68929",
+      "created_at": "2026-09-12T05:58:10.095521+00:00"
+    },
+    "78732ff8c240442fa01604f4e2758472": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "lesson_complete",
+      "details": {
+        "lesson_id": "c81f207272ea4ec781f1e69bd0131bc1"
+      },
+      "id": "78732ff8c240442fa01604f4e2758472",
+      "created_at": "2026-09-12T05:58:10.214057+00:00"
+    },
+    "7e6c4aacee7748bf9fb6ddbfe2b3f9f0": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "assignment_submit",
+      "details": {
+        "assignment_id": "ab0cb6123e504628bc358e8f7ccde4e8"
+      },
+      "id": "7e6c4aacee7748bf9fb6ddbfe2b3f9f0",
+      "created_at": "2026-09-12T05:58:10.768699+00:00"
+    },
+    "bdf27ba6591942329531f06e4378347d": {
+      "user_id": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "action_type": "assignment_graded",
+      "details": {
+        "submission_id": "750a8c40cc0d47edacf8e6285105b12c",
+        "score": 9.5
+      },
+      "id": "bdf27ba6591942329531f06e4378347d",
+      "created_at": "2026-09-12T05:58:11.182951+00:00"
+    },
+    "87012f6affca4020a4c450514b466ae3": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "exam_start",
+      "details": {
+        "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+        "attempt_id": "a65d7b6b7fb64d599a2c3473ac859bfa"
+      },
+      "id": "87012f6affca4020a4c450514b466ae3",
+      "created_at": "2026-09-12T05:58:11.420849+00:00"
+    },
+    "7fbabf99003d4e1082085c74e3c58cb4": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "exam_submit",
+      "details": {
+        "exam_id": "aa7341c44a8d4e15ba6428a151f28169",
+        "score": 10.0,
+        "percentage": 66.67
+      },
+      "id": "7fbabf99003d4e1082085c74e3c58cb4",
+      "created_at": "2026-09-12T05:58:11.768758+00:00"
+    },
+    "f2358fae45fe4f24bb7fd09a2461ef49": {
+      "user_id": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "action_type": "exam_manual_grade",
+      "details": {
+        "attempt_id": "a65d7b6b7fb64d599a2c3473ac859bfa",
+        "score": 15.0
+      },
+      "id": "f2358fae45fe4f24bb7fd09a2461ef49",
+      "created_at": "2026-09-12T05:58:12.180379+00:00"
+    },
+    "3d3c2adca4674bd9a952e5e5d26b5faf": {
+      "user_id": "37babb0519b647d8bd69a5535d4d4e0a",
+      "action_type": "playground_run",
+      "details": {
+        "language": "python"
+      },
+      "id": "3d3c2adca4674bd9a952e5e5d26b5faf",
+      "created_at": "2026-09-12T05:58:12.457009+00:00"
+    },
+    "a9b91c5086d540b28a776c5d3acb3c67": {
+      "user_id": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "action_type": "lesson_create",
+      "details": {
+        "lesson_id": "9a1cdd419ba44595867a99bcbc2371c1",
+        "title": "درس مؤقت لاختبار الحذف المتتالي"
+      },
+      "id": "a9b91c5086d540b28a776c5d3acb3c67",
+      "created_at": "2026-09-12T05:58:12.685565+00:00"
+    },
+    "c8530980a89f41238ca6cebfe7cb77d3": {
+      "user_id": "8032b5eed0cc4631a1a336f15c6a83a3",
+      "action_type": "lesson_delete",
+      "details": {
+        "lesson_id": "9a1cdd419ba44595867a99bcbc2371c1",
+        "title": "درس مؤقت لاختبار الحذف المتتالي"
+      },
+      "id": "c8530980a89f41238ca6cebfe7cb77d3",
+      "created_at": "2026-09-12T05:58:12.907743+00:00"
+    }
+  },
+  "audit_logs": {},
+  "platform_settings": {
+    "settings_default": {
+      "id": "settings_default",
+      "setting_key": "general",
+      "setting_value": {
+        "platform_name": "Code Spark",
+        "academic_subject": "البرمجة",
+        "theme": "dark",
+        "primary_color": "#60A175",
+        "background_dark": "#060807",
+        "secondary_dark": "#1E472B",
+        "deep_area": "#03260E",
+        "allow_registration": true,
+        "default_exam_duration_mins": 30,
+        "autosave_interval_seconds": 15
+      },
+      "description": "General system configuration for Code Spark",
+      "created_at": "2026-09-12T05:58:06.214061+00:00"
+    }
+  }
+}
