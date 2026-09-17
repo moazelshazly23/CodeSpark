@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 160" width="680" height="160">
+  <defs>
+    <linearGradient id="hl_c_gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60A175" />
+      <stop offset="40%" stop-color="#1E472B" />
+      <stop offset="100%" stop-color="#03260E" />
+    </linearGradient>
+    <linearGradient id="hl_spark_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8CD6A3" />
+      <stop offset="100%" stop-color="#60A175" />
+    </linearGradient>
+  </defs>
+
+  <!-- Logo Mark Scaled with Light Border -->
+  <g transform="translate(10, 10) scale(0.273)">
+    <circle cx="256" cy="256" r="240" fill="#03260E" stroke="#60A175" stroke-width="10" />
+    <path d="M 370,110 C 290,65 190,75 116,135 L 64,242 C 56,252 56,264 64,274 L 116,380 C 190,442 292,450 372,402 L 332,336 C 278,368 206,362 155,324 L 122,258 L 155,190 C 206,152 278,146 332,178 Z" fill="url(#hl_c_gradient)" />
+    <path d="M 330,170 Q 330,258 418,258 Q 330,258 330,346 Q 330,258 242,258 Q 330,258 330,170 Z" fill="url(#hl_spark_grad)" />
+    <path d="M 405,178 Q 405,200 427,200 Q 405,200 405,222 Q 405,200 383,200 Q 405,200 405,178 Z" fill="#60A175" />
+    <path d="M 436,128 Q 436,146 454,146 Q 436,146 436,164 Q 436,146 418,146 Q 436,146 436,128 Z" fill="#60A175" />
+  </g>
+
+  <!-- Text: CODE SPARK in Dark text -->
+  <text x="165" y="76" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="44" letter-spacing="3" fill="#060807">
+    CODE <tspan fill="#1E472B">SPARK</tspan>
+  </text>
+  
+  <text x="168" y="112" font-family="'Cairo', 'Tajawal', system-ui, sans-serif" font-weight="600" font-size="19" letter-spacing="0.5" fill="#1E472B">
+    منصة تعليم مادة البرمجة المدرسية
+  </text>
+</svg>

@@ -1,82 +1,52 @@
 """
-Code Spark - Centralized Application Configuration
-Environment Variables & Application Settings
-Cross-platform compatibility (Windows, Linux, Docker, Python 3.10-3.14, Pydantic v1 & v2)
+CodeSpark - Centralized Configuration Management
+Provides strict type-safe environment variables and configuration defaults.
 """
 import os
 from typing import List
 
-try:
-    from pydantic_settings import BaseSettings
-except ImportError:
-    try:
-        from pydantic import BaseSettings
-    except ImportError:
-        class BaseSettings:
-            pass
-
-_this_file = globals().get("__file__")
-if not _this_file and "__spec__" in globals() and getattr(__spec__, "origin", None):
-    _this_file = __spec__.origin
-
-if _this_file:
-    CURRENT_DIR = os.path.dirname(os.path.abspath(_this_file))
-    BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
-else:
-    BASE_BACKEND_DIR = os.path.abspath(os.path.dirname(__file__))
-
-candidate_storage = os.path.abspath(os.path.join(BASE_BACKEND_DIR, "..", "storage"))
-if os.path.exists(candidate_storage) and os.access(candidate_storage, os.W_OK):
-    DEFAULT_STORAGE_DIR = candidate_storage
-else:
-    DEFAULT_STORAGE_DIR = "/tmp/codespark_storage"
-os.makedirs(DEFAULT_STORAGE_DIR, exist_ok=True)
-
-DEFAULT_DB_PATH = os.path.abspath(os.path.join(BASE_BACKEND_DIR, "codespark.db"))
-
-class Settings(BaseSettings):
-    PROJECT_NAME: str = "Code Spark"
-    PROJECT_DESCRIPTION: str = "منصة كود سبارك التعليمية المتقدمة لتدريس البرمجة"
-    VERSION: str = "1.0.0"
+class Settings:
+    PROJECT_NAME: str = "CodeSpark Educational Platform"
+    PROJECT_DESCRIPTION: str = "منصة كود سبارك لتعليم البرمجة التأسيسية لطلاب المرحلة الثانوية في جمهورية مصر العربية"
+    VERSION: str = "2.5.0-production"
     API_V1_STR: str = "/api"
 
-    # Security
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "codespark_super_secret_production_key_2026_blue_cyan_spark")
+    # Security & JWT
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "codespark_super_secret_production_key_2026_egypt_secondary")
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
+    REFRESH_TOKEN_EXPIRE_DAYS: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
 
+    # Persistent Data Directory (uses /home/spark/codespark_data for reliable file locking)
+    DATA_DIR: str = os.getenv("DATA_DIR", "/home/spark/codespark_data")
+    
     # Database Configuration
-    DATABASE_URL: str = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
-    DB_PATH: str = os.getenv("DB_PATH", DEFAULT_DB_PATH)
+    # Supports PostgreSQL connection strings (e.g. postgresql://user:pass@localhost:5432/codespark)
+    # or persistent SQLite file path for local development/testing.
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        f"sqlite:///{os.path.join(DATA_DIR, 'codespark_persistent.db')}"
+    )
 
-    # Storage Configuration
-    STORAGE_DIR: str = os.getenv("STORAGE_DIR", DEFAULT_STORAGE_DIR)
-    MAX_UPLOAD_SIZE_MB: int = 100
-    ALLOWED_EXTENSIONS: List[str] = [
-        "pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "zip", "png", "jpg", "jpeg", "webp", "mp4", "webm"
-    ]
+    # File Storage
+    BASE_DIR: str = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", os.path.join(DATA_DIR, "uploads"))
 
-    # CORS
+    # Payment Defaults
+    DEFAULT_VODAFONE_CASH: str = os.getenv("DEFAULT_VODAFONE_CASH", "+20159159038")
+    DEFAULT_INSTAPAY_PHONE: str = os.getenv("DEFAULT_INSTAPAY_PHONE", "+20159159038")
+    DEFAULT_INSTAPAY_LINK: str = os.getenv("DEFAULT_INSTAPAY_LINK", "https://ipn.eg/S/moazasem/instapay/27DsGj")
+    DEFAULT_CONTACT_PHONE: str = os.getenv("DEFAULT_CONTACT_PHONE", "+20159159038")
+
+    # CORS Configuration
     BACKEND_CORS_ORIGINS: List[str] = ["*"]
 
-    # AI Coding Assistant
-    AI_API_KEY: str = os.getenv("AI_API_KEY", "")
-
-    # Official Payment & Subscription Info
-    OFFICIAL_CONTACT_PHONE: str = os.getenv("OFFICIAL_CONTACT_PHONE", "+20159159038")
-    INSTAPAY_PHONE: str = os.getenv("INSTAPAY_PHONE", "+20159159038")
-    INSTAPAY_LINK: str = os.getenv("INSTAPAY_LINK", "https://ipn.eg/S/moazasem/instapay/27DsGj")
-
-    class Config:
-        case_sensitive = True
-        extra = "allow"
+    # Code Execution Environment
+    PYTHON_EXECUTABLE: str = os.getenv("PYTHON_EXECUTABLE", "")
+    NODE_EXECUTABLE: str = os.getenv("NODE_EXECUTABLE", "")
 
 settings = Settings()
 
-try:
-    os.makedirs(settings.STORAGE_DIR, exist_ok=True)
-    os.makedirs(os.path.join(settings.STORAGE_DIR, "files"), exist_ok=True)
-    os.makedirs(os.path.join(settings.STORAGE_DIR, "videos"), exist_ok=True)
-except Exception:
-    pass
+# Ensure directories exist
+os.makedirs(settings.DATA_DIR, exist_ok=True)
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)

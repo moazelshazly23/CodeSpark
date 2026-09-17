@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Code Spark - منصة تعليم البرمجة التأسيسية</title>
-  <link rel="icon" type="image/svg+xml" href="assets/branding/app_icon.svg">
+  <title>CodeSpark - منصة تعليم البرمجة التأسيسية لطلاب المرحلة الثانوية</title>
+  <link rel="icon" type="image/svg+xml" href="assets/branding/codespark-favicon.svg">
   <link rel="stylesheet" href="css/variables.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/layout.css">
@@ -13,50 +13,108 @@
 </head>
 <body>
 
-  <!-- 1. Authentication Shell (Login / Register) -->
+  <!-- ======================================================================= -->
+  <!-- 1. Public Shell (Landing, About, Curriculum, Pricing, Contact)         -->
+  <!-- ======================================================================= -->
+  <div id="public-shell" class="public-wrapper">
+    <!-- Public Header -->
+    <header class="public-header">
+      <div class="public-header-inner">
+        <a href="#/" class="brand-link">
+          <img src="assets/branding/codespark-icon.svg" alt="CodeSpark Logo" class="brand-img-icon">
+          <span class="brand-text">Code<span class="text-cyan">Spark</span></span>
+        </a>
+
+        <nav class="public-nav">
+          <a href="#/" class="public-nav-link">الرئيسية</a>
+          <a href="#/curriculum" class="public-nav-link">المنهج الدراسي</a>
+          <a href="#/pricing" class="public-nav-link">باقات الاشتراك</a>
+          <a href="#/about" class="public-nav-link">عن المنصة</a>
+          <a href="#/contact" class="public-nav-link">تواصل معنا</a>
+        </nav>
+
+        <div class="public-header-actions">
+          <a href="#/login" class="btn btn-secondary">تسجيل الدخول</a>
+          <a href="#/register" class="btn btn-primary glow-effect">حساب جديد مجاناً 🚀</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Public Views Container -->
+    <main id="public-content-container" class="public-main-content"></main>
+
+    <!-- Public Footer -->
+    <footer class="public-footer text-center">
+      <div class="footer-inner">
+        <div class="footer-brand mb-2">
+          <span class="brand-text">Code<span class="text-cyan">Spark</span></span>
+          <p class="text-muted" style="font-size:0.9rem;">المنصة التعليمية الأولى لطلاب المرحلة الثانوية في مصر لتعليم البرمجة التأسيسية ولغة بايثون.</p>
+        </div>
+        <div class="footer-links mb-3">
+          <a href="#/">الرئيسية</a> •
+          <a href="#/curriculum">المنهج</a> •
+          <a href="#/pricing">الأسعار والاشتراك</a> •
+          <a href="#/about">عن المنصة</a> •
+          <a href="#/contact">الدعم الفني</a>
+        </div>
+        <div class="footer-copy text-muted" style="font-size:0.8rem;">
+          جميع الحقوق محفوظة © 2026 منصة CodeSpark التعليمية | إشراف: م. معاذ محمود الشاذلي
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- 2. Authentication Shell (Login / Register)                             -->
+  <!-- ======================================================================= -->
   <div id="auth-shell" class="auth-wrapper" style="display: none;">
     <div class="auth-container">
-      <div class="auth-brand">
-        <div class="brand-logo">⚡</div>
-        <h1>Code Spark</h1>
-        <p>منصة تعليم البرمجة التأسيسية لطلاب المرحلة الثانوية</p>
+      <div class="auth-brand text-center">
+        <a href="#/" style="text-decoration:none;">
+          <img src="assets/branding/codespark-icon.svg" alt="CodeSpark Logo" style="width:56px;height:56px;margin-bottom:0.5rem;">
+          <h1 style="color:var(--color-text-main);font-size:1.8rem;margin:0;">Code<span class="text-cyan">Spark</span></h1>
+        </a>
+        <p class="text-muted mt-1">منصة تعليم البرمجة لطلاب المرحلة الثانوية</p>
       </div>
 
-      <!-- Login Form Card -->
+      <!-- Login Card -->
       <div id="login-card" class="card auth-card">
-        <h2 class="auth-title">تسجيل الدخول للمنصة</h2>
+        <h2 class="auth-title">تسجيل الدخول إلى حسابك</h2>
         <form id="login-form">
           <div class="form-group">
             <label class="form-label" for="login-username">اسم المستخدم أو البريد الإلكتروني</label>
             <input type="text" id="login-username" class="form-input" placeholder="اسم المستخدم أو الإيميل" required autofocus>
           </div>
           <div class="form-group">
-            <label class="form-label" for="login-password">كلمة المرور</label>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label class="form-label" for="login-password">كلمة المرور</label>
+              <a href="#/forgot-password" style="font-size:0.8rem;color:var(--color-primary);">نسيت كلمة المرور؟</a>
+            </div>
             <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">تسجيل الدخول</button>
-          <div class="auth-footer">
+          <button type="submit" class="btn btn-primary btn-block glow-effect">تسجيل الدخول</button>
+          <div class="auth-footer text-center mt-3">
             <span>طالب جديد بدون حساب؟</span>
-            <a href="#" id="show-register-link">إنشاء حساب طالب مجاناً</a>
+            <a href="#/register">إنشاء حساب طالب مجاناً 🚀</a>
           </div>
         </form>
       </div>
 
-      <!-- Register Form Card -->
+      <!-- Register Card -->
       <div id="register-card" class="card auth-card" style="display: none;">
         <h2 class="auth-title">إنشاء حساب طالب جديد</h2>
-        <p class="auth-subtitle">لا يلزم كود اشتراك للتسجيل، يمكنك التجربة مجاناً وتفعيل الاشتراك لاحقاً.</p>
+        <p class="text-muted mb-3" style="font-size:0.85rem;">لا يلزم كود اشتراك للتسجيل، يمكنك التجربة مجاناً وتفعيل الاشتراك لاحقاً.</p>
         <form id="register-form">
           <div class="form-group">
-            <label class="form-label" for="reg-fullname">الاسم بالكامل</label>
+            <label class="form-label" for="reg-fullname">الاسم بالكامل *</label>
             <input type="text" id="reg-fullname" class="form-input" placeholder="الاسم الثلاثي أو الرباعي" required>
           </div>
           <div class="form-group">
-            <label class="form-label" for="reg-username">اسم المستخدم (Username)</label>
+            <label class="form-label" for="reg-username">اسم المستخدم (Username) *</label>
             <input type="text" id="reg-username" class="form-input" placeholder="example_student" required>
           </div>
           <div class="form-group">
-            <label class="form-label" for="reg-email">البريد الإلكتروني</label>
+            <label class="form-label" for="reg-email">البريد الإلكتروني *</label>
             <input type="email" id="reg-email" class="form-input" placeholder="student@example.com" required>
           </div>
           <div class="form-group">
@@ -64,101 +122,80 @@
             <input type="tel" id="reg-phone" class="form-input" placeholder="010XXXXXXXX">
           </div>
           <div class="form-group">
-            <label class="form-label" for="reg-password">كلمة المرور</label>
+            <label class="form-label" for="reg-password">كلمة المرور *</label>
             <input type="password" id="reg-password" class="form-input" placeholder="6 أحرف على الأقل" minlength="6" required>
           </div>
-          <button type="submit" class="btn btn-primary btn-block">إنشاء الحساب الآن</button>
-          <div class="auth-footer">
+          <button type="submit" class="btn btn-primary btn-block glow-effect">إنشاء الحساب الآن ⚡</button>
+          <div class="auth-footer text-center mt-3">
             <span>لديك حساب بالفعل؟</span>
-            <a href="#" id="show-login-link">تسجيل الدخول</a>
+            <a href="#/login">تسجيل الدخول</a>
           </div>
         </form>
+      </div>
+
+      <div class="text-center mt-3">
+        <a href="#/" style="font-size:0.85rem;color:var(--color-text-muted);">← العودة إلى الصفحة الرئيسية</a>
       </div>
     </div>
   </div>
 
-  <!-- 2. Application Shell (Protected Platform Views) -->
+  <!-- ======================================================================= -->
+  <!-- 3. Application Shell (Protected Platform Views: Student / Admin)      -->
+  <!-- ======================================================================= -->
   <div id="app-shell" class="app-layout" style="display: none;">
+    <!-- Mobile Backdrop -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
     <!-- Sidebar -->
     <aside id="sidebar" class="sidebar">
       <div class="sidebar-header">
-        <a href="#/dashboard" class="sidebar-brand">
-          <span class="brand-spark">⚡</span>
-          <span class="brand-title">Code Spark</span>
+        <a href="#/" class="sidebar-brand">
+          <img src="assets/branding/codespark-icon.svg" alt="CodeSpark Logo" class="brand-img-icon">
+          <span class="brand-text">Code<span class="text-cyan">Spark</span></span>
         </a>
       </div>
+
+      <!-- User Profile Summary Pill -->
+      <div class="sidebar-user-card">
+        <div class="user-avatar" id="user-avatar-badge">U</div>
+        <div class="user-info">
+          <div class="user-name" id="user-display-name">المستخدم</div>
+          <div class="user-role" id="user-role-badge">طالب 🎓</div>
+        </div>
+      </div>
+
+      <!-- Navigation Links Container -->
       <nav id="sidebar-nav" class="sidebar-nav"></nav>
+
+      <!-- Sidebar Footer -->
       <div class="sidebar-footer">
-        <button id="logout-btn" class="btn btn-secondary btn-block">
-          <span>🚪</span>
-          <span>تسجيل الخروج</span>
-        </button>
+        <button id="logout-btn" class="btn btn-secondary btn-block">🚪 تسجيل الخروج</button>
       </div>
     </aside>
 
-    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
-
-    <!-- Main Content Area -->
+    <!-- Main Content Wrapper -->
     <div class="main-wrapper">
-      <header id="app-header" class="app-header">
-        <div class="header-left">
-          <button id="mobile-menu-btn" class="btn-icon" aria-label="القائمة">☰</button>
-          <div id="subscription-quick-banner" style="display: none;">
-            <button id="activate-sub-btn" class="btn btn-sm btn-primary">
-              <span>🔑</span>
-              <span>تفعيل كود الاشتراك</span>
-            </button>
-          </div>
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobile-menu-btn" class="mobile-toggle-btn" aria-label="القائمة">☰</button>
+          <span class="platform-indicator-badge">منصة كود سبارك التعليمية ⚡</span>
         </div>
-        <div class="header-right">
-          <div id="student-gamification-pill" class="gamification-pill" style="display: none;">
-            <span class="stat-badge">⚡ <span id="stat-xp">50</span> XP</span>
-            <span class="stat-badge">🔥 <span id="stat-streak">1</span> يوم</span>
-          </div>
-          <div class="user-profile-menu">
-            <div id="user-avatar-badge" class="user-avatar">U</div>
-            <div class="user-meta">
-              <span id="user-display-name" class="user-name">المستخدم</span>
-              <span id="user-role-badge" class="user-role">طالب</span>
-            </div>
-          </div>
+        <div class="topbar-right">
+          <a href="#/student/playground" class="btn btn-sm btn-outline-cyan">💻 محرر الأكواد</a>
+          <a href="#/student/subscription" class="btn btn-sm btn-primary">⭐ الاشتراك</a>
         </div>
       </header>
 
-      <main id="content-container" class="content-container">
-        <!-- Dynamic Views Injected Here by SPA Router -->
-      </main>
+      <!-- Dynamic Content Area -->
+      <main id="content-container" class="content-body"></main>
     </div>
   </div>
 
-  <!-- 3. Subscription Code Redemption Modal -->
-  <div id="sub-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h3 class="modal-title">تفعيل اشتراك Code Spark 🔑</h3>
-        <button id="close-sub-modal" class="modal-close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p class="modal-description">أدخل كود الاشتراك الخاص بك (مثال: CS-XXXX-XXXX) لفتح كافة الدروس المتقدمة، التمارين، الامتحانات، والمذكرات فوراً.</p>
-        <form id="activate-code-form">
-          <div class="form-group">
-            <label class="form-label" for="input-sub-code">كود الاشتراك</label>
-            <input type="text" id="input-sub-code" class="form-input font-mono" placeholder="CS-XXXX-XXXX" required>
-            <div id="code-validate-feedback" class="form-feedback" style="display: none;"></div>
-          </div>
-          <div class="modal-actions">
-            <button type="button" id="cancel-sub-btn" class="btn btn-secondary">إلغاء</button>
-            <button type="submit" id="submit-activate-btn" class="btn btn-primary">تفعيل الاشتراك الآن</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Container -->
+  <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- Main JavaScript Module -->
+  <!-- Master Application Script (ES Module) -->
   <script type="module" src="js/app.js"></script>
 </body>
 </html>

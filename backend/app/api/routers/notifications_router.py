@@ -1,19 +1,20 @@
 """
-Code Spark - Notifications Router
+CodeSpark - Notifications Router
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from typing import Dict, Any
 from app.api.deps import get_current_user
-from app.db.engine import db_engine
+from app.repositories.repositories import NotificationsRepository
+from app.schemas.all_schemas import NotificationCreate
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 @router.get("")
-def list_notifications(user: Dict[str, Any] = Depends(get_current_user)):
-    notes = db_engine.fetch_all("SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 30", (user["id"],))
-    return {"notifications": notes}
+def list_my_notifications(user: Dict[str, Any] = Depends(get_current_user)):
+    notifications = NotificationsRepository.list_user_notifications(user["id"])
+    return {"notifications": notifications, "total": len(notifications)}
 
-@router.put("/{note_id}/read")
-def mark_read(note_id: str, user: Dict[str, Any] = Depends(get_current_user)):
-    db_engine.execute("UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?", (note_id, user["id"]))
-    return {"success": True}
+@router.post("/{notif_id}/read")
+def mark_read(notif_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+    NotificationsRepository.mark_as_read(notif_id)
+    return {"success": True, "message": "تم تحديد الإشعار كمقروء"}

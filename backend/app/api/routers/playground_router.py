@@ -1,5 +1,6 @@
 """
-Code Spark - Playground & Interactive Code Execution Router
+CodeSpark - Interactive Code Playground Router
+Executes Python, JS, HTML, CSS in an isolated environment.
 """
 from fastapi import APIRouter
 from app.services.code_runner import CodeExecutionService

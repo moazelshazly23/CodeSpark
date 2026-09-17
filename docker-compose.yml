@@ -1,1 +1,43 @@
-version: '3.8' services: postgres: image: postgres:16-alpine container_name: codespark_postgres restart: always environment: POSTGRES_USER: ${POSTGRES_USER:-codespark_admin} POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SecureProductionPassword2026} POSTGRES_DB: ${POSTGRES_DB:-codespark_db} ports: - "5432:5432" volumes: - postgres_data:/var/lib/postgresql/data - ./backend/app/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql healthcheck: test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codespark_admin} -d ${POSTGRES_DB:-codespark_db}"] interval: 10s timeout: 5s retries: 5 backend: build: context: . dockerfile: ./backend/Dockerfile container_name: codespark_api restart: always depends_on: postgres: condition: service_healthy environment: - DATABASE_URL=postgresql://${POSTGRES_USER:-codespark_admin}:${POSTGRES_PASSWORD:-SecureProductionPassword2026}@postgres:5432/${POSTGRES_DB:-codespark_db} - SECRET_KEY=${SECRET_KEY:-codespark_super_secret_production_key_2026_green_spark} - STORAGE_DIR=/app/storage ports: - "8000:8000" volumes: - ./storage:/app/storage - ./frontend:/app/frontend volumes: postgres_data:
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: codespark_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: codespark_user
+      POSTGRES_PASSWORD: secure_db_password_2026
+      POSTGRES_DB: codespark_prod
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codespark_user -d codespark_prod"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: codespark_app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://codespark_user:secure_db_password_2026@postgres:5432/codespark_prod
+      SECRET_KEY: ${SECRET_KEY:-codespark_prod_secret_key_change_me_in_env_2026}
+      DATA_DIR: /app/data
+      UPLOAD_DIR: /app/data/uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - app_storage:/app/data
+
+volumes:
+  postgres_data:
+  app_storage:

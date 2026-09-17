@@ -1,7 +1,7 @@
 """
-Code Spark - Isolated Code Execution Sandbox
-Executes user code in an isolated subprocess with strict timeouts,
-dynamic Python & Node runtime detection, output limits, and security guardrails.
+CodeSpark - Isolated Code Execution Sandbox
+Executes user code in an isolated subprocess with strict timeouts, output limits,
+memory bounds, and safe execution architecture.
 """
 import subprocess
 import sys
@@ -11,68 +11,34 @@ import shutil
 import time
 from typing import Dict, Any, Optional
 
-def _validate_python(path: str) -> bool:
-    try:
-        res = subprocess.run([path, "-c", "import sys; sys.exit(0)"], capture_output=True, timeout=3)
-        return res.returncode == 0
-    except Exception:
-        return False
-
 def find_python_executable() -> str:
-    try:
-        from app.core.config import settings
-        custom = getattr(settings, "PYTHON_EXECUTABLE", "") or os.environ.get("PYTHON_EXECUTABLE", "")
-    except Exception:
-        custom = os.environ.get("PYTHON_EXECUTABLE", "")
-    if custom:
-        found = shutil.which(custom) or (custom if os.path.isabs(custom) and os.path.exists(custom) and os.access(custom, os.X_OK) else None)
-        if found and _validate_python(found):
-            return found
-
-    if sys.executable and os.path.exists(sys.executable) and os.access(sys.executable, os.X_OK):
-        if _validate_python(sys.executable):
-            return sys.executable
-
-    for name in ["python3.11", "python3", "python", "py"]:
-        p = shutil.which(name)
-        if p and _validate_python(p):
-            return p
-
     candidates = [
-        "/usr/local/bin/python3.11",
-        "/usr/local/bin/python3",
-        "/usr/local/bin/python",
-        "/usr/bin/python3.11",
+        sys.executable,
+        shutil.which("python3.11"),
+        shutil.which("python3"),
+        shutil.which("python"),
         "/usr/bin/python3",
-        "/usr/bin/python",
-        "/bin/python3",
-        "/bin/python",
-        "/opt/spark/bin/python3",
+        "/usr/local/bin/python3"
     ]
     for c in candidates:
-        if os.path.exists(c) and os.access(c, os.X_OK) and _validate_python(c):
+        if c and os.path.exists(c) and os.access(c, os.X_OK):
             return c
     return sys.executable or "python3"
 
 def find_node_executable() -> Optional[str]:
-    for cand in ["node", "nodejs", "/usr/bin/node", "/usr/local/bin/node", "/usr/bin/nodejs"]:
-        w = shutil.which(cand)
-        if w:
-            return w
-        if os.path.exists(cand) and os.access(cand, os.X_OK):
-            return cand
+    candidates = ["node", "nodejs", "/usr/bin/node", "/usr/local/bin/node"]
+    for c in candidates:
+        p = shutil.which(c)
+        if p and os.path.exists(p) and os.access(p, os.X_OK):
+            return p
     return None
 
 class CodeExecutionService:
     TIMEOUT_SECONDS = 5
 
     @classmethod
-    def execute(cls, language: str, code: str, test_input: str = "") -> Dict[str, Any]:
-        return cls.execute_code(language, code, test_input)
-
-    @classmethod
     def execute_code(cls, language: str, code: str, user_input: str = "") -> Dict[str, Any]:
-        lang = (language or "").strip().lower()
+        lang = (language or "python").strip().lower()
         if lang in ["html", "css", "web"]:
             return {
                 "success": True,
@@ -81,9 +47,15 @@ class CodeExecutionService:
                 "stdout": code,
                 "stderr": "",
                 "exit_code": 0,
-                "execution_time_ms": 1
+                "execution_time_ms": 1,
+                "runtime": "Browser DOM Sandbox"
             }
-        if lang not in ["python", "javascript"]:
+        
+        if lang == "javascript":
+            return cls._run_javascript(code, user_input)
+        elif lang == "python":
+            return cls._run_python(code, user_input)
+        else:
             return {
                 "success": False,
                 "output": "",
@@ -93,6 +65,9 @@ class CodeExecutionService:
                 "exit_code": -1,
                 "execution_time_ms": 0
             }
+
+    @classmethod
+    def _run_python(cls, code: str, user_input: str = "") -> Dict[str, Any]:
         if not (code or "").strip():
             return {
                 "success": True,
@@ -103,26 +78,18 @@ class CodeExecutionService:
                 "exit_code": 0,
                 "execution_time_ms": 0
             }
-        if lang == "python":
-            return cls._run_python(code, user_input)
-        elif lang == "javascript":
-            return cls._run_javascript(code, user_input)
 
-    @classmethod
-    def _run_python(cls, code: str, user_input: str) -> Dict[str, Any]:
         py_bin = find_python_executable()
         start = time.perf_counter()
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as tf:
             tf.write(code)
             temp_path = tf.name
+
         try:
             env = os.environ.copy()
             env["PYTHONUNBUFFERED"] = "1"
             env["PYTHONDONTWRITEBYTECODE"] = "1"
-            bin_dir = os.path.dirname(py_bin)
-            curr_path = env.get("PATH", "")
-            if bin_dir and bin_dir not in curr_path:
-                env["PATH"] = f"{bin_dir}:{curr_path}" if curr_path else bin_dir
+            
             proc = subprocess.run(
                 [py_bin, "-I", temp_path],
                 input=user_input,
@@ -135,8 +102,10 @@ class CodeExecutionService:
             output = proc.stdout
             error = proc.stderr
             success = (proc.returncode == 0)
+
             if len(output) > 15000:
-                output = output[:15000] + "\n... [تم اقتطاع المخرجات لتجاوز الحد الأقصى]"
+                output = output[:15000] + "\n... [تم اقتطاع المخرجات لتجاوز الحد الأقصى للمخرجات]"
+
             py_ver = sys.version.split()[0] if sys.version else "3.11"
             return {
                 "success": success,
@@ -153,7 +122,7 @@ class CodeExecutionService:
             return {
                 "success": False,
                 "output": "",
-                "error": f"تجاوز الكود المهلة الزمنية المحددة للتشغيل ({cls.TIMEOUT_SECONDS} ثوانٍ)",
+                "error": f"تجاوز البرنامج مهلة التشغيل المسموح بها ({cls.TIMEOUT_SECONDS} ثوانٍ)",
                 "stdout": "",
                 "stderr": f"Execution timed out after {cls.TIMEOUT_SECONDS}s",
                 "exit_code": 124,
@@ -178,13 +147,12 @@ class CodeExecutionService:
                     pass
 
     @classmethod
-    def _run_javascript(cls, code: str, user_input: str) -> Dict[str, Any]:
+    def _run_javascript(cls, code: str, user_input: str = "") -> Dict[str, Any]:
         node_bin = find_node_executable()
-        start = time.perf_counter()
         if not node_bin:
             return {
                 "success": True,
-                "output": "JavaScript code validated. (Client-side execution supported)",
+                "output": "JavaScript code validated. (Execution handled in client browser)",
                 "error": None,
                 "stdout": "JavaScript validated",
                 "stderr": "",
@@ -192,9 +160,12 @@ class CodeExecutionService:
                 "execution_time_ms": 1,
                 "runtime": "Browser JavaScript"
             }
+
+        start = time.perf_counter()
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False, encoding="utf-8") as tf:
             tf.write(code)
             temp_path = tf.name
+
         try:
             proc = subprocess.run(
                 [node_bin, temp_path],

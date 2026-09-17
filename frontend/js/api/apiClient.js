@@ -1,10 +1,10 @@
-/***
- * Code Spark - Centralized Unified API Client
- * Fast, reliable, token-aware REST client with abort & debounce capabilities.
+/**
+ * CodeSpark - Centralized API Client
+ * Robust, token-aware Fetch API wrapper with timeout, json formatting, and error handling.
  */
 const API_BASE = '/api';
 
-class ApiClient {
+export class ApiClient {
   static getToken() {
     const token = localStorage.getItem('codespark_token');
     if (!token || token === 'undefined' || token === 'null' || typeof token !== 'string' || token.trim() === '') {
@@ -96,7 +96,7 @@ class ApiClient {
     return this.request(qs ? `${endpoint}?${qs}` : endpoint, { method: 'GET' });
   }
 
-  static post(endpoint, data) {
+  static post(endpoint, data = {}) {
     const isFormData = data instanceof FormData;
     return this.request(endpoint, {
       method: 'POST',
@@ -105,10 +105,13 @@ class ApiClient {
   }
 
   static upload(endpoint, formData) {
-    return this.post(endpoint, formData);
+    return this.request(endpoint, {
+      method: 'POST',
+      body: formData
+    });
   }
 
-  static put(endpoint, data) {
+  static put(endpoint, data = {}) {
     const isFormData = data instanceof FormData;
     return this.request(endpoint, {
       method: 'PUT',
@@ -119,15 +122,6 @@ class ApiClient {
   static delete(endpoint) {
     return this.request(endpoint, { method: 'DELETE' });
   }
-}
-
-// Debounce helper for search inputs
-export function debounce(func, delay = 300) {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), delay);
-  };
 }
 
 export default ApiClient;

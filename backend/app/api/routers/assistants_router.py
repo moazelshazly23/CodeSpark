@@ -1,59 +1,55 @@
 """
-Code Spark - Assistants Management Router
+CodeSpark - Assistant Management & Assistant Operations Router
+Enforces strict role limitations: assistants can only generate monthly codes,
+cannot change prices, cannot change payment settings, and cannot escalate permissions.
 """
-from fastapi import APIRouter, Depends, HTTPException
-from typing import List, Dict, Any
-from pydantic import BaseModel
-from app.api.deps import require_role
-from app.db.engine import db_engine
+from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Dict, Any, List
+from app.api.deps import require_role, get_current_user
+from app.repositories.repositories import UserRepository
+from app.services.auth_service import AuthService
 from app.core.security import get_password_hash
-from app.repositories.all_repositories import UserRepository
+from app.schemas.all_schemas import AssistantCreate, AssistantUpdatePermissions
 
-router = APIRouter(prefix="/assistants", tags=["Assistants Management"], dependencies=[Depends(require_role("admin"))])
+router = APIRouter(prefix="/assistants", tags=["Assistants Management"])
 
-class AssistantCreate(BaseModel):
-    username: str
-    email: str
-    password: str
-    full_name: str
-    phone: str = None
-    permissions: List[str] = []
-
-class AssistantPermissionsUpdate(BaseModel):
-    permissions: List[str]
-
-@router.get("")
+@router.get("", dependencies=[Depends(require_role("admin"))])
 def list_assistants():
-    users, total = UserRepository.list_users(role="assistant")
-    for u in users:
-        u["permissions"] = UserRepository.get_assistant_permissions(u["id"])
-    return {"assistants": users, "total": total}
+    assistants = UserRepository.list_users(role="assistant")
+    for a in assistants:
+        a["permissions"] = UserRepository.get_assistant_permissions(a["id"])
+    return {"assistants": assistants}
 
-@router.post("")
+@router.post("", dependencies=[Depends(require_role("admin"))])
 def create_assistant(req: AssistantCreate):
     if UserRepository.get_by_username(req.username):
         raise HTTPException(status_code=400, detail="اسم المستخدم مسجل بالفعل")
     if UserRepository.get_by_email(req.email):
         raise HTTPException(status_code=400, detail="البريد الإلكتروني مسجل بالفعل")
-    data = {
-        "username": req.username,
-        "email": req.email.lower(),
-        "hashed_password": get_password_hash(req.password),
-        "full_name": req.full_name,
-        "role": "assistant",
-        "phone": req.phone,
-        "is_active": 1,
-        "is_verified": 1
-    }
-    user = UserRepository.create(data)
-    UserRepository.set_assistant_permissions(user["id"], req.permissions)
-    user["permissions"] = req.permissions
-    return {"success": True, "assistant": user}
+    if len(req.password) < 6:
+        raise HTTPException(status_code=400, detail="كلمة المرور يجب أن تكون 6 أحرف على الأقل")
 
-@router.put("/{assistant_id}/permissions")
-def update_assistant_permissions(assistant_id: str, req: AssistantPermissionsUpdate):
-    user = UserRepository.get_by_id(assistant_id)
-    if not user or user.get("role") != "assistant":
+    data = {
+        "username": req.username.strip(),
+        "email": req.email.strip().lower(),
+        "hashed_password": get_password_hash(req.password),
+        "full_name": req.full_name.strip(),
+        "role": "assistant",
+        "phone": req.phone.strip() if req.phone else None,
+        "is_active": 1
+    }
+    assistant = UserRepository.create(data)
+    if req.permissions:
+        UserRepository.set_assistant_permissions(assistant["id"], req.permissions)
+    
+    assistant.pop("hashed_password", None)
+    assistant["permissions"] = UserRepository.get_assistant_permissions(assistant["id"])
+    return {"success": True, "assistant": assistant}
+
+@router.put("/{assistant_id}/permissions", dependencies=[Depends(require_role("admin"))])
+def update_assistant_permissions(assistant_id: str, req: AssistantUpdatePermissions):
+    u = UserRepository.get_by_id(assistant_id)
+    if not u or u["role"] != "assistant":
         raise HTTPException(status_code=404, detail="المساعد غير موجود")
     UserRepository.set_assistant_permissions(assistant_id, req.permissions)
-    return {"success": True, "permissions": req.permissions}
+    return {"success": True, "permissions": req.permissions, "message": "تم تحديث صلاحيات المساعد بنجاح"}
