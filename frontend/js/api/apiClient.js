@@ -1,8 +1,7 @@
-/**
+/***
  * Code Spark - Centralized Unified API Client
  * Fast, reliable, token-aware REST client with abort & debounce capabilities.
  */
-
 const API_BASE = '/api';
 
 class ApiClient {
@@ -27,11 +26,26 @@ class ApiClient {
     localStorage.removeItem('codespark_user');
   }
 
+  static extractList(res, key = null) {
+    if (!res) return [];
+    if (Array.isArray(res)) return res;
+    if (key && Array.isArray(res[key])) return res[key];
+    const candidateKeys = [
+      'announcements', 'courses', 'lessons', 'files', 'exams', 'questions',
+      'codes', 'plans', 'requests', 'students', 'assistants', 'tickets',
+      'items', 'data', 'results', 'logs'
+    ];
+    for (const k of candidateKeys) {
+      if (Array.isArray(res[k])) return res[k];
+    }
+    return [];
+  }
+
   static async request(endpoint, options = {}) {
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
     const headers = options.headers || {};
-
     const token = this.getToken();
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -40,10 +54,7 @@ class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    const config = {
-      ...options,
-      headers
-    };
+    const config = { ...options, headers };
 
     try {
       const response = await fetch(url, config);

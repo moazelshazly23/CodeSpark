@@ -214,11 +214,20 @@ class AnnouncementCreate(BaseModel):
     content: str
     is_urgent: bool = False
     is_published: bool = True
+    target_audience: Optional[str] = 'ALL' 
 
 class PlatformSettingsUpdate(BaseModel):
     platform_name: Optional[str] = None
+    vodafone_cash: Optional[str] = None
     payment_phone: Optional[str] = None
     instapay_phone: Optional[str] = None
     contact_phone: Optional[str] = None
     instapay_link: Optional[str] = None
     allow_registration: Optional[bool] = None
+    special_offers: Optional[str] = None
+    offers_visible: Optional[bool] = None
+    offer_banner_text: Optional[str] = None
+    discount_percent: Optional[float] = None
+
+    class Config:
+        extra = 'allow' 

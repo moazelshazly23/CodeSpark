@@ -4,8 +4,6 @@
  */
 import AuthService from '../auth/authService.js';
 import { Toast } from '../components/ui.js';
-import { StudentPages } from '../pages/studentPages.js';
-import { AdminPages } from '../pages/adminPages.js';
 
 export class Router {
   static routes = {};
@@ -27,15 +25,12 @@ export class Router {
     const hash = window.location.hash || '#/';
     const path = hash.replace(/^#/, '') || '/';
     const mainContent = document.getElementById('content-container') || document.getElementById('main-content');
-    
     const appShell = document.getElementById('app-shell');
     const authShell = document.getElementById('auth-shell');
 
-    // Auth-only vs Public Pages
     const isPublic = path === '/login' || path === '/register';
     const isAuthed = AuthService.isAuthenticated();
 
-    // Toggle navigation UI visibility based on auth state IMMEDIATELY
     if (isAuthed) {
       if (authShell) authShell.style.display = 'none';
       if (appShell) appShell.style.display = 'flex';
@@ -53,7 +48,6 @@ export class Router {
       }
     }
 
-    // Match route
     let matchedRoute = null;
     let params = {};
 
@@ -63,7 +57,6 @@ export class Router {
         paramNames.push(key);
         return '([^/]+)';
       });
-
       const match = path.match(new RegExp(`^${regexPath}$`));
       if (match) {
         matchedRoute = config;
@@ -77,17 +70,17 @@ export class Router {
     if (!matchedRoute) {
       if (mainContent) {
         mainContent.innerHTML = `
-          <div class="card empty-state">
+          <div class="empty-state">
+            <div class="empty-icon">⚠️</div>
             <h2>404 - الصفحة غير موجودة</h2>
-            <p style="margin:1rem 0;">الصفحة التي تحاول الوصول إليها غير متاحة.</p>
-            <a href="#/" class="btn btn-primary btn-sm">العودة للرئيسية</a>
+            <p>الصفحة التي تحاول الوصول إليها غير متاحة.</p>
+            <a href="#/" class="btn btn-primary">العودة للرئيسية</a>
           </div>
         `;
       }
       return;
     }
 
-    // Role Guard Check
     if (matchedRoute.requiredRoles) {
       if (!AuthService.hasRole(matchedRoute.requiredRoles)) {
         Toast.error('ليس لديك الصلاحية لدخول هذه الصفحة');
@@ -96,7 +89,6 @@ export class Router {
       }
     }
 
-    // Update active state in sidebar
     document.querySelectorAll('.nav-item').forEach(item => {
       const itemHash = item.getAttribute('href');
       if (itemHash && hash.startsWith(itemHash)) {
@@ -106,18 +98,31 @@ export class Router {
       }
     });
 
-    // Execute route handler
     if (this.currentCleanup) {
-      try { this.currentCleanup(); } catch (_) {}
+      try {
+        this.currentCleanup();
+      } catch (_) {}
       this.currentCleanup = null;
     }
 
     if (mainContent) {
-      mainContent.innerHTML = '';
+      mainContent.innerHTML = '<div class="page-loading"><div class="spinner"></div><p>جاري تحميل المحتوى...</p></div>';
       window.scrollTo({ top: 0, behavior: 'instant' });
-      const cleanup = await matchedRoute.handler(mainContent, params);
-      if (typeof cleanup === 'function') {
-        this.currentCleanup = cleanup;
+      try {
+        const cleanup = await matchedRoute.handler(mainContent, params);
+        if (typeof cleanup === 'function') {
+          this.currentCleanup = cleanup;
+        }
+      } catch (err) {
+        console.error('Route handler error:', err);
+        mainContent.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">❌</div>
+            <h2>حدث خطأ أثناء تحميل الصفحة</h2>
+            <p>${err.message || 'تعذر استرجاع البيانات'}</p>
+            <button class="btn btn-secondary" onclick="window.location.reload()">إعادة المحاولة</button>
+          </div>
+        `;
       }
     }
   }

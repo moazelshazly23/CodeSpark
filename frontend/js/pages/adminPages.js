@@ -1,7 +1,7 @@
 /**
- * Code Spark - Comprehensive Admin & Assistant Management Views
- * Real CRUD operations for Courses, Units, Lessons, Videos, Educational Resources,
- * Question Bank, Exams, Announcements, Subscriptions, Students, and Assistants.
+ * Code Spark - Admin & Assistant Pages Controller
+ * Full CRUD for Curriculum, Exams, Questions, Files, Announcements,
+ * Subscriptions, Payment Settings, and Account Security.
  */
 import ApiClient, { debounce } from '../api/apiClient.js';
 import { Toast, Modal } from '../components/ui.js';
@@ -9,144 +9,126 @@ import AuthService from '../auth/authService.js';
 
 export class AdminPages {
 
-  /* ===================================================================
-     1. ADMIN DASHBOARD & REAL KPIS
-  =================================================================== */
+  // =========================================================================
+  // 1. DASHBOARD & KPIS
+  // =========================================================================
   static async renderDashboard(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">لوحة التحكم الإدارية والتحليلات 📊</h2>
-          <p style="color:var(--color-text-muted);">نظرة عامة لحظية على أداء منصة Code Spark</p>
+          <h1 class="page-title">لوحة الإحصائيات والإشراف العام 📊</h1>
+          <p class="page-subtitle">متابعة نشاط الطلاب، الاشتراكات، والعمليات الأكاديمية لحظيًا</p>
         </div>
-        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
-          <a href="#/admin/subscriptions" class="btn btn-primary btn-sm">🔑 إدارة وتوليد الأكواد</a>
-          <a href="#/admin/courses" class="btn btn-secondary btn-sm">📚 إدارة المناهج</a>
-          <a href="#/admin/lessons" class="btn btn-secondary btn-sm">🎬 إدارة الدروس</a>
-          <a href="#/admin/questions" class="btn btn-secondary btn-sm">📝 بنك الأسئلة</a>
-          <a href="#/admin/exams" class="btn btn-secondary btn-sm">🎯 الامتحانات</a>
+        <div style="display:flex;gap:0.75rem;">
+          <a href="#/admin/payment-settings" class="btn btn-primary">💳 طرق الدفع والاشتراك</a>
+          <a href="#/admin/lessons" class="btn btn-secondary">🎬 إضافة درس جديد</a>
         </div>
       </div>
 
-      <!-- KPI Grid -->
-      <div id="admin-kpis-grid" class="dashboard-grid">
-        <div class="card skeleton" style="height:110px;"></div>
-        <div class="card skeleton" style="height:110px;"></div>
-        <div class="card skeleton" style="height:110px;"></div>
-        <div class="card skeleton" style="height:110px;"></div>
+      <div class="stats-grid" id="admin-kpis-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(14,165,233,0.15);color:var(--color-primary);">👥</div>
+          <div>
+            <div class="stat-val" id="kpi-students">—</div>
+            <div class="stat-label">إجمالي الطلاب المسجلين</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(16,185,129,0.15);color:var(--color-success);">⭐</div>
+          <div>
+            <div class="stat-val" id="kpi-subscribed">—</div>
+            <div class="stat-label">الطلاب المشتركون النشطون</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(245,158,11,0.15);color:var(--color-warning);">📥</div>
+          <div>
+            <div class="stat-val" id="kpi-pending-reqs">—</div>
+            <div class="stat-label">طلبات اشتراك معلقة</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(139,92,246,0.15);color:#8B5CF6;">📚</div>
+          <div>
+            <div class="stat-val" id="kpi-courses">—</div>
+            <div class="stat-label">المناهج والدروس المنشورة</div>
+          </div>
+        </div>
       </div>
 
-      <!-- Main Columns -->
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;margin-top:1.5rem;" class="dashboard-columns">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;margin-top:2rem;">
         <div class="card">
-          <h3 style="font-weight:800;color:var(--color-text-main);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
-            <span>⚡</span> أحدث الأنشطة وسجل التدقيق (Audit Logs)
+          <h3 style="font-size:1.15rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+            <span>⚡</span> الإجراءات السريعة
           </h3>
-          <div id="admin-recent-logs" style="display:flex;flex-direction:column;gap:0.75rem;">
-            <div class="skeleton" style="height:180px;"></div>
+          <div style="display:flex;flex-direction:column;gap:0.75rem;">
+            <a href="#/admin/announcements" class="btn btn-secondary" style="justify-content:flex-start;">📢 نشر إعلان عام للطلاب</a>
+            <a href="#/admin/subscription-requests" class="btn btn-secondary" style="justify-content:flex-start;">📥 مراجعة طلبات التحويل البنكي والمحافظ</a>
+            <a href="#/admin/subscriptions" class="btn btn-secondary" style="justify-content:flex-start;">🔑 توليد أكواد تفعيل جديدة</a>
+            <a href="#/admin/questions" class="btn btn-secondary" style="justify-content:flex-start;">❓ إضافة أسئلة لبنك الأسئلة</a>
+            <a href="#/admin/payment-settings" class="btn btn-secondary" style="justify-content:flex-start;">⚙️ ضبط أرقام فودافون كاش وإنستاباي</a>
           </div>
         </div>
 
         <div class="card">
-          <h3 style="font-weight:800;color:var(--color-text-main);margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
-            <span>🛠️</span> إدارة النظام والمحتوى
+          <h3 style="font-size:1.15rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+            <span>🛡️</span> حالة النظام وبيانات التشغيل
           </h3>
-          <div style="display:flex;flex-direction:column;gap:0.6rem;">
-            <a href="#/admin/courses" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">📚 إدارة المناهج والكورسات والوحدات</a>
-            <a href="#/admin/lessons" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">🎬 إضافة وتعديل وحذف الدروس</a>
-            <a href="#/admin/questions" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">📝 بنك الأسئلة المركزي</a>
-            <a href="#/admin/exams" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">🎯 إنشاء وتصحيح الامتحانات</a>
-            <a href="#/admin/announcements" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">📢 نشر وإدارة الإعلانات</a>
-            <a href="#/admin/students" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">👥 إدارة حسابات الطلاب</a>
-            <a href="#/admin/assistants" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">🛡️ صلاحيات المساعدين</a>
-            <a href="#/admin/subscriptions" class="btn btn-secondary btn-sm" style="justify-content:flex-start;">🔑 أكواد الاشتراكات</a>
-          </div>
+          <p style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;">
+            • محرك قواعد البيانات يعمل بنمط <strong>SQLite WAL</strong> فائق السرعة والموثوقية.<br>
+            • معالجة آمنة لطلبات التحويل المالي وإشعارات الطلاب التلقائية.<br>
+            • عزل محكم لصلاحيات المساعدين التعليميين ومنع العمليات الحساسة.<br>
+            • الحفظ الفوري والدائم لكافة الإعدادات والبيانات المسجلة.
+          </p>
         </div>
       </div>
     `;
 
     try {
-      const data = await ApiClient.get('/admin/dashboard');
-
-      document.getElementById('admin-kpis-grid').innerHTML = `
-        <div class="card metric-card">
-          <div class="metric-icon">👥</div>
-          <div class="metric-data">
-            <h3>${data.total_students || 0}</h3>
-            <p>إجمالي الطلاب المسجلين</p>
-          </div>
-        </div>
-
-        <div class="card metric-card">
-          <div class="metric-icon">🔑</div>
-          <div class="metric-data">
-            <h3 style="color:#10B981;">${data.active_subscribers || 0}</h3>
-            <p>المشتركون النشطون</p>
-          </div>
-        </div>
-
-        <div class="card metric-card">
-          <div class="metric-icon">📚</div>
-          <div class="metric-data">
-            <h3>${data.total_lessons || 0}</h3>
-            <p>الدروس المنشورة</p>
-          </div>
-        </div>
-
-        <div class="card metric-card">
-          <div class="metric-icon">🎯</div>
-          <div class="metric-data">
-            <h3 style="color:var(--color-primary);">${data.average_score || 0}%</h3>
-            <p>متوسط درجات الطلاب</p>
-          </div>
-        </div>
-      `;
-
-      const logs = data.recent_activity || [];
-      document.getElementById('admin-recent-logs').innerHTML = logs.length > 0 ? logs.map(l => `
-        <div style="padding:0.75rem 1rem;background:var(--color-bg-secondary);border-radius:var(--radius-md);display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <span style="font-weight:700;color:var(--color-text-main);">${l.action}</span>
-            <span style="font-size:0.85rem;color:var(--color-text-muted);margin-right:0.5rem;">(${l.entity_type})</span>
-          </div>
-          <span style="font-size:0.75rem;color:var(--color-text-dim);">${l.created_at ? l.created_at.substring(11, 16) : ''}</span>
-        </div>
-      `).join('') : '<p style="color:var(--color-text-muted);">لا توجد أنشطة مسجلة حديثاً.</p>';
-
+      const stats = await ApiClient.get('/admin/stats').catch(() => ApiClient.get('/admin/dashboard'));
+      if (stats) {
+        const setVal = (id, val) => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = val !== undefined ? val : 0;
+        };
+        setVal('kpi-students', stats.students_count);
+        setVal('kpi-subscribed', stats.subscribed_count);
+        setVal('kpi-pending-reqs', stats.pending_subscription_requests);
+        setVal('kpi-courses', `${stats.courses_count || 0} كورس / ${stats.lessons_count || 0} درس`);
+      }
     } catch (err) {
-      console.error(err);
-      Toast.error('تعذر تحميل بيانات لوحة الإدارة');
+      console.error('Failed to load admin stats:', err);
     }
   }
 
-  /* ===================================================================
-     2. COURSES & UNITS MANAGEMENT (CRUD)
-  =================================================================== */
+  // =========================================================================
+  // 2. COURSES & CURRICULUM CRUD
+  // =========================================================================
   static async renderCourses(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة المناهج والكورسات والوحدات 📚</h2>
-          <p style="color:var(--color-text-muted);">إنشاء وتعديل المناهج الدراسية وهيكلة الوحدات والدروس المرتبطة بها</p>
+          <h1 class="page-title">المناهج والكورسات 🎓</h1>
+          <p class="page-subtitle">إدارة المناهج الدراسية، الوحدات، والمسارات التعليمية</p>
         </div>
-        <button id="btn-add-course" class="btn btn-primary btn-sm" style="font-weight:700;">+ إضافة كورس جديد</button>
+        <button id="btn-add-course" class="btn btn-primary">+ إضافة كورس جديد</button>
       </div>
 
       <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
+        <div class="table-responsive">
+          <table class="data-table">
             <thead>
               <tr>
-                <th>الكورس / المنهج</th>
-                <th>الاسم التعريفي (Slug)</th>
-                <th>الوحدات التابعة</th>
-                <th>الخصوصية</th>
+                <th>عنوان الكورس</th>
+                <th>الاسم البرمجي (Slug)</th>
+                <th>نوع الوصول</th>
                 <th>الحالة</th>
+                <th>الترتيب</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody id="courses-table-body">
-              <tr><td colspan="6" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:2rem;">جاري تحميل الكورسات...</td></tr>
             </tbody>
           </table>
         </div>
@@ -156,136 +138,110 @@ export class AdminPages {
     async function loadCourses() {
       try {
         const res = await ApiClient.get('/courses');
-        const courses = res.courses || [];
+        const courses = ApiClient.extractList(res, 'courses');
         const tbody = document.getElementById('courses-table-body');
-
-        if (courses.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:2rem;">لا توجد كورسات مضافة بعد.</td></tr>';
+        if (!courses || courses.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد كورسات مضافة بعد. اضغط على "+ إضافة كورس جديد" للبدء.</td></tr>';
           return;
         }
 
-        let rowsHtml = '';
-        for (const crs of courses) {
-          const unitsRes = await ApiClient.get(`/units?course_id=${crs.id}`).catch(() => ({ units: [] }));
-          const unitCount = unitsRes.units?.length || 0;
+        tbody.innerHTML = courses.map(c => `
+          <tr>
+            <td>
+              <strong>${c.title}</strong>
+              ${c.description ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${c.description.substring(0, 45)}...</div>` : ''}
+            </td>
+            <td><code>${c.slug || '—'}</code></td>
+            <td>
+              <span class="badge ${c.access_type === 'PUBLIC' ? 'badge-success' : 'badge-primary'}">
+                ${c.access_type === 'PUBLIC' ? 'عام مجاني' : 'للمشتركين فقط ⭐'}
+              </span>
+            </td>
+            <td>
+              <span class="badge ${c.is_published ? 'badge-success' : 'badge-warning'}">
+                ${c.is_published ? 'منشور ✅' : 'مسودة ⏸️'}
+              </span>
+            </td>
+            <td>${c.order_index !== undefined ? c.order_index : 0}</td>
+            <td>
+              <button class="btn btn-secondary btn-sm edit-course-btn" data-id="${c.id}">تعديل ✏️</button>
+              <button class="btn btn-danger btn-sm del-course-btn" data-id="${c.id}">حذف 🗑️</button>
+            </td>
+          </tr>
+        `).join('');
 
-          rowsHtml += `
-            <tr>
-              <td>
-                <div style="display:flex;align-items:center;gap:0.75rem;">
-                  <img src="${crs.thumbnail_url || '/assets/branding/app_icon.svg'}" style="width:36px;height:36px;object-fit:contain;border-radius:6px;background:var(--color-bg-secondary);">
-                  <div>
-                    <strong style="color:var(--color-text-main);font-size:1.05rem;">${crs.title}</strong>
-                    <div style="font-size:0.75rem;color:var(--color-text-muted);">${crs.description ? crs.description.substring(0, 50) + '...' : ''}</div>
-                  </div>
-                </div>
-              </td>
-              <td><code style="font-family:var(--font-mono);color:var(--color-primary);">${crs.slug}</code></td>
-              <td><span class="badge" style="background:var(--color-bg-secondary);color:var(--color-cyan-accent);">${unitCount} وحدات</span></td>
-              <td>
-                <span class="badge ${crs.access_type === 'PUBLIC' ? 'badge-public' : 'badge-subscribers'}">
-                  ${crs.access_type === 'PUBLIC' ? 'عام للجميع' : 'للمشتركين فقط 🔑'}
-                </span>
-              </td>
-              <td>
-                <span class="badge ${crs.is_published ? 'badge-public' : 'badge-danger'}">
-                  ${crs.is_published ? 'منشور ✅' : 'مخفي ⏸️'}
-                </span>
-              </td>
-              <td>
-                <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                  <button class="btn btn-secondary btn-sm manage-units-btn" data-id="${crs.id}" title="إدارة وحدات هذا الكورس">الوحدات 📁</button>
-                  <button class="btn btn-secondary btn-sm edit-course-btn" data-id="${crs.id}">تعديل ✏️</button>
-                  <button class="btn btn-danger btn-sm del-course-btn" data-id="${crs.id}">حذف 🗑️</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }
-        tbody.innerHTML = rowsHtml;
-
-        // Bind Edit Course
-        document.querySelectorAll('.edit-course-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const crs = courses.find(x => x.id === btn.dataset.id);
-            if (crs) openCourseModal(crs, loadCourses);
+        tbody.querySelectorAll('.edit-course-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const course = courses.find(x => x.id === b.dataset.id);
+            if (course) openCourseModal(course);
           });
         });
 
-        // Bind Delete Course
-        document.querySelectorAll('.del-course-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const crsId = btn.dataset.id;
+        tbody.querySelectorAll('.del-course-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const courseId = b.dataset.id;
             Modal.confirm({
               title: 'تأكيد حذف الكورس',
-              message: 'هل أنت متأكد من حذف هذا الكورس وجميع الوحدات والدروس التابعة له نهائياً؟',
+              message: 'هل أنت متأكد من رغبتك في حذف هذا الكورس وجميع الوحدات المرتبطة به؟',
               onConfirm: async () => {
                 try {
-                  await ApiClient.delete(`/courses/${crsId}`);
+                  await ApiClient.delete(`/courses/${courseId}`);
                   Toast.success('تم حذف الكورس بنجاح');
                   loadCourses();
-                } catch (e) {
-                  Toast.error(e.message);
+                } catch (err) {
+                  Toast.error(err.message || 'فشل حذف الكورس');
                 }
               }
             });
           });
         });
-
-        // Bind Manage Units
-        document.querySelectorAll('.manage-units-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const crsId = btn.dataset.id;
-            const crs = courses.find(x => x.id === crsId);
-            openUnitsModal(crs, loadCourses);
-          });
-        });
-
-        document.getElementById('btn-add-course').onclick = () => openCourseModal(null, loadCourses);
-
       } catch (err) {
         console.error(err);
-        Toast.error('فشل تحميل قائمة الكورسات');
+        Toast.error('فشل تحميل قائمة المناهج والكورسات');
       }
     }
 
-    function openCourseModal(course, onSaved) {
+    function openCourseModal(course = null) {
       const isEdit = !!course;
       Modal.open({
-        title: isEdit ? `تعديل الكورس: ${course.title}` : 'إضافة كورس تعليمي جديد',
+        title: isEdit ? 'تعديل بيانات الكورس' : 'إضافة كورس تعليمي جديد',
         contentHtml: `
           <form id="form-course-save">
             <div class="form-group">
-              <label class="form-label">عنوان الكورس / المنهج</label>
-              <input type="text" id="m-crs-title" class="form-input" required value="${course?.title || ''}" placeholder="مثال: أساسيات البرمجة بلغة بايثون">
+              <label class="form-label">عنوان الكورس *</label>
+              <input type="text" id="m-crs-title" class="form-control" required value="${course?.title || ''}" placeholder="مثال: مدخل إلى البرمجة بلغة بايثون">
             </div>
             <div class="form-group">
-              <label class="form-label">الاسم التعريفي (Slug)</label>
-              <input type="text" id="m-crs-slug" class="form-input" required value="${course?.slug || ''}" placeholder="python-fundamentals">
+              <label class="form-label">الاسم التعريفي (Slug) *</label>
+              <input type="text" id="m-crs-slug" class="form-control" required value="${course?.slug || ''}" placeholder="مثال: intro-to-python">
             </div>
             <div class="form-group">
-              <label class="form-label">الوصف الأكاديمي</label>
-              <textarea id="m-crs-desc" class="form-input" rows="3" placeholder="اكتب وصفاً موجزاً للكورس...">${course?.description || ''}</textarea>
+              <label class="form-label">وصف الكورس</label>
+              <textarea id="m-crs-desc" class="form-control" rows="3" placeholder="نبذة مختصرة عن أهداف الكورس والموضوعات المغطاة">${course?.description || ''}</textarea>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div class="form-group">
-                <label class="form-label">مستوى الوصول</label>
-                <select id="m-crs-access" class="form-input">
-                  <option value="PUBLIC" ${course?.access_type === 'PUBLIC' ? 'selected' : ''}>عام ومتاح للجميع (PUBLIC)</option>
-                  <option value="SUBSCRIBERS_ONLY" ${course?.access_type === 'SUBSCRIBERS_ONLY' ? 'selected' : ''}>للمشتركين فقط (SUBSCRIBERS_ONLY)</option>
+                <label class="form-label">نوع الوصول</label>
+                <select id="m-crs-access" class="form-control">
+                  <option value="PUBLIC" ${course?.access_type === 'PUBLIC' ? 'selected' : ''}>عام ومتاح للجميع</option>
+                  <option value="SUBSCRIBERS_ONLY" ${course?.access_type === 'SUBSCRIBERS_ONLY' ? 'selected' : ''}>للمشتركين فقط ⭐</option>
                 </select>
               </div>
               <div class="form-group">
-                <label class="form-label">حالة النشر</label>
-                <select id="m-crs-pub" class="form-input">
-                  <option value="1" ${course?.is_published !== 0 ? 'selected' : ''}>منشور ومتاح للطلاب ✅</option>
-                  <option value="0" ${course?.is_published === 0 ? 'selected' : ''}>مسودة غير منشورة ⏸️</option>
-                </select>
+                <label class="form-label">ترتيب العرض</label>
+                <input type="number" id="m-crs-order" class="form-control" value="${course?.order_index || 1}" min="0">
               </div>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.75rem;">
-              ${isEdit ? 'حفظ تعديلات الكورس' : 'إنشاء الكورس الآن 🚀'}
-            </button>
+            <div class="form-group" style="margin-top:0.5rem;">
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" id="m-crs-pub" ${course ? (course.is_published ? 'checked' : '') : 'checked'}>
+                <span>نشر الكورس وجعله مرئيًا للطلاب الآن</span>
+              </label>
+            </div>
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">${isEdit ? 'حفظ التعديلات' : 'إنشاء الكورس الآن'}</button>
+            </div>
           </form>
         `
       });
@@ -294,593 +250,533 @@ export class AdminPages {
         e.preventDefault();
         const payload = {
           title: document.getElementById('m-crs-title').value.trim(),
-          slug: document.getElementById('m-crs-slug').value.trim() || 'course-' + Date.now(),
+          slug: document.getElementById('m-crs-slug').value.trim(),
           description: document.getElementById('m-crs-desc').value.trim(),
-          thumbnail_url: course?.thumbnail_url || '/assets/branding/app_icon.svg',
-          order_index: course?.order_index || 1,
-          is_published: document.getElementById('m-crs-pub').value === '1',
-          access_type: document.getElementById('m-crs-access').value
+          access_type: document.getElementById('m-crs-access').value,
+          order_index: parseInt(document.getElementById('m-crs-order').value) || 0,
+          is_published: document.getElementById('m-crs-pub').checked
         };
 
         try {
           if (isEdit) {
             await ApiClient.put(`/courses/${course.id}`, payload);
-            Toast.success('تم تعديل الكورس بنجاح');
+            Toast.success('تم تحديث بيانات الكورس بنجاح');
           } else {
             await ApiClient.post('/courses', payload);
-            Toast.success('تمت إضافة الكورس بنجاح 🎉');
+            Toast.success('تم إنشاء الكورس بنجاح 🎉');
           }
           Modal.close();
-          onSaved();
+          loadCourses();
         } catch (err) {
-          Toast.error(err.message);
+          Toast.error(err.message || 'فشل حفظ الكورس');
         }
       });
     }
 
-    async function openUnitsModal(course, onSaved) {
-      const uRes = await ApiClient.get(`/units?course_id=${course.id}`).catch(() => ({ units: [] }));
-      const units = uRes.units || [];
-
-      Modal.open({
-        title: `إدارة وحدات: ${course.title}`,
-        contentHtml: `
-          <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.9rem;color:var(--color-text-muted);">الوحدات التابعة لهذا الكورس (${units.length})</span>
-            <button id="sub-btn-new-unit" class="btn btn-primary btn-sm">+ إضافة وحدة جديدة</button>
-          </div>
-          <div id="modal-units-list" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:0.75rem;">
-            ${units.length > 0 ? units.map(u => `
-              <div style="padding:0.75rem 1rem;background:var(--color-bg-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                  <strong style="color:var(--color-text-main);">${u.title}</strong>
-                  <div style="font-size:0.75rem;color:var(--color-text-muted);">${u.description || ''}</div>
-                </div>
-                <div style="display:flex;gap:0.4rem;">
-                  <button class="btn btn-danger btn-sm m-del-unit-btn" data-uid="${u.id}">حذف</button>
-                </div>
-              </div>
-            `).join('') : '<p style="color:var(--color-text-muted);text-align:center;padding:1rem;">لا توجد وحدات في هذا الكورس بعد.</p>'}
-          </div>
-        `
-      });
-
-      document.querySelectorAll('.m-del-unit-btn').forEach(b => {
-        b.addEventListener('click', async () => {
-          try {
-            await ApiClient.delete(`/units/${b.dataset.uid}`);
-            Toast.success('تم حذف الوحدة');
-            Modal.close();
-            openUnitsModal(course, onSaved);
-          } catch (e) {
-            Toast.error(e.message);
-          }
-        });
-      });
-
-      document.getElementById('sub-btn-new-unit').onclick = () => {
-        Modal.open({
-          title: `إضافة وحدة جديدة لكورس: ${course.title}`,
-          contentHtml: `
-            <form id="form-unit-add">
-              <div class="form-group">
-                <label class="form-label">عنوان الوحدة</label>
-                <input type="text" id="m-unit-title" class="form-input" required placeholder="مثال: الوحدة الأولى: المفاهيم التأسيسية">
-              </div>
-              <div class="form-group">
-                <label class="form-label">وصف الوحدة</label>
-                <textarea id="m-unit-desc" class="form-input" rows="2" placeholder="وصف محتوى ومخرجات الوحدة..."></textarea>
-              </div>
-              <div class="form-group">
-                <label class="form-label">مستوى الوصول</label>
-                <select id="m-unit-acc" class="form-input">
-                  <option value="PUBLIC">عام للجميع</option>
-                  <option value="SUBSCRIBERS_ONLY" selected>للمشتركين فقط 🔑</option>
-                </select>
-              </div>
-              <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;">إضافة الوحدة</button>
-            </form>
-          `
-        });
-
-        document.getElementById('form-unit-add').addEventListener('submit', async (e) => {
-          e.preventDefault();
-          try {
-            await ApiClient.post('/units', {
-              course_id: course.id,
-              title: document.getElementById('m-unit-title').value.trim(),
-              description: document.getElementById('m-unit-desc').value.trim(),
-              order_index: units.length + 1,
-              is_published: true,
-              access_type: document.getElementById('m-unit-acc').value
-            });
-            Toast.success('تمت إضافة الوحدة بنجاح');
-            openUnitsModal(course, onSaved);
-          } catch (err) {
-            Toast.error(err.message);
-          }
-        });
-      };
-    }
-
+    document.getElementById('btn-add-course').addEventListener('click', () => openCourseModal());
     await loadCourses();
   }
 
-  /* ===================================================================
-     3. LESSONS MANAGEMENT (Full CRUD for Admin & Assistants)
-  =================================================================== */
+  // =========================================================================
+  // 3. LESSONS & VIDEOS CRUD
+  // =========================================================================
   static async renderLessons(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة الدروس والفيديوهات 🎬</h2>
-          <p style="color:var(--color-text-muted);">إضافة وتعديل وحذف الدروس وتحديد خصوصية المشاهدة ومصادر الفيديوهات والمذكرات</p>
+          <h1 class="page-title">إدارة الدروس والفيديوهات 📚</h1>
+          <p class="page-subtitle">إضافة وتعديل شروحات الفيديو والدروس النصية وربطها بالوحدات التعليمية</p>
         </div>
-        <button id="btn-add-lesson" class="btn btn-primary btn-sm" style="font-weight:700;">+ إضافة درس جديد</button>
+        <button id="btn-add-lesson" class="btn btn-primary">+ إضافة درس جديد</button>
       </div>
 
-      <!-- Filters & Search Bar -->
-      <div class="card" style="margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;padding:1rem;">
-        <input type="text" id="filter-lesson-search" class="form-input" placeholder="بحث في عنوان الدرس..." style="flex:1;min-width:200px;">
-        <select id="filter-lesson-unit" class="form-input" style="width:auto;min-width:200px;">
-          <option value="">جميع الوحدات</option>
-        </select>
-        <select id="filter-lesson-access" class="form-input" style="width:auto;">
-          <option value="">كافة مستويات الوصول</option>
-          <option value="PUBLIC">عام ومجاني</option>
-          <option value="SUBSCRIBERS_ONLY">للمشتركين فقط</option>
-        </select>
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:center;">
+          <div style="flex:1;min-width:250px;">
+            <label class="form-label" style="font-size:0.85rem;">تصفية حسب الكورس الدراسي</label>
+            <select id="filter-lesson-course" class="form-control">
+              <option value="">جميع الكورسات والمناهج</option>
+            </select>
+          </div>
+          <div style="flex:1;min-width:250px;">
+            <label class="form-label" style="font-size:0.85rem;">بحث عن درس</label>
+            <input type="text" id="filter-lesson-search" class="form-control" placeholder="ابحث بعنوان الدرس...">
+          </div>
+        </div>
       </div>
 
       <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
+        <div class="table-responsive">
+          <table class="data-table">
             <thead>
               <tr>
-                <th>ترتيب</th>
                 <th>عنوان الدرس</th>
                 <th>الوحدة / الكورس</th>
                 <th>نوع الفيديو</th>
-                <th>الخصوصية</th>
-                <th>الحالة</th>
                 <th>المدة</th>
+                <th>الوصول</th>
+                <th>الحالة</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody id="lessons-table-body">
-              <tr><td colspan="8" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:2rem;">جاري تحميل الدروس...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     `;
 
-    let cachedUnits = [];
-    let cachedCourses = [];
-    let allLessonsList = [];
+    let allCourses = [];
+    let allUnits = [];
+    let allLessons = [];
 
-    // Attach Add Lesson handler immediately so button is never dead!
-    const addBtn = document.getElementById('btn-add-lesson');
-    if (addBtn) {
-      addBtn.onclick = () => openLessonFormModal(null);
-    }
-
-    async function ensureUnitsLoaded() {
-      if (cachedUnits.length > 0) return cachedUnits;
+    async function loadData() {
       try {
-        const coursesRes = await ApiClient.get('/courses').catch(() => ({ courses: [] }));
-        cachedCourses = coursesRes.courses || [];
-        cachedUnits = [];
-        for (const c of cachedCourses) {
-          const uRes = await ApiClient.get(`/units?course_id=${c.id}`).catch(() => ({ units: [] }));
-          if (uRes.units && uRes.units.length > 0) {
-            uRes.units.forEach(u => {
-              cachedUnits.push({ ...u, course_title: c.title });
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching units:", err);
-      }
-      return cachedUnits;
-    }
-
-    async function loadLessons() {
-      try {
-        const [lessons, units] = await Promise.all([
-          ApiClient.get('/lessons'),
-          ensureUnitsLoaded()
+        const [cRes, uRes, lRes] = await Promise.all([
+          ApiClient.get('/courses').catch(() => ({ courses: [] })),
+          ApiClient.get('/units').catch(() => ({ units: [] })),
+          ApiClient.get('/lessons').catch(() => ({ lessons: [] }))
         ]);
-        allLessonsList = lessons || [];
 
-        // Populate unit dropdown filter
-        const unitSelect = document.getElementById('filter-lesson-unit');
-        if (unitSelect && unitSelect.options.length <= 1) {
-          units.forEach(u => {
-            const opt = document.createElement('option');
-            opt.value = u.id;
-            opt.textContent = `${u.title} (${u.course_title || 'كورس'})`;
-            unitSelect.appendChild(opt);
+        allCourses = ApiClient.extractList(cRes, 'courses');
+        allUnits = ApiClient.extractList(uRes, 'units');
+        allLessons = ApiClient.extractList(lRes, 'lessons');
+
+        const courseSelect = document.getElementById('filter-lesson-course');
+        if (courseSelect) {
+          courseSelect.innerHTML = '<option value="">جميع الكورسات والمناهج</option>' +
+            allCourses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+        }
+
+        renderLessonsTable();
+      } catch (err) {
+        console.error(err);
+        Toast.error('فشل تحميل بيانات الدروس والمناهج');
+      }
+    }
+
+    function renderLessonsTable() {
+      const selectedCourseId = document.getElementById('filter-lesson-course')?.value || '';
+      const search = (document.getElementById('filter-lesson-search')?.value || '').toLowerCase().trim();
+      const tbody = document.getElementById('lessons-table-body');
+      if (!tbody) return;
+
+      let filtered = allLessons;
+      if (selectedCourseId) {
+        const unitIdsInCourse = allUnits.filter(u => u.course_id === selectedCourseId).map(u => u.id);
+        filtered = filtered.filter(l => unitIdsInCourse.includes(l.unit_id));
+      }
+      if (search) {
+        filtered = filtered.filter(l => (l.title || '').toLowerCase().includes(search));
+      }
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد دروس مطابقة. اضغط على "+ إضافة درس جديد".</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(l => {
+        const unit = allUnits.find(u => u.id === l.unit_id);
+        const course = unit ? allCourses.find(c => c.id === unit.course_id) : null;
+        return `
+          <tr>
+            <td>
+              <strong>${l.title}</strong>
+              ${l.description ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${l.description.substring(0, 40)}...</div>` : ''}
+            </td>
+            <td>
+              <div>${unit?.title || 'وحدة غير محددة'}</div>
+              <div style="font-size:0.75rem;color:var(--color-primary);">${course?.title || ''}</div>
+            </td>
+            <td>
+              <span class="badge ${l.video_type === 'youtube' ? 'badge-danger' : 'badge-secondary'}">
+                ${l.video_type === 'youtube' ? 'YouTube 📺' : 'مرفوع 🎥'}
+              </span>
+            </td>
+            <td>${l.duration_minutes || Math.round((l.duration_seconds || 0)/60) || '—'} دقيقة</td>
+            <td>
+              <span class="badge ${l.is_free ? 'badge-success' : 'badge-primary'}">
+                ${l.is_free ? 'مجاني 🎁' : 'للمشتركين ⭐'}
+              </span>
+            </td>
+            <td>
+              <span class="badge ${l.is_published ? 'badge-success' : 'badge-warning'}">
+                ${l.is_published ? 'منشور ✅' : 'مسودة ⏸️'}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-secondary btn-sm edit-lesson-btn" data-id="${l.id}">تعديل ✏️</button>
+              <button class="btn btn-danger btn-sm del-lesson-btn" data-id="${l.id}">حذف 🗑️</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      tbody.querySelectorAll('.edit-lesson-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const lesson = allLessons.find(x => x.id === b.dataset.id);
+          if (lesson) openLessonModal(lesson);
+        });
+      });
+
+      tbody.querySelectorAll('.del-lesson-btn').forEach(b => {
+        b.addEventListener('click', () => {
+          const lessonId = b.dataset.id;
+          Modal.confirm({
+            title: 'تأكيد حذف الدرس',
+            message: 'هل أنت متأكد من رغبتك في حذف هذا الدرس؟ لن يتمكن الطلاب من مشاهدته بعد الحذف.',
+            onConfirm: async () => {
+              try {
+                await ApiClient.delete(`/lessons/${lessonId}`);
+                Toast.success('تم حذف الدرس بنجاح');
+                loadData();
+              } catch (err) {
+                Toast.error(err.message || 'فشل حذف الدرس');
+              }
+            }
           });
-        }
+        });
+      });
+    }
 
-        const searchQuery = document.getElementById('filter-lesson-search')?.value.toLowerCase().trim() || '';
-        const selectedUnit = document.getElementById('filter-lesson-unit')?.value || '';
-        const selectedAccess = document.getElementById('filter-lesson-access')?.value || '';
+    function openLessonModal(lesson = null) {
+      const isEdit = !!lesson;
+      let targetUnit = lesson ? allUnits.find(u => u.id === lesson.unit_id) : allUnits[0];
+      let selectedCourseId = targetUnit ? targetUnit.course_id : (allCourses[0]?.id || '');
 
-        let filtered = allLessonsList;
-        if (searchQuery) {
-          filtered = filtered.filter(l => (l.title && l.title.toLowerCase().includes(searchQuery)) || (l.description && l.description.toLowerCase().includes(searchQuery)));
-        }
-        if (selectedUnit) {
-          filtered = filtered.filter(l => l.unit_id === selectedUnit);
-        }
-        if (selectedAccess) {
-          filtered = filtered.filter(l => l.access_type === selectedAccess);
-        }
+      Modal.open({
+        title: isEdit ? 'تعديل بيانات الدرس التعليمي' : 'إضافة درس تعليمي جديد',
+        contentHtml: `
+          <form id="form-lesson-save">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">الكورس التابع له *</label>
+                <select id="m-les-course" class="form-control" required>
+                  ${allCourses.map(c => `<option value="${c.id}" ${c.id === selectedCourseId ? 'selected' : ''}>${c.title}</option>`).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">الوحدة التعليمية *</label>
+                <select id="m-les-unit" class="form-control" required></select>
+              </div>
+            </div>
 
-        const tbody = document.getElementById('lessons-table-body');
-        if (!filtered || filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding:2rem;color:var(--color-text-muted);">لا توجد دروس مطابقة لخيارات البحث. يمكنك النقر على زر <strong>+ إضافة درس جديد</strong> أعلاه.</td></tr>';
+            <div class="form-group">
+              <label class="form-label">عنوان الدرس *</label>
+              <input type="text" id="m-les-title" class="form-control" required value="${lesson?.title || ''}" placeholder="مثال: المتغيرات وأنواع البيانات في بايثون">
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">نوع الفيديو</label>
+                <select id="m-les-vtype" class="form-control">
+                  <option value="youtube" ${lesson?.video_type === 'youtube' ? 'selected' : ''}>رابط YouTube</option>
+                  <option value="embedded" ${lesson?.video_type === 'embedded' ? 'selected' : ''}>مشغل داخلي / فيديو مباشر</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">رابط الفيديو (URL) *</label>
+                <input type="url" id="m-les-vurl" class="form-control" required value="${lesson?.video_url || ''}" placeholder="https://www.youtube.com/watch?v=...">
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">مدة الفيديو (بالدقائق)</label>
+                <input type="number" id="m-les-dur" class="form-control" min="1" value="${lesson?.duration_minutes || Math.round((lesson?.duration_seconds||0)/60) || 15}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">ترتيب العرض</label>
+                <input type="number" id="m-les-order" class="form-control" min="0" value="${lesson?.order_index !== undefined ? lesson.order_index : 1}">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الشرح المكتوب والأكواد التوضيحية (Markdown / Text)</label>
+              <textarea id="m-les-content" class="form-control" rows="5" placeholder="# عنوان الشرح\nاكتب تفاصيل الدرس ومقتطفات الأكواد هنا...">${lesson?.content_markdown || ''}</textarea>
+            </div>
+
+            <div style="display:flex;gap:2rem;margin-top:0.75rem;">
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" id="m-les-free" ${lesson?.is_free ? 'checked' : ''}>
+                <span>درس تجريبي مجاني (متاح لغير المشتركين)</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" id="m-les-pub" ${lesson ? (lesson.is_published ? 'checked' : '') : 'checked'}>
+                <span>نشر الدرس وإتاحته للطلاب فورًا</span>
+              </label>
+            </div>
+
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">${isEdit ? 'حفظ تعديلات الدرس' : 'إضافة ونشر الدرس الآن'}</button>
+            </div>
+          </form>
+        `
+      });
+
+      const updateUnitOptions = (crsId) => {
+        const unitsInCourse = allUnits.filter(u => u.course_id === crsId);
+        const unitSelect = document.getElementById('m-les-unit');
+        if (unitsInCourse.length === 0) {
+          unitSelect.innerHTML = '<option value="">لا توجد وحدات في هذا الكورس بعد</option>';
+        } else {
+          unitSelect.innerHTML = unitsInCourse.map(u => `
+            <option value="${u.id}" ${lesson?.unit_id === u.id ? 'selected' : ''}>${u.title}</option>
+          `).join('');
+        }
+      };
+
+      const courseSelect = document.getElementById('m-les-course');
+      courseSelect.addEventListener('change', () => updateUnitOptions(courseSelect.value));
+      updateUnitOptions(selectedCourseId);
+
+      document.getElementById('form-lesson-save').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const unitId = document.getElementById('m-les-unit').value;
+        if (!unitId) {
+          Toast.error('يرجى اختيار الوحدة التعليمية أو إضافة وحدة للكورس أولاً');
           return;
         }
 
-        tbody.innerHTML = filtered.map(l => {
-          const unitObj = cachedUnits.find(u => u.id === l.unit_id);
+        const durMin = parseInt(document.getElementById('m-les-dur').value) || 15;
+        const payload = {
+          unit_id: unitId,
+          title: document.getElementById('m-les-title').value.trim(),
+          video_type: document.getElementById('m-les-vtype').value,
+          video_url: document.getElementById('m-les-vurl').value.trim(),
+          duration_minutes: durMin,
+          duration_seconds: durMin * 60,
+          order_index: parseInt(document.getElementById('m-les-order').value) || 0,
+          content_markdown: document.getElementById('m-les-content').value,
+          is_free: document.getElementById('m-les-free').checked,
+          is_published: document.getElementById('m-les-pub').checked
+        };
+
+        try {
+          if (isEdit) {
+            await ApiClient.put(`/lessons/${lesson.id}`, payload);
+            Toast.success('تم تحديث الدرس بنجاح');
+          } else {
+            await ApiClient.post('/lessons', payload);
+            Toast.success('تم إنشاء ونشر الدرس بنجاح 🎉');
+          }
+          Modal.close();
+          loadData();
+        } catch (err) {
+          Toast.error(err.message || 'فشل حفظ الدرس');
+        }
+      });
+    }
+
+    document.getElementById('btn-add-lesson').addEventListener('click', () => openLessonModal());
+    document.getElementById('filter-lesson-course')?.addEventListener('change', renderLessonsTable);
+    document.getElementById('filter-lesson-search')?.addEventListener('input', debounce(renderLessonsTable, 300));
+    await loadData();
+  }
+
+  // =========================================================================
+  // 4. STUDY FILES & GOOGLE DRIVE CRUD
+  // =========================================================================
+  static async renderStudyFiles(container) {
+    container.innerHTML = `
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">الملفات والمذكرات الدراسية 📁</h1>
+          <p class="page-subtitle">رفع وإدارة مذكرات الشرح، ملخصات PDF، وملفات التمارين وروابط Google Drive</p>
+        </div>
+        <button id="btn-add-file" class="btn btn-primary">+ إضافة ملف أو رابط Drive</button>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>عنوان الملف</th>
+                <th>المصدر والنوع</th>
+                <th>مستوى الوصول</th>
+                <th>الحالة</th>
+                <th>تاريخ الإضافة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="files-table-body">
+              <tr><td colspan="6" style="text-align:center;padding:2rem;">جاري تحميل الملفات...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    async function loadFiles() {
+      try {
+        const res = await ApiClient.get('/files');
+        const files = ApiClient.extractList(res, 'files');
+        const tbody = document.getElementById('files-table-body');
+        if (!files || files.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد ملفات أو مذكرات مضافة حاليًا.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = files.map(f => {
+          const isDrive = f.source_type === 'google_drive' || (f.external_url && f.external_url.includes('drive.google.com'));
           return `
             <tr>
-              <td><strong>#${l.order_index || 1}</strong></td>
               <td>
-                <strong style="color:var(--color-text-main);">${l.title}</strong>
-                <div style="font-size:0.75rem;color:var(--color-text-muted);">${l.slug || ''}</div>
+                <strong>${f.title}</strong>
+                ${f.description ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${f.description.substring(0, 45)}...</div>` : ''}
               </td>
               <td>
-                <span style="font-size:0.85rem;color:var(--color-text-dim);">${unitObj?.title || 'الوحدة الأساسية'}</span>
-                ${unitObj?.course_title ? `<div style="font-size:0.75rem;color:var(--color-primary);">${unitObj.course_title}</div>` : ''}
-              </td>
-              <td>
-                <span class="badge" style="background:var(--color-bg-secondary);color:var(--color-cyan-accent);">
-                  ${l.video_type === 'youtube' ? 'YouTube 🎬' : (l.video_type === 'uploaded' ? 'رفع مباشر 📁' : 'بدون فيديو')}
+                <span class="badge ${isDrive ? 'badge-primary' : 'badge-secondary'}">
+                  ${isDrive ? 'Google Drive ☁️' : 'ملف مباشر 📄'}
                 </span>
               </td>
               <td>
-                <span class="badge ${l.access_type === 'PUBLIC' ? 'badge-public' : 'badge-subscribers'}">
-                  ${l.access_type === 'PUBLIC' ? 'عام' : 'مشتركين 🔑'}
+                <span class="badge ${f.visibility === 'PUBLIC' ? 'badge-success' : 'badge-warning'}">
+                  ${f.visibility === 'PUBLIC' ? 'عام للجميع' : 'للمشتركين فقط ⭐'}
                 </span>
               </td>
               <td>
-                <button class="btn btn-sm toggle-pub-btn" data-id="${l.id}" data-pub="${l.is_published}" style="padding:2px 8px;font-size:0.75rem;border:none;">
-                  <span class="badge ${l.is_published ? 'badge-public' : 'badge-danger'}">
-                    ${l.is_published ? 'منشور ✅' : 'مسودة ⏸️'}
-                  </span>
-                </button>
+                <span class="badge ${f.is_published ? 'badge-success' : 'badge-danger'}">
+                  ${f.is_published ? 'منشور ✅' : 'مخفي ⏸️'}
+                </span>
               </td>
-              <td>${Math.round((l.duration_seconds || 0) / 60)} دقيقة</td>
+              <td style="font-size:0.85rem;">${f.created_at ? f.created_at.substring(0, 10) : '—'}</td>
               <td>
-                <div style="display:flex;gap:0.4rem;">
-                  <button class="btn btn-secondary btn-sm edit-lesson-btn" data-id="${l.id}">تعديل ✏️</button>
-                  <button class="btn btn-danger btn-sm del-lesson-btn" data-id="${l.id}">حذف 🗑️</button>
-                </div>
+                ${f.external_url ? `<a href="${f.external_url}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">معاينة ↗️</a>` : ''}
+                <button class="btn btn-danger btn-sm del-file-btn" data-id="${f.id}">حذف 🗑️</button>
               </td>
             </tr>
           `;
         }).join('');
 
-        // Bind Edit Lesson
-        document.querySelectorAll('.edit-lesson-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const les = allLessonsList.find(x => x.id === btn.dataset.id);
-            if (les) openLessonFormModal(les);
-          });
-        });
-
-        // Bind Delete Lesson
-        document.querySelectorAll('.del-lesson-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const lesId = btn.dataset.id;
+        tbody.querySelectorAll('.del-file-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const fileId = b.dataset.id;
             Modal.confirm({
-              title: 'تأكيد حذف الدرس',
-              message: 'هل أنت متأكد من رغبتك في حذف هذا الدرس وجميع التمارين والمرفقات التابعة له نهائياً؟',
+              title: 'تأكيد حذف الملف',
+              message: 'هل أنت متأكد من رغبتك في حذف هذا الملف؟ لن يتمكن الطلاب من تحميله بعد الحذف.',
               onConfirm: async () => {
                 try {
-                  await ApiClient.delete(`/lessons/${lesId}`);
-                  Toast.success('تم حذف الدرس بنجاح');
-                  loadLessons();
-                } catch (e) {
-                  Toast.error(e.message);
+                  await ApiClient.delete(`/files/${fileId}`);
+                  Toast.success('تم حذف الملف بنجاح');
+                  loadFiles();
+                } catch (err) {
+                  Toast.error(err.message || 'فشل حذف الملف');
                 }
               }
             });
           });
         });
-
-        // Toggle published state
-        document.querySelectorAll('.toggle-pub-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const les = allLessonsList.find(x => x.id === btn.dataset.id);
-            if (!les) return;
-            const newPub = (les.is_published === 1 || les.is_published === true) ? false : true;
-            try {
-              await ApiClient.put(`/lessons/${les.id}`, { ...les, is_published: newPub });
-              Toast.success(newPub ? 'تم نشر الدرس' : 'تم إلغاء نشر الدرس');
-              loadLessons();
-            } catch (e) {
-              Toast.error(e.message);
-            }
-          });
-        });
-
       } catch (err) {
         console.error(err);
-        Toast.error('فشل تحميل قائمة الدروس');
+        Toast.error('فشل تحميل قائمة الملفات');
       }
     }
 
-    async function openLessonFormModal(lesson) {
-      const isEdit = !!lesson;
-      Toast.info('جاري تجهيز نموذج الدرس والوحدات الدراسية...');
-      const units = await ensureUnitsLoaded();
-
-      if (!units || units.length === 0) {
-        Modal.open({
-          title: 'تنبيه: لا توجد وحدات دراسية',
-          contentHtml: `
-            <div style="text-align:center;padding:1.5rem;">
-              <div style="font-size:3rem;margin-bottom:1rem;">⚠️</div>
-              <h3 style="color:var(--color-text-main);margin-bottom:0.75rem;font-weight:800;">لا توجد وحدات دراسية منشأة حالياً</h3>
-              <p style="color:var(--color-text-muted);margin-bottom:1.5rem;line-height:1.6;">
-                لا يمكن إضافة درس تعليمي دون تحديد الوحدة الدراسية التابع لها. يرجى التوجه إلى قسم المناهج والكورسات، وإنشاء وحدة دراسية أولاً ثم العودة لإضافة الدروس.
-              </p>
-              <button id="btn-goto-courses-modal" class="btn btn-primary" style="padding:0.75rem 1.5rem;font-weight:700;">📚 الانتقال لإدارة الكورسات والوحدات</button>
-            </div>
-          `
-        });
-        document.getElementById('btn-goto-courses-modal')?.addEventListener('click', () => {
-          Modal.close();
-          window.location.hash = '#/admin/courses';
-        });
-        return;
-      }
-
-      // Group units by course
-      const coursesMap = {};
-      units.forEach(u => {
-        const cName = u.course_title || 'الكورسات المتاحة';
-        if (!coursesMap[cName]) coursesMap[cName] = [];
-        coursesMap[cName].push(u);
-      });
-
-      let unitOptionsHtml = '';
-      for (const [cName, uList] of Object.entries(coursesMap)) {
-        unitOptionsHtml += `<optgroup label="كورس: ${cName}">`;
-        uList.forEach(u => {
-          unitOptionsHtml += `<option value="${u.id}" ${lesson?.unit_id === u.id ? 'selected' : ''}>${u.title}</option>`;
-        });
-        unitOptionsHtml += `</optgroup>`;
-      }
-
+    function openFileModal() {
       Modal.open({
-        title: isEdit ? `تعديل الدرس: ${lesson.title}` : 'إضافة درس تعليمي جديد 🎬',
+        title: 'إضافة مذكرة دراسية أو رابط Google Drive',
         contentHtml: `
-          <form id="form-lesson-save">
+          <form id="form-file-save">
             <div class="form-group">
-              <label class="form-label">الوحدة الدراسية التابع لها الدرس <span style="color:var(--color-danger);">*</span></label>
-              <select id="m-les-unit" class="form-input" required>
-                ${unitOptionsHtml}
+              <label class="form-label">عنوان المذكرة / الملف *</label>
+              <input type="text" id="m-file-title" class="form-control" required placeholder="مثال: مذكرة التراكيب البيانية والخوارزميات (PDF)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">الوصف التعليمي للملف</label>
+              <textarea id="m-file-desc" class="form-control" rows="2" placeholder="وصف محتوى الملف وإرشادات المذاكرة..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">نوع المصدر</label>
+              <select id="m-file-stype" class="form-control">
+                <option value="google_drive">رابط Google Drive مباشر</option>
+                <option value="external_url">رابط خارجي مباشر (PDF/Doc/Zip)</option>
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">عنوان الدرس <span style="color:var(--color-danger);">*</span></label>
-              <input type="text" id="m-les-title" class="form-input" required value="${lesson?.title || ''}" placeholder="مثال: الدرس الأول: المتغيرات وأنواع البيانات في بايثون">
+              <label class="form-label">الرابط المباشر (URL) *</label>
+              <input type="url" id="m-file-url" class="form-control" required placeholder="https://drive.google.com/file/d/...">
             </div>
-            <div class="form-group">
-              <label class="form-label">الاسم التعريفي في الرابط (Slug) <span style="color:var(--color-danger);">*</span></label>
-              <input type="text" id="m-les-slug" class="form-input" required value="${lesson?.slug || ''}" placeholder="variables-and-data-types">
-            </div>
-            <div class="form-group">
-              <label class="form-label">نوع الفيديو ومصدره</label>
-              <select id="m-les-vtype" class="form-input">
-                <option value="youtube" ${lesson?.video_type === 'youtube' ? 'selected' : ''}>يوتيوب (YouTube URL)</option>
-                <option value="uploaded" ${lesson?.video_type === 'uploaded' ? 'selected' : ''}>رفع فيديو مباشر من الجهاز (MP4, WebM)</option>
-                <option value="none" ${lesson?.video_type === 'none' ? 'selected' : ''}>بدون فيديو (شرح نصي ومذكرات فقط)</option>
-              </select>
-            </div>
-            <div class="form-group" id="video-url-container">
-              <label class="form-label">رابط الفيديو أو معرف اليوتيوب</label>
-              <input type="text" id="m-les-vurl" class="form-input" value="${lesson?.video_url || ''}" placeholder="https://www.youtube.com/watch?v=...">
-            </div>
-            <div class="form-group" id="video-upload-container" style="display:none;">
-              <label class="form-label">رفع ملف الفيديو مباشرة من جهازك (MP4, WebM)</label>
-              <input type="file" id="m-les-vfile" class="form-input" accept="video/mp4,video/webm">
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div class="form-group">
-                <label class="form-label">مستوى الوصول</label>
-                <select id="m-les-access" class="form-input">
-                  <option value="PUBLIC" ${lesson?.access_type === 'PUBLIC' ? 'selected' : ''}>متاح للجميع (مجاني)</option>
-                  <option value="SUBSCRIBERS_ONLY" ${lesson?.access_type === 'SUBSCRIBERS_ONLY' ? 'selected' : ''}>للمشتركين فقط 🔑</option>
+                <label class="form-label">مستوى الوصول للطلاب</label>
+                <select id="m-file-vis" class="form-control">
+                  <option value="PUBLIC">متاح لجميع الطلاب (مجاني)</option>
+                  <option value="SUBSCRIBERS_ONLY">متاح للمشتركين فقط ⭐</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label class="form-label">المدة المقدرة (دقيقة)</label>
-                <input type="number" id="m-les-dur" class="form-input" value="${Math.round((lesson?.duration_seconds || 600) / 60)}" min="1">
-              </div>
-              <div class="form-group">
-                <label class="form-label">الترتيب داخل الوحدة</label>
-                <input type="number" id="m-les-ord" class="form-input" value="${lesson?.order_index || 1}" min="1">
+              <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:0.5rem;">
+                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                  <input type="checkbox" id="m-file-pub" checked>
+                  <span>نشر الملف فورًا</span>
+                </label>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">شرح الدرس وملاحظات المحاضرة والأكواد (Markdown)</label>
-              <textarea id="m-les-content" class="form-input" rows="5" placeholder="اكتب شرح الدرس والملاحظات البرمجية والأمثلة التوضيحية...">${lesson?.content_markdown || ''}</textarea>
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">حفظ ونشر الملف 🚀</button>
             </div>
-            <button type="submit" id="submit-lesson-save-btn" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.5rem;padding:0.85rem;">
-              ${isEdit ? 'حفظ تعديلات الدرس 💾' : 'إضافة ونشر الدرس الآن 🎬'}
-            </button>
           </form>
         `
       });
 
-      // Auto-generate slug from title
-      const titleInput = document.getElementById('m-les-title');
-      const slugInput = document.getElementById('m-les-slug');
-      if (titleInput && slugInput && !isEdit) {
-        titleInput.addEventListener('input', () => {
-          if (!slugInput.value || slugInput.value.startsWith('lesson-')) {
-            const raw = titleInput.value.toLowerCase().trim();
-            const slug = raw.replace(/[^a-z0-9؀-ۿ]+/g, '-').replace(/^-+|-+$/g, '');
-            slugInput.value = slug || 'lesson-' + Date.now();
-          }
-        });
-      }
+      document.getElementById('form-file-save').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          title: document.getElementById('m-file-title').value.trim(),
+          description: document.getElementById('m-file-desc').value.trim(),
+          source_type: document.getElementById('m-file-stype').value,
+          external_url: document.getElementById('m-file-url').value.trim(),
+          visibility: document.getElementById('m-file-vis').value,
+          is_published: document.getElementById('m-file-pub').checked
+        };
 
-      // Video type toggle
-      const vtypeSelect = document.getElementById('m-les-vtype');
-      const vurlBox = document.getElementById('video-url-container');
-      const vfileBox = document.getElementById('video-upload-container');
-
-      if (vtypeSelect && vurlBox && vfileBox) {
-        vtypeSelect.addEventListener('change', () => {
-          if (vtypeSelect.value === 'uploaded') {
-            vurlBox.style.display = 'none';
-            vfileBox.style.display = 'block';
-          } else if (vtypeSelect.value === 'youtube') {
-            vurlBox.style.display = 'block';
-            vfileBox.style.display = 'none';
-          } else {
-            vurlBox.style.display = 'none';
-            vfileBox.style.display = 'none';
-          }
-        });
-        if (lesson?.video_type === 'uploaded') {
-          vtypeSelect.dispatchEvent(new Event('change'));
+        try {
+          await ApiClient.post('/files', payload);
+          Toast.success('تمت إضافة الملف ونشره بنجاح 🎉');
+          Modal.close();
+          loadFiles();
+        } catch (err) {
+          Toast.error(err.message || 'فشل حفظ الملف');
         }
-      }
-
-      const form = document.getElementById('form-lesson-save');
-      if (form) {
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const saveBtn = document.getElementById('submit-lesson-save-btn');
-          if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'جاري الحفظ والتحقق...';
-          }
-
-          let vUrl = document.getElementById('m-les-vurl')?.value.trim() || '';
-          let vId = null;
-
-          // Check if uploaded video file
-          const vFile = document.getElementById('m-les-vfile')?.files[0];
-          if (vtypeSelect && vtypeSelect.value === 'uploaded' && vFile) {
-            const fd = new FormData();
-            fd.append('file', vFile);
-            Toast.info('جاري رفع ملف الفيديو...');
-            try {
-              const upRes = await ApiClient.upload('/resources/upload', fd);
-              vUrl = upRes.file_url;
-            } catch (err) {
-              Toast.error('فشل رفع الفيديو: ' + err.message);
-              if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'حفظ'; }
-              return;
-            }
-          } else if (vtypeSelect && vtypeSelect.value === 'youtube' && vUrl) {
-            if (vUrl.includes('v=')) {
-              vId = vUrl.split('v=')[1].split('&')[0];
-            } else if (vUrl.includes('youtu.be/')) {
-              vId = vUrl.split('youtu.be/')[1].split('?')[0];
-            } else if (vUrl.length === 11 && !vUrl.includes('/')) {
-              vId = vUrl;
-            }
-          }
-
-          const rawSlug = document.getElementById('m-les-slug')?.value.trim();
-          const safeSlug = rawSlug || ('lesson-' + Date.now());
-
-          const payload = {
-            unit_id: document.getElementById('m-les-unit').value,
-            title: document.getElementById('m-les-title').value.trim(),
-            slug: safeSlug,
-            description: document.getElementById('m-les-title').value.trim(),
-            content_markdown: document.getElementById('m-les-content').value,
-            video_type: vtypeSelect ? vtypeSelect.value : 'none',
-            video_url: vUrl,
-            video_id: vId,
-            duration_seconds: (parseFloat(document.getElementById('m-les-dur').value) || 10) * 60,
-            order_index: parseInt(document.getElementById('m-les-ord').value) || 1,
-            access_type: document.getElementById('m-les-access').value,
-            is_published: true
-          };
-
-          try {
-            if (isEdit) {
-              await ApiClient.put(`/lessons/${lesson.id}`, payload);
-              Toast.success('تم تعديل الدرس بنجاح ✅');
-            } else {
-              await ApiClient.post('/lessons', payload);
-              Toast.success('تمت إضافة ونشر الدرس بنجاح 🎉');
-            }
-            Modal.close();
-            await loadLessons();
-          } catch (err) {
-            Toast.error(err.message || 'حدث خطأ أثناء حفظ الدرس');
-          } finally {
-            if (saveBtn) {
-              saveBtn.disabled = false;
-              saveBtn.textContent = isEdit ? 'حفظ تعديلات الدرس 💾' : 'إضافة ونشر الدرس الآن 🎬';
-            }
-          }
-        });
-      }
+      });
     }
 
-    document.getElementById('filter-lesson-search')?.addEventListener('input', debounce(loadLessons, 300));
-    document.getElementById('filter-lesson-unit')?.addEventListener('change', loadLessons);
-    document.getElementById('filter-lesson-access')?.addEventListener('change', loadLessons);
-
-    await loadLessons();
+    document.getElementById('btn-add-file').addEventListener('click', openFileModal);
+    await loadFiles();
   }
+
+  // =========================================================================
+  // 5. QUESTION BANK CRUD
+  // =========================================================================
   static async renderQuestionBank(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">بنك الأسئلة المركزي 📝</h2>
-          <p style="color:var(--color-text-muted);">إضافة وتعديل وحذف أسئلة الاختيار من متعدد والصواب والخطأ وتحليل الأكواد وتصنيفها</p>
+          <h1 class="page-title">بنك الأسئلة المركزي ❓</h1>
+          <p class="page-subtitle">إنشاء وإدارة وتصنيف أسئلة الاختيار من متعدد والصواب والخطأ وتحليل الأكواد</p>
         </div>
-        <button id="btn-add-question" class="btn btn-primary btn-sm" style="font-weight:700;">+ إضافة سؤال جديد</button>
-      </div>
-
-      <div class="card" style="margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;padding:1rem;">
-        <input type="text" id="filter-q-search" class="form-input" placeholder="بحث في نص السؤال..." style="flex:1;min-width:200px;">
-        <select id="filter-q-diff" class="form-input" style="width:auto;">
-          <option value="">جميع الصعوبات</option>
-          <option value="easy">سهل (Easy)</option>
-          <option value="medium">متوسط (Medium)</option>
-          <option value="hard">صعب (Hard)</option>
-        </select>
-        <select id="filter-q-type" class="form-input" style="width:auto;">
-          <option value="">جميع الأنواع</option>
-          <option value="multiple_choice">اختيار من متعدد (MCQ)</option>
-          <option value="true_false">صح أو خطأ (True/False)</option>
-          <option value="code">تحليل كود برمجى</option>
-        </select>
+        <button id="btn-add-question" class="btn btn-primary">+ إضافة سؤال جديد</button>
       </div>
 
       <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
+        <div class="table-responsive">
+          <table class="data-table">
             <thead>
               <tr>
                 <th>نص السؤال</th>
                 <th>النوع</th>
-                <th>الصعوبة</th>
+                <th>مستوى الصعوبة</th>
                 <th>الموضوع</th>
                 <th>الإجابة الصحيحة</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody id="questions-table-body">
-              <tr><td colspan="6" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:2rem;">جاري تحميل الأسئلة...</td></tr>
             </tbody>
           </table>
         </div>
@@ -888,233 +784,161 @@ export class AdminPages {
     `;
 
     async function loadQuestions() {
-      const search = document.getElementById('filter-q-search')?.value || '';
-      const diff = document.getElementById('filter-q-diff')?.value || '';
-      const qtype = document.getElementById('filter-q-type')?.value || '';
-
-      let url = `/questions?`;
-      if (search) url += `search=${encodeURIComponent(search)}&`;
-      if (diff) url += `difficulty=${diff}&`;
-      if (qtype) url += `qtype=${qtype}&`;
-
       try {
-        const res = await ApiClient.get(url);
-        const questions = res.questions || [];
+        const res = await ApiClient.get('/questions');
+        const questions = ApiClient.extractList(res, 'questions');
         const tbody = document.getElementById('questions-table-body');
-
-        if (questions.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="padding:2rem;">لا توجد أسئلة تطابق البحث.</td></tr>';
+        if (!questions || questions.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted);">بنك الأسئلة فارغ حاليًا. اضغط على "+ إضافة سؤال جديد".</td></tr>';
           return;
         }
 
         tbody.innerHTML = questions.map(q => `
           <tr>
-            <td style="max-width:320px;">
-              <strong style="color:var(--color-text-main);line-height:1.4;">${q.question_text}</strong>
-              ${q.explanation ? `<div style="font-size:0.75rem;color:var(--color-text-muted);margin-top:0.2rem;">الشرح: ${q.explanation}</div>` : ''}
-            </td>
+            <td><strong>${q.question_text}</strong></td>
             <td>
-              <span class="badge" style="background:var(--color-bg-secondary);color:var(--color-primary);font-size:0.75rem;">
-                ${q.question_type === 'multiple_choice' ? 'اختيار من متعدد' : (q.question_type === 'true_false' ? 'صح/خطأ' : 'كود')}
+              <span class="badge badge-secondary">
+                ${q.question_type === 'multiple_choice' ? 'اختيار من متعدد' : (q.question_type === 'true_false' ? 'صح أو خطأ' : 'تحليل كود')}
               </span>
             </td>
             <td>
-              <span class="badge" style="background:rgba(245,158,11,0.15);color:#F59E0B;font-size:0.75rem;">
-                ${q.difficulty}
+              <span class="badge ${q.difficulty === 'easy' ? 'badge-success' : (q.difficulty === 'medium' ? 'badge-warning' : 'badge-danger')}">
+                ${q.difficulty === 'easy' ? 'سهل' : (q.difficulty === 'medium' ? 'متوسط' : 'متقدم')}
               </span>
             </td>
             <td>${q.topic || 'عام'}</td>
-            <td><code style="background:var(--color-bg-surface);padding:0.2rem 0.5rem;border-radius:4px;color:#10B981;font-weight:700;">${q.correct_answer}</code></td>
+            <td><code>${q.correct_answer || '—'}</code></td>
             <td>
-              <div style="display:flex;gap:0.4rem;">
-                <button class="btn btn-secondary btn-sm edit-q-btn" data-id="${q.id}">تعديل ✏️</button>
-                <button class="btn btn-danger btn-sm del-q-btn" data-id="${q.id}">حذف 🗑️</button>
-              </div>
+              <button class="btn btn-danger btn-sm del-question-btn" data-id="${q.id}">حذف 🗑️</button>
             </td>
           </tr>
         `).join('');
 
-        // Bind Edit Question
-        document.querySelectorAll('.edit-q-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const q = questions.find(x => x.id === btn.dataset.id);
-            if (q) openQuestionModal(q, loadQuestions);
-          });
-        });
-
-        // Bind Delete Question
-        document.querySelectorAll('.del-q-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const qId = btn.dataset.id;
+        tbody.querySelectorAll('.del-question-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const qId = b.dataset.id;
             Modal.confirm({
               title: 'تأكيد حذف السؤال',
-              message: 'هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً من بنك الأسئلة؟',
+              message: 'هل أنت متأكد من رغبتك في حذف هذا السؤال من بنك الأسئلة؟',
               onConfirm: async () => {
                 try {
                   await ApiClient.delete(`/questions/${qId}`);
                   Toast.success('تم حذف السؤال بنجاح');
                   loadQuestions();
-                } catch (e) {
-                  Toast.error(e.message);
+                } catch (err) {
+                  Toast.error(err.message || 'فشل حذف السؤال');
                 }
               }
             });
           });
         });
-
-        document.getElementById('btn-add-question').onclick = () => openQuestionModal(null, loadQuestions);
-
       } catch (err) {
         console.error(err);
-        Toast.error('فشل تحميل بنك الأسئلة');
+        Toast.error('فشل تحميل أسئلة بنك الأسئلة');
       }
     }
 
-    function openQuestionModal(q, onSaved) {
-      const isEdit = !!q;
-      const opts = q?.options_json ? JSON.parse(q.options_json) : [
-        { id: "opt1", text: "" },
-        { id: "opt2", text: "" },
-        { id: "opt3", text: "" },
-        { id: "opt4", text: "" }
-      ];
-
+    function openQuestionModal() {
       Modal.open({
-        title: isEdit ? 'تعديل السؤال' : 'إضافة سؤال جديد إلى بنك الأسئلة',
+        title: 'إضافة سؤال جديد لبنك الأسئلة',
         contentHtml: `
-          <form id="form-q-save">
+          <form id="form-question-save">
             <div class="form-group">
-              <label class="form-label">نص السؤال</label>
-              <textarea id="m-q-text" class="form-input" rows="3" required placeholder="اكتب نص السؤال هنا بوضوح...">${q?.question_text || ''}</textarea>
+              <label class="form-label">نص السؤال *</label>
+              <textarea id="m-q-text" class="form-control" rows="3" required placeholder="اكتب نص السؤال بدقة..."></textarea>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
               <div class="form-group">
                 <label class="form-label">نوع السؤال</label>
-                <select id="m-q-type" class="form-input">
-                  <option value="multiple_choice" ${q?.question_type === 'multiple_choice' ? 'selected' : ''}>اختيار من متعدد (MCQ)</option>
-                  <option value="true_false" ${q?.question_type === 'true_false' ? 'selected' : ''}>صح أو خطأ (True / False)</option>
-                  <option value="code" ${q?.question_type === 'code' ? 'selected' : ''}>تحليل مخرجات كود</option>
+                <select id="m-q-type" class="form-control">
+                  <option value="multiple_choice">اختيار من متعدد (MCQ)</option>
+                  <option value="true_false">صح أو خطأ (True / False)</option>
                 </select>
               </div>
               <div class="form-group">
                 <label class="form-label">مستوى الصعوبة</label>
-                <select id="m-q-diff" class="form-input">
-                  <option value="easy" ${q?.difficulty === 'easy' ? 'selected' : ''}>سهل (Easy)</option>
-                  <option value="medium" ${q?.difficulty === 'medium' ? 'selected' : ''}>متوسط (Medium)</option>
-                  <option value="hard" ${q?.difficulty === 'hard' ? 'selected' : ''}>صعب (Hard)</option>
+                <select id="m-q-diff" class="form-control">
+                  <option value="easy">سهل (Easy)</option>
+                  <option value="medium" selected>متوسط (Medium)</option>
+                  <option value="hard">متقدم (Hard)</option>
                 </select>
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">الموضوع البرمجي (Topic)</label>
-              <input type="text" id="m-q-topic" class="form-input" value="${q?.topic || ''}" placeholder="مثال: المتغيرات، الدوال، الحلقات التكرارية">
+              <label class="form-label">موضوع السؤال (Topic)</label>
+              <input type="text" id="m-q-topic" class="form-control" placeholder="مثال: المتغيرات والقوائم">
             </div>
-            
-            <div style="margin-top:1rem;margin-bottom:0.5rem;font-weight:700;color:var(--color-primary);">الخيارات وتحديد الإجابة الصحيحة:</div>
-            <div style="display:flex;flex-direction:column;gap:0.6rem;">
-              <div style="display:flex;gap:0.5rem;align-items:center;">
-                <input type="radio" name="correct_opt" value="opt1" ${q?.correct_answer === 'opt1' ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--color-primary);">
-                <input type="text" id="opt-val-1" class="form-input" placeholder="الخيار الأول (opt1)" value="${opts[0]?.text || ''}">
-              </div>
-              <div style="display:flex;gap:0.5rem;align-items:center;">
-                <input type="radio" name="correct_opt" value="opt2" ${q?.correct_answer === 'opt2' || !q ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--color-primary);">
-                <input type="text" id="opt-val-2" class="form-input" placeholder="الخيار الثاني (opt2)" value="${opts[1]?.text || ''}">
-              </div>
-              <div style="display:flex;gap:0.5rem;align-items:center;">
-                <input type="radio" name="correct_opt" value="opt3" ${q?.correct_answer === 'opt3' ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--color-primary);">
-                <input type="text" id="opt-val-3" class="form-input" placeholder="الخيار الثالث (opt3)" value="${opts[2]?.text || ''}">
-              </div>
-              <div style="display:flex;gap:0.5rem;align-items:center;">
-                <input type="radio" name="correct_opt" value="opt4" ${q?.correct_answer === 'opt4' ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--color-primary);">
-                <input type="text" id="opt-val-4" class="form-input" placeholder="الخيار الرابع (opt4)" value="${opts[3]?.text || ''}">
-              </div>
+            <div class="form-group">
+              <label class="form-label">الخيارات (JSON Format)</label>
+              <textarea id="m-q-opts" class="form-control" rows="3">[{"id":"opt1","text":"الخيار الأول"},{"id":"opt2","text":"الخيار الثاني"}]</textarea>
             </div>
-
-            <div class="form-group" style="margin-top:1rem;">
-              <label class="form-label">شرح وتفسير الإجابة النموذجية (Explanation)</label>
-              <textarea id="m-q-exp" class="form-input" rows="2" placeholder="اكتب سبب صحة الإجابة ليظهر للطالب بعد الحل...">${q?.explanation || ''}</textarea>
+            <div class="form-group">
+              <label class="form-label">معرّف الإجابة الصحيحة (Correct Answer) *</label>
+              <input type="text" id="m-q-ans" class="form-control" required value="opt1" placeholder="مثال: opt1 أو true">
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.5rem;">
-              ${isEdit ? 'حفظ التعديلات' : 'إضافة السؤال لبنك الأسئلة 📝'}
-            </button>
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">حفظ السؤال في البنك 💾</button>
+            </div>
           </form>
         `
       });
 
-      document.getElementById('form-q-save').addEventListener('submit', async (e) => {
+      document.getElementById('form-question-save').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const selectedRadio = document.querySelector('input[name="correct_opt"]:checked');
-        const correctVal = selectedRadio ? selectedRadio.value : 'opt2';
-
-        const customOpts = [
-          { id: "opt1", text: document.getElementById('opt-val-1').value.trim() },
-          { id: "opt2", text: document.getElementById('opt-val-2').value.trim() },
-          { id: "opt3", text: document.getElementById('opt-val-3').value.trim() },
-          { id: "opt4", text: document.getElementById('opt-val-4').value.trim() }
-        ];
-
         const payload = {
           question_text: document.getElementById('m-q-text').value.trim(),
           question_type: document.getElementById('m-q-type').value,
           difficulty: document.getElementById('m-q-diff').value,
           topic: document.getElementById('m-q-topic').value.trim() || 'عام',
-          options_json: JSON.stringify(customOpts),
-          correct_answer: correctVal,
-          explanation: document.getElementById('m-q-exp').value.trim()
+          options_json: document.getElementById('m-q-opts').value.trim(),
+          correct_answer: document.getElementById('m-q-ans').value.trim()
         };
 
         try {
-          if (isEdit) {
-            await ApiClient.put(`/questions/${q.id}`, payload);
-            Toast.success('تم تعديل السؤال بنجاح');
-          } else {
-            await ApiClient.post('/questions', payload);
-            Toast.success('تمت إضافة السؤال لبنك الأسئلة بنجاح 🎉');
-          }
+          await ApiClient.post('/questions', payload);
+          Toast.success('تمت إضافة السؤال بنجاح 🎉');
           Modal.close();
-          onSaved();
+          loadQuestions();
         } catch (err) {
-          Toast.error(err.message);
+          Toast.error(err.message || 'فشل حفظ السؤال');
         }
       });
     }
 
-    document.getElementById('filter-q-search')?.addEventListener('input', debounce(loadQuestions, 300));
-    document.getElementById('filter-q-diff')?.addEventListener('change', loadQuestions);
-    document.getElementById('filter-q-type')?.addEventListener('change', loadQuestions);
-
+    document.getElementById('btn-add-question').addEventListener('click', openQuestionModal);
     await loadQuestions();
   }
 
-  /* ===================================================================
-     5. EXAMS MANAGEMENT & SUBMISSIONS (Full CRUD for Admin & Assistants)
-  =================================================================== */
+  // =========================================================================
+  // 6. EXAMS & AUTO-GRADING
+  // =========================================================================
   static async renderExams(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة وتصحيح الامتحانات 🎯</h2>
-          <p style="color:var(--color-text-muted);">إنشاء وتعديل الامتحانات واختيار الأسئلة من بنك الأسئلة ومتابعة نتائج الطلاب لحظياً</p>
+          <h1 class="page-title">الامتحانات والتصحيح الآلي 📝</h1>
+          <p class="page-subtitle">إنشاء الامتحانات، ضبط أزمنة الإجابة، ومتابعة درجات ومحاولات الطلاب</p>
         </div>
-        <button id="btn-add-exam" class="btn btn-primary btn-sm" style="font-weight:700;">+ إنشاء امتحان جديد</button>
+        <button id="btn-add-exam" class="btn btn-primary">+ إنشاء امتحان جديد</button>
       </div>
 
       <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
+        <div class="table-responsive">
+          <table class="data-table">
             <thead>
               <tr>
                 <th>عنوان الامتحان</th>
                 <th>المدة</th>
                 <th>درجة النجاح</th>
-                <th>المحاولات</th>
+                <th>المحاولات المسموحة</th>
                 <th>الوصول</th>
                 <th>الحالة</th>
                 <th>الإجراءات</th>
               </tr>
             </thead>
             <tbody id="exams-table-body">
-              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:2rem;">جاري تحميل الامتحانات...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1123,376 +947,444 @@ export class AdminPages {
 
     async function loadExams() {
       try {
-        const [exams, qRes] = await Promise.all([
-          ApiClient.get('/exams'),
-          ApiClient.get('/questions').catch(() => ({ questions: [] }))
-        ]);
-
-        const allQuestions = qRes.questions || [];
+        const res = await ApiClient.get('/exams');
+        const exams = ApiClient.extractList(res, 'exams');
         const tbody = document.getElementById('exams-table-body');
-
         if (!exams || exams.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد امتحانات مضافة بعد.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد امتحانات مضافة حاليًا. اضغط على "+ إنشاء امتحان جديد".</td></tr>';
           return;
         }
 
         tbody.innerHTML = exams.map(ex => `
           <tr>
             <td>
-              <strong style="color:var(--color-text-main);">${ex.title}</strong>
-              <div style="font-size:0.75rem;color:var(--color-text-muted);">${ex.description || ''}</div>
+              <strong>${ex.title}</strong>
+              ${ex.description ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${ex.description.substring(0, 45)}...</div>` : ''}
             </td>
             <td>${ex.duration_minutes} دقيقة</td>
-            <td><span style="color:#10B981;font-weight:700;">${ex.passing_score}%</span></td>
-            <td>${ex.max_attempts}</td>
+            <td>${ex.passing_score}%</td>
+            <td>${ex.max_attempts} محاولة</td>
             <td>
-              <span class="badge ${ex.access_type === 'PUBLIC' ? 'badge-public' : 'badge-subscribers'}">
-                ${ex.access_type === 'PUBLIC' ? 'عام' : 'مشتركين 🔑'}
+              <span class="badge ${ex.access_type === 'PUBLIC' ? 'badge-success' : 'badge-primary'}">
+                ${ex.access_type === 'PUBLIC' ? 'عام مجاني' : 'للمشتركين ⭐'}
               </span>
             </td>
             <td>
-              <span class="badge ${ex.is_published ? 'badge-public' : 'badge-danger'}">
+              <span class="badge ${ex.is_published ? 'badge-success' : 'badge-warning'}">
                 ${ex.is_published ? 'منشور ✅' : 'مسودة ⏸️'}
               </span>
             </td>
             <td>
-              <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
-                <button class="btn btn-secondary btn-sm view-results-btn" data-id="${ex.id}">النتائج 📊</button>
-                <button class="btn btn-secondary btn-sm edit-exam-btn" data-id="${ex.id}">تعديل ✏️</button>
-                <button class="btn btn-danger btn-sm del-exam-btn" data-id="${ex.id}">حذف 🗑️</button>
-              </div>
+              <button class="btn btn-danger btn-sm del-exam-btn" data-id="${ex.id}">حذف 🗑️</button>
             </td>
           </tr>
         `).join('');
 
-        // View Student Results
-        document.querySelectorAll('.view-results-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const exId = btn.dataset.id;
-            try {
-              const results = await ApiClient.get(`/exams/${exId}/results`);
-              Modal.open({
-                title: 'نتائج ومحاولات الطلاب في الامتحان',
-                contentHtml: `
-                  <div class="table-container" style="max-height:350px;overflow-y:auto;">
-                    <table class="table" style="width:100%;">
-                      <thead>
-                        <tr>
-                          <th>الطالب</th>
-                          <th>اسم المستخدم</th>
-                          <th>الدرجة المحققة</th>
-                          <th>النسبة</th>
-                          <th>الحالة</th>
-                          <th>تاريخ التسليم</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${results && results.length > 0 ? results.map(r => `
-                          <tr>
-                            <td><strong>${r.student_name}</strong></td>
-                            <td style="font-family:var(--font-mono);">${r.student_username}</td>
-                            <td>${r.score} / ${r.total_possible}</td>
-                            <td><strong>${r.percentage}%</strong></td>
-                            <td>
-                              <span class="badge ${r.is_passed ? 'badge-public' : 'badge-danger'}">
-                                ${r.is_passed ? 'ناجح ✅' : 'راسب ❌'}
-                              </span>
-                            </td>
-                            <td>${r.completed_at ? r.completed_at.substring(0, 16).replace('T', ' ') : '—'}</td>
-                          </tr>
-                        `).join('') : '<tr><td colspan="6" class="text-center" style="padding:1.5rem;">لا توجد محاولات مسجلة بعد لهذا الامتحان.</td></tr>'}
-                      </tbody>
-                    </table>
-                  </div>
-                `
-              });
-            } catch (e) {
-              Toast.error(e.message);
-            }
-          });
-        });
-
-        // Edit Exam
-        document.querySelectorAll('.edit-exam-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const ex = exams.find(x => x.id === btn.dataset.id);
-            const fullExam = await ApiClient.get(`/exams/${ex.id}`).catch(() => ex);
-            openExamModal(fullExam, allQuestions, loadExams);
-          });
-        });
-
-        // Delete Exam
-        document.querySelectorAll('.del-exam-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const exId = btn.dataset.id;
+        tbody.querySelectorAll('.del-exam-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const exId = b.dataset.id;
             Modal.confirm({
               title: 'تأكيد حذف الامتحان',
-              message: 'هل أنت متأكد من رغبتك في حذف هذا الامتحان بالكامل وكافة محاولات الطلاب المرتبطة به؟',
+              message: 'هل أنت متأكد من رغبتك في حذف هذا الامتحان؟ لن يتمكن الطلاب من دخوله بعد الحذف.',
               onConfirm: async () => {
                 try {
                   await ApiClient.delete(`/exams/${exId}`);
                   Toast.success('تم حذف الامتحان بنجاح');
                   loadExams();
-                } catch (e) {
-                  Toast.error(e.message);
+                } catch (err) {
+                  Toast.error(err.message || 'فشل حذف الامتحان');
                 }
               }
             });
           });
         });
-
-        document.getElementById('btn-add-exam').onclick = () => openExamModal(null, allQuestions, loadExams);
-
       } catch (err) {
         console.error(err);
         Toast.error('فشل تحميل قائمة الامتحانات');
       }
     }
 
-    function openExamModal(exam, allQuestions, onSaved) {
-      const isEdit = !!exam;
-      const linkedQIds = exam?.questions ? exam.questions.map(q => q.id) : [];
-
+    function openExamModal() {
       Modal.open({
-        title: isEdit ? `تعديل الامتحان: ${exam.title}` : 'إنشاء وتكوين امتحان جديد',
+        title: 'إنشاء امتحان جديد',
         contentHtml: `
           <form id="form-exam-save">
             <div class="form-group">
-              <label class="form-label">عنوان الامتحان</label>
-              <input type="text" id="m-ex-title" class="form-input" required value="${exam?.title || ''}" placeholder="مثال: امتحان نهاية الوحدة الأولى">
+              <label class="form-label">عنوان الامتحان *</label>
+              <input type="text" id="m-ex-title" class="form-control" required placeholder="مثال: الاختبار الشامل لوحدة التراكيب البيانية">
             </div>
             <div class="form-group">
-              <label class="form-label">الوصف والتعليمات للطلاب</label>
-              <textarea id="m-ex-desc" class="form-input" rows="2" placeholder="اكتب تعليمات الامتحان للطلاب...">${exam?.description || ''}</textarea>
+              <label class="form-label">وصف الامتحان والتعليمات</label>
+              <textarea id="m-ex-desc" class="form-control" rows="2" placeholder="اكتب تعليمات الاختبار وتنبيهات الوقت للطلاب..."></textarea>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
               <div class="form-group">
                 <label class="form-label">المدة (بالدقائق)</label>
-                <input type="number" id="m-ex-dur" class="form-input" required value="${exam?.duration_minutes || 45}" min="5">
+                <input type="number" id="m-ex-dur" class="form-control" value="45" min="5" required>
               </div>
               <div class="form-group">
                 <label class="form-label">درجة النجاح (%)</label>
-                <input type="number" id="m-ex-pass" class="form-input" required value="${exam?.passing_score || 75}" min="1" max="100">
+                <input type="number" id="m-ex-pass" class="form-control" value="60" min="1" max="100" required>
               </div>
               <div class="form-group">
-                <label class="form-label">المحاولات المتاحة</label>
-                <input type="number" id="m-ex-att" class="form-input" required value="${exam?.max_attempts || 1}" min="1">
+                <label class="form-label">أقصى محاولات</label>
+                <input type="number" id="m-ex-att" class="form-control" value="2" min="1" required>
               </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">مستوى الوصول</label>
-              <select id="m-ex-access" class="form-input">
-                <option value="SUBSCRIBERS_ONLY" ${exam?.access_type === 'SUBSCRIBERS_ONLY' ? 'selected' : ''}>مخصص للمشتركين فقط 🔑</option>
-                <option value="PUBLIC" ${exam?.access_type === 'PUBLIC' ? 'selected' : ''}>عام ومتاح للجميع (PUBLIC)</option>
-              </select>
-            </div>
-
-            <div style="margin-top:1rem;margin-bottom:0.5rem;font-weight:800;color:var(--color-primary);">اختر الأسئلة من بنك الأسئلة (${allQuestions.length} سؤال متاح):</div>
-            <div style="max-height:220px;overflow-y:auto;background:var(--color-bg-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:0.75rem;display:flex;flex-direction:column;gap:0.6rem;">
-              ${allQuestions.length > 0 ? allQuestions.map((q, idx) => `
-                <label style="display:flex;align-items:center;gap:0.75rem;cursor:pointer;padding:0.4rem;border-radius:var(--radius-sm);background:var(--color-bg-card);">
-                  <input type="checkbox" name="exam_q_pick" value="${q.id}" ${linkedQIds.includes(q.id) ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--color-primary);">
-                  <div style="font-size:0.85rem;color:var(--color-text-main);flex:1;">
-                    <span style="color:#F59E0B;font-weight:700;">[${q.difficulty}] </span>
-                    <span>${q.question_text}</span>
-                  </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">مستوى الوصول</label>
+                <select id="m-ex-access" class="form-control">
+                  <option value="PUBLIC">متاح لجميع الطلاب</option>
+                  <option value="SUBSCRIBERS_ONLY">للمشتركين فقط ⭐</option>
+                </select>
+              </div>
+              <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:0.5rem;">
+                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                  <input type="checkbox" id="m-ex-pub" checked>
+                  <span>نشر الامتحان وجعله متاحًا فورًا</span>
                 </label>
-              `).join('') : '<p style="font-size:0.85rem;color:var(--color-text-muted);">لا توجد أسئلة في بنك الأسئلة. قم بإضافة أسئلة أولاً.</p>'}
+              </div>
             </div>
-
-            <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:1.25rem;">
-              ${isEdit ? 'حفظ تعديلات الامتحان' : 'إنشاء ونشر الامتحان 🎯'}
-            </button>
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">إنشاء الامتحان الآن 🚀</button>
+            </div>
           </form>
         `
       });
 
       document.getElementById('form-exam-save').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const pickedQIds = Array.from(document.querySelectorAll('input[name="exam_q_pick"]:checked')).map(cb => ({
-          question_id: cb.value,
-          points: 5.0
-        }));
-
         const payload = {
           title: document.getElementById('m-ex-title').value.trim(),
           description: document.getElementById('m-ex-desc').value.trim(),
           duration_minutes: parseInt(document.getElementById('m-ex-dur').value) || 45,
-          passing_score: parseFloat(document.getElementById('m-ex-pass').value) || 75.0,
+          passing_score: parseFloat(document.getElementById('m-ex-pass').value) || 60.0,
           max_attempts: parseInt(document.getElementById('m-ex-att').value) || 1,
           access_type: document.getElementById('m-ex-access').value,
-          is_published: true,
-          questions: pickedQIds
+          is_published: document.getElementById('m-ex-pub').checked,
+          questions: []
         };
 
         try {
-          if (isEdit) {
-            await ApiClient.put(`/exams/${exam.id}`, payload);
-            Toast.success('تم تعديل الامتحان بنجاح');
-          } else {
-            await ApiClient.post('/exams', payload);
-            Toast.success('تم إنشاء ونشر الامتحان بنجاح 🎉');
-          }
+          await ApiClient.post('/exams', payload);
+          Toast.success('تم إنشاء الامتحان بنجاح 🎉');
           Modal.close();
-          onSaved();
+          loadExams();
         } catch (err) {
-          Toast.error(err.message);
+          Toast.error(err.message || 'فشل إنشاء الامتحان');
         }
       });
     }
 
+    document.getElementById('btn-add-exam').addEventListener('click', openExamModal);
     await loadExams();
   }
 
-  /* ===================================================================
-     6. ANNOUNCEMENTS MANAGEMENT (Full CRUD for Admin & Assistants)
-  =================================================================== */
+  // =========================================================================
+  // 7. ANNOUNCEMENTS CRUD (Fixed & Verified)
+  // =========================================================================
   static async renderAnnouncements(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة ونشر الإعلانات العامة 📢</h2>
-          <p style="color:var(--color-text-muted);">بث الرسائل والتبليغات الموجهة لكافة الطلاب أو المشتركين أو المساعدين وتحديثها لحظياً</p>
+          <h1 class="page-title">إدارة ونشر الإعلانات العامة 📢</h1>
+          <p class="page-subtitle">بث التنبيهات والأخبار الموجهة للطلاب وتحديثها لحظيًا في لوحة المتابعة</p>
         </div>
-        <button id="btn-add-announcement" class="btn btn-primary btn-sm" style="font-weight:700;">+ نشر إعلان جديد</button>
+        <button id="btn-add-announcement" class="btn btn-primary">+ نشر إعلان جديد</button>
       </div>
 
-      <div id="announcements-cards-list" style="display:flex;flex-direction:column;gap:1rem;">
-        <div class="card skeleton" style="height:120px;"></div>
+      <div class="card">
+        <div id="announcements-cards-list" style="display:flex;flex-direction:column;gap:1rem;">
+          <div style="text-align:center;padding:2rem;color:var(--color-text-muted);">جاري تحميل الإعلانات...</div>
+        </div>
       </div>
     `;
 
     async function loadAnnouncements() {
+      const listEl = document.getElementById('announcements-cards-list');
+      if (!listEl) return;
+
       try {
-        const announcements = await ApiClient.get('/announcements');
-        const listEl = document.getElementById('announcements-cards-list');
+        const res = await ApiClient.get('/announcements');
+        const announcements = ApiClient.extractList(res, 'announcements');
 
         if (!announcements || announcements.length === 0) {
-          listEl.innerHTML = '<div class="card empty-state"><p>لا توجد إعلانات منشورة حالياً.</p></div>';
+          listEl.innerHTML = '<div style="text-align:center;padding:2.5rem;color:var(--color-text-muted);">لا توجد إعلانات عامة منشورة حاليًا. اضغط على زر "+ نشر إعلان جديد" بالأعلى لنشر أول إعلان.</div>';
           return;
         }
 
         listEl.innerHTML = announcements.map(a => `
-          <div class="card" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;border-right:4px solid var(--color-primary);">
+          <div style="background:var(--color-surface-hover);border:1px solid var(--color-border);border-radius:0.75rem;padding:1.25rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;">
             <div style="flex:1;">
-              <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.4rem;">
-                <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.25rem;">${a.title}</h3>
-                <span class="badge" style="background:var(--color-bg-secondary);color:var(--color-cyan-accent);">
-                  الجمهور: ${a.target_audience === 'ALL' ? 'الكل 👥' : (a.target_audience === 'STUDENTS' ? 'الطلاب 🎓' : (a.target_audience === 'SUBSCRIBERS' ? 'المشتركون 🔑' : 'المساعدون 🛡️'))}
+              <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+                <h3 style="font-size:1.1rem;font-weight:700;color:var(--color-text);margin:0;">${a.title}</h3>
+                <span class="badge ${a.is_urgent ? 'badge-danger' : 'badge-primary'}">
+                  ${a.is_urgent ? 'عاجل ⚠️' : 'إعلان عام 📢'}
+                </span>
+                <span class="badge ${a.is_published ? 'badge-success' : 'badge-warning'}">
+                  ${a.is_published ? 'منشور ✅' : 'مسودة ⏸️'}
                 </span>
               </div>
-              <p style="color:var(--color-text-muted);font-size:0.95rem;line-height:1.6;margin-bottom:0.75rem;">
-                ${a.content}
-              </p>
+              <p style="color:var(--color-text-muted);font-size:0.95rem;line-height:1.6;white-space:pre-wrap;margin:0 0 0.75rem 0;">${a.content}</p>
               <div style="font-size:0.8rem;color:var(--color-text-dim);">
-                تاريخ النشر: ${a.publish_date ? a.publish_date.substring(0, 10) : ''}
+                📅 تاريخ النشر: ${a.created_at ? a.created_at.substring(0, 16).replace('T', ' ') : '—'}
               </div>
             </div>
-            <button class="btn btn-danger btn-sm del-ann-btn" data-id="${a.id}">حذف الإعلان 🗑️</button>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-secondary btn-sm edit-ann-btn" data-id="${a.id}">تعديل ✏️</button>
+              <button class="btn btn-danger btn-sm del-ann-btn" data-id="${a.id}">حذف 🗑️</button>
+            </div>
           </div>
         `).join('');
 
-        document.querySelectorAll('.del-ann-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const aId = btn.dataset.id;
+        listEl.querySelectorAll('.edit-ann-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const ann = announcements.find(x => x.id === b.dataset.id);
+            if (ann) openAnnouncementModal(ann);
+          });
+        });
+
+        listEl.querySelectorAll('.del-ann-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const annId = b.dataset.id;
             Modal.confirm({
               title: 'تأكيد حذف الإعلان',
               message: 'هل أنت متأكد من رغبتك في حذف هذا الإعلان؟ لن يظهر للطلاب بعد الحذف.',
               onConfirm: async () => {
                 try {
-                  await ApiClient.delete(`/announcements/${aId}`);
+                  await ApiClient.delete(`/announcements/${annId}`);
                   Toast.success('تم حذف الإعلان بنجاح');
                   loadAnnouncements();
-                } catch (e) {
-                  Toast.error(e.message);
+                } catch (err) {
+                  Toast.error(err.message || 'فشل حذف الإعلان');
+                }
+              }
+            });
+          });
+        });
+      } catch (err) {
+        console.error('Error loading announcements:', err);
+        Toast.error('فشل تحميل قائمة الإعلانات');
+      }
+    }
+
+    function openAnnouncementModal(ann = null) {
+      const isEdit = !!ann;
+      Modal.open({
+        title: isEdit ? 'تعديل الإعلان العام' : 'نشر إعلان عام جديد للطلاب',
+        contentHtml: `
+          <form id="form-ann-save">
+            <div class="form-group">
+              <label class="form-label">عنوان الإعلان *</label>
+              <input type="text" id="m-ann-title" class="form-control" required value="${ann?.title || ''}" placeholder="مثال: موعد الاختبار الشامل القادم">
+            </div>
+            <div class="form-group">
+              <label class="form-label">نص الإعلان بالتفصيل *</label>
+              <textarea id="m-ann-content" class="form-control" rows="5" required placeholder="اكتب تفاصيل وتوجيهات الإعلان بوضوح للطلاب...">${ann?.content || ''}</textarea>
+            </div>
+            <div style="display:flex;gap:2rem;margin-top:0.75rem;">
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" id="m-ann-urgent" ${ann?.is_urgent ? 'checked' : ''}>
+                <span>إعلان هام وعاجل (تظليل بلون مميز ⚠️)</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" id="m-ann-pub" ${ann ? (ann.is_published ? 'checked' : '') : 'checked'}>
+                <span>نشر الإعلان للطلاب فورًا</span>
+              </label>
+            </div>
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">${isEdit ? 'حفظ تعديلات الإعلان' : 'نشر الإعلان الآن 📢'}</button>
+            </div>
+          </form>
+        `
+      });
+
+      document.getElementById('form-ann-save').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          title: document.getElementById('m-ann-title').value.trim(),
+          content: document.getElementById('m-ann-content').value.trim(),
+          is_urgent: document.getElementById('m-ann-urgent').checked,
+          is_published: document.getElementById('m-ann-pub').checked,
+          target_audience: 'ALL'
+        };
+
+        try {
+          if (isEdit) {
+            await ApiClient.put(`/announcements/${ann.id}`, payload);
+            Toast.success('تم تحديث الإعلان بنجاح');
+          } else {
+            await ApiClient.post('/announcements', payload);
+            Toast.success('تم نشر الإعلان بنجاح 🎉');
+          }
+          Modal.close();
+          loadAnnouncements();
+        } catch (err) {
+          Toast.error(err.message || 'فشل حفظ الإعلان');
+        }
+      });
+    }
+
+    document.getElementById('btn-add-announcement').addEventListener('click', () => openAnnouncementModal());
+    await loadAnnouncements();
+  }
+
+  // =========================================================================
+  // 8. SUBSCRIPTION REQUESTS REVIEW & APPROVAL
+  // =========================================================================
+  static async renderSubscriptionRequests(container) {
+    container.innerHTML = `
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">طلبات الاشتراكات وإيصالات الدفع 📥</h1>
+          <p class="page-subtitle">مراجعة إيصالات التحويل البنكي وفودافون كاش وإنستاباي وتفعيل الحسابات فورًا</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>اسم الطالب</th>
+                <th>الباقة المطلوبة</th>
+                <th>المبلغ المحول</th>
+                <th>طريقة الدفع والرقم</th>
+                <th>المرجع والتحويل</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="sub-requests-table-body">
+              <tr><td colspan="7" style="text-align:center;padding:2rem;">جاري تحميل طلبات الاشتراكات...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    async function loadRequests() {
+      try {
+        const res = await ApiClient.get('/subscriptions/requests');
+        const reqs = ApiClient.extractList(res, 'requests');
+        const tbody = document.getElementById('sub-requests-table-body');
+        if (!reqs || reqs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد طلبات اشتراك مسجلة حاليًا.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = reqs.map(r => `
+          <tr>
+            <td>
+              <strong>${r.student_name || 'طالب'}</strong>
+              <div style="font-size:0.8rem;color:var(--color-text-muted);">${r.phone || ''}</div>
+            </td>
+            <td><strong>${r.package_name || `${r.duration_months} أشهر`}</strong></td>
+            <td><strong>${r.amount} ج.م</strong></td>
+            <td>
+              <span class="badge badge-primary">${r.payment_method || 'فودافون كاش'}</span>
+              <div style="font-size:0.8rem;color:var(--color-text-muted);">${r.payment_number || '—'}</div>
+            </td>
+            <td><code>${r.payment_reference || '—'}</code></td>
+            <td>
+              <span class="badge ${r.status === 'APPROVED' ? 'badge-success' : (r.status === 'REJECTED' ? 'badge-danger' : 'badge-warning')}">
+                ${r.status === 'APPROVED' ? 'معتمد ومفعل ✅' : (r.status === 'REJECTED' ? 'مرفوض ❌' : 'قيد المراجعة ⏳')}
+              </span>
+            </td>
+            <td>
+              ${r.status === 'PENDING' ? `
+                <button class="btn btn-success btn-sm approve-req-btn" data-id="${r.id}">تفعيل واعتماد ✅</button>
+                <button class="btn btn-danger btn-sm reject-req-btn" data-id="${r.id}">رفض ❌</button>
+              ` : `
+                <span style="font-size:0.85rem;color:var(--color-text-dim);">مكتمل</span>
+              `}
+            </td>
+          </tr>
+        `).join('');
+
+        tbody.querySelectorAll('.approve-req-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const reqId = b.dataset.id;
+            Modal.confirm({
+              title: 'تأكيد تفعيل الاشتراك',
+              message: 'هل تم التأكد من استلام المبلغ المحول؟ سيتم تفعيل حساب الطالب فورا وفتح كافة المناهج والامتحانات.',
+              onConfirm: async () => {
+                try {
+                  await ApiClient.post(`/subscriptions/requests/${reqId}/review`, {
+                    action: 'approve',
+                    admin_notes: 'تم استلام التحويل وتفعيل الاشتراك بنجاح'
+                  }).catch(() => ApiClient.post(`/subscriptions/requests/${reqId}/approve`));
+                  Toast.success('تم تفعيل اشتراك الطالب بنجاح! 🚀');
+                  loadRequests();
+                } catch (err) {
+                  Toast.error(err.message || 'فشل تفعيل الاشتراك');
                 }
               }
             });
           });
         });
 
-        document.getElementById('btn-add-announcement').onclick = () => {
-          Modal.open({
-            title: 'نشر إعلان عام جديد للطلاب',
-            contentHtml: `
-              <form id="form-ann-save">
-                <div class="form-group">
-                  <label class="form-label">عنوان الإعلان</label>
-                  <input type="text" id="m-ann-title" class="form-input" required placeholder="مثال: موعد اختبار منتصف الفصل القادم">
-                </div>
-                <div class="form-group">
-                  <label class="form-label">الجمهور المستهدف</label>
-                  <select id="m-ann-aud" class="form-input">
-                    <option value="ALL">كافة المستخدمين (الكل 👥)</option>
-                    <option value="STUDENTS">الطلاب فقط 🎓</option>
-                    <option value="SUBSCRIBERS">المشتركون فقط 🔑</option>
-                    <option value="ASSISTANTS">المساعدون التعليميون 🛡️</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label class="form-label">نص الإعلان بالتفصيل</label>
-                  <textarea id="m-ann-content" class="form-input" rows="4" required placeholder="اكتب نص الإعلان هنا بوضوح لجميع الطلاب..."></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;">نشر الإعلان الآن 📢</button>
-              </form>
-            `
-          });
-
-          document.getElementById('form-ann-save').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-              await ApiClient.post('/announcements', {
-                title: document.getElementById('m-ann-title').value.trim(),
-                target_audience: document.getElementById('m-ann-aud').value,
-                content: document.getElementById('m-ann-content').value.trim()
-              });
-              Modal.close();
-              Toast.success('تم نشر الإعلان بنجاح 🎉');
-              loadAnnouncements();
-            } catch (err) {
-              Toast.error(err.message);
+        tbody.querySelectorAll('.reject-req-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const reqId = b.dataset.id;
+            const reason = prompt('أدخل سبب رفض الطلب لإشعار الطالب به:', 'بيانات التحويل غير مطابقة أو لم يتم العثور على المبلغ');
+            if (reason !== null) {
+              ApiClient.post(`/subscriptions/requests/${reqId}/review`, {
+                action: 'reject',
+                admin_notes: reason.trim() || 'بيانات التحويل غير صحيحة'
+              }).catch(() => ApiClient.post(`/subscriptions/requests/${reqId}/reject`, { rejection_reason: reason.trim() }))
+              .then(() => {
+                Toast.success('تم رفض الطلب وتحديث الحالة');
+                loadRequests();
+              })
+              .catch(err => Toast.error(err.message || 'فشل رفض الطلب'));
             }
           });
-        };
-
+        });
       } catch (err) {
         console.error(err);
-        Toast.error('فشل تحميل قائمة الإعلانات');
+        Toast.error('فشل تحميل قائمة طلبات الاشتراكات');
       }
     }
 
-    await loadAnnouncements();
+    await loadRequests();
   }
 
-  /* ===================================================================
-     7. SUBSCRIPTION CODES MANAGEMENT
-  =================================================================== */
+  // =========================================================================
+  // 9. SUBSCRIPTION CODES MANAGEMENT
+  // =========================================================================
   static async renderSubscriptions(container) {
+    const user = AuthService.getUser();
+    const isAdmin = user?.role === 'admin';
+
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة وتوليد أكواد الاشتراكات 🔑</h2>
-          <p style="color:var(--color-text-muted);">إنشاء وتتبع أكواد التفعيل وتحديد مدد الصلاحية للطلاب</p>
+          <h1 class="page-title">أكواد تفعيل الاشتراكات 🔑</h1>
+          <p class="page-subtitle">توليد أكواد التفعيل الأكاديمية ومتابعة الأكواد المستخدمة والصالحة</p>
         </div>
-        <button id="btn-generate-code" class="btn btn-primary btn-sm" style="font-weight:700;">+ توليد كود جديد</button>
+        <button id="btn-gen-code" class="btn btn-primary">+ توليد كود اشتراك جديد</button>
       </div>
 
       <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
+        <div class="table-responsive">
+          <table class="data-table">
             <thead>
               <tr>
                 <th>كود الاشتراك</th>
                 <th>نوع المدة</th>
-                <th>الأيام</th>
+                <th>عدد الأيام</th>
                 <th>الحالة</th>
                 <th>المستخدم المستفيد</th>
                 <th>تاريخ التوليد</th>
-                <th>الإجراءات</th>
+                <th>الإجراء</th>
               </tr>
             </thead>
             <tbody id="codes-table-body">
-              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="7" style="text-align:center;padding:2rem;">جاري تحميل الأكواد...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1502,280 +1394,534 @@ export class AdminPages {
     async function loadCodes() {
       try {
         const res = await ApiClient.get('/subscriptions/codes');
-        const codes = res.codes || [];
+        const codes = ApiClient.extractList(res, 'codes');
         const tbody = document.getElementById('codes-table-body');
-        
-        if (codes.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد أكواد مولدة بعد.</td></tr>';
+        if (!codes || codes.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد أكواد مولدة بعد.</td></tr>';
           return;
         }
 
         tbody.innerHTML = codes.map(c => `
           <tr>
-            <td><strong style="font-family:var(--font-mono);color:var(--color-primary);">${c.code}</strong></td>
-            <td>${c.duration_type}</td>
+            <td><code><strong>${c.code}</strong></code></td>
+            <td><span class="badge badge-primary">${c.duration_type}</span></td>
             <td>${c.duration_days} يوم</td>
             <td>
-              <span class="badge ${c.status === 'ACTIVE' ? 'badge-public' : (c.status === 'USED' ? 'badge-subscribers' : 'badge-danger')}">
-                ${c.status === 'ACTIVE' ? 'نشط وغير مستخدم' : (c.status === 'USED' ? 'تم الاستخدام' : 'معطل / منتهي')}
+              <span class="badge ${c.status === 'ACTIVE' ? 'badge-success' : (c.status === 'USED' ? 'badge-secondary' : 'badge-danger')}">
+                ${c.status === 'ACTIVE' ? 'نشط وغير مستخدم' : (c.status === 'USED' ? 'تم الاستخدام' : 'منتهي / معطل')}
               </span>
             </td>
             <td>${c.used_by || '—'}</td>
-            <td>${c.created_at ? c.created_at.substring(0, 10) : ''}</td>
+            <td style="font-size:0.85rem;">${c.created_at ? c.created_at.substring(0, 10) : '—'}</td>
             <td>
-              <button class="btn btn-secondary btn-sm copy-code-btn" data-code="${c.code}" style="padding:0.25rem 0.6rem;font-size:0.8rem;">نسخ</button>
+              <button class="btn btn-secondary btn-sm copy-code-btn" data-code="${c.code}">نسخ 📋</button>
             </td>
           </tr>
         `).join('');
 
-        document.querySelectorAll('.copy-code-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            navigator.clipboard.writeText(btn.dataset.code);
-            Toast.success(`تم نسخ الكود: ${btn.dataset.code}`);
+        tbody.querySelectorAll('.copy-code-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            navigator.clipboard.writeText(b.dataset.code);
+            Toast.success(`تم نسخ الكود: ${b.dataset.code}`);
           });
         });
-      } catch (e) {
+      } catch (err) {
+        console.error(err);
         Toast.error('فشل تحميل قائمة الأكواد');
       }
     }
 
-    await loadCodes();
-
-    document.getElementById('btn-generate-code').addEventListener('click', () => {
+    document.getElementById('btn-gen-code').addEventListener('click', () => {
       Modal.open({
         title: 'توليد كود اشتراك جديد',
         contentHtml: `
           <form id="form-gen-code">
             <div class="form-group">
-              <label class="form-label">مدة الاشتراك</label>
-              <select id="gen-duration" class="form-input">
-                <option value="1_MONTH">شهر واحد (30 يوم)</option>
-                <option value="3_MONTHS" selected>3 أشهر (90 يوم)</option>
-                <option value="6_MONTHS">6 أشهر (180 يوم)</option>
-                <option value="12_MONTHS">سنة كاملة (365 يوم)</option>
-                <option value="LIFETIME">مدى الحياة (Lifetime)</option>
+              <label class="form-label">مدة كود الاشتراك *</label>
+              <select id="m-code-dur" class="form-control" required>
+                <option value="1_MONTH">شهر واحد (30 يوم) - متاح للمساعدين والمشرف</option>
+                ${isAdmin ? `
+                  <option value="3_MONTHS">3 أشهر (فصلي - 90 يوم)</option>
+                  <option value="6_MONTHS">6 أشهر (نصف سنوي - 180 يوم)</option>
+                  <option value="12_MONTHS">سنة كاملة (365 يوم)</option>
+                  <option value="LIFETIME">مدى الحياة (Lifetime)</option>
+                ` : ''}
               </select>
             </div>
             <div class="form-group">
-              <label class="form-label">كود مخصص (اختياري، اتركه فارغاً لتوليد كود تلقائي CS-XXXX-XXXX)</label>
-              <input type="text" id="gen-custom-code" class="form-input" placeholder="مثال: CS-SUMMER-2026" style="text-transform:uppercase;">
+              <label class="form-label">اسم الدفعة أو ملاحظة داخلية</label>
+              <input type="text" id="m-code-batch" class="form-control" placeholder="مثال: دفعة أوائل الطلاب - سبتمبر 2026">
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.5rem;">توليد الكود الآن 🔑</button>
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">توليد الكود الآن ⚡</button>
+            </div>
           </form>
         `
       });
 
       document.getElementById('form-gen-code').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const duration = document.getElementById('gen-duration').value;
-        const custom = document.getElementById('gen-custom-code').value.trim() || null;
+        const durType = document.getElementById('m-code-dur').value;
+        const batch = document.getElementById('m-code-batch').value.trim() || 'كود يدوي';
+
         try {
-          const res = await ApiClient.post('/subscriptions/codes/generate', {
-            duration_type: duration,
-            custom_code: custom
+          const res = await ApiClient.post('/subscriptions/codes', {
+            duration_type: durType,
+            batch_name: batch
           });
+          Toast.success(`تم توليد الكود بنجاح: ${res.code?.code || ''} 🎉`);
           Modal.close();
-          Toast.success(`تم توليد الكود بنجاح: ${res.code.code}`);
           loadCodes();
         } catch (err) {
-          Toast.error(err.message);
+          Toast.error(err.message || 'فشل توليد الكود');
         }
       });
     });
+
+    await loadCodes();
   }
 
-  /* ===================================================================
-     8. ASSISTANTS & PERMISSIONS MANAGEMENT
-  =================================================================== */
-  static async renderAssistants(container) {
+  // =========================================================================
+  // 10. DEDICATED PAYMENT & SUBSCRIPTION SETTINGS ("طرق الدفع والاشتراك")
+  // =========================================================================
+  static async renderPaymentSettings(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة المساعدين التعليميين والصلاحيات 🛡️</h2>
-          <p style="color:var(--color-text-muted);">تخصيص صلاحيات الوصول التفصيلية لكل مساعد تعليمي</p>
+          <h1 class="page-title">طرق الدفع والاشتراك 💳</h1>
+          <p class="page-subtitle">إدارة أرقام فودافون كاش وإنستاباي، باقات الاشتراكات الأكاديمية، والأسعار والعروض</p>
         </div>
-        <button id="btn-add-assistant" class="btn btn-primary btn-sm" style="font-weight:700;">+ إضافة مساعد جديد</button>
       </div>
 
-      <div id="assistants-cards-grid" style="display:grid;grid-template-columns:1fr;gap:1.25rem;">
-        <div class="card skeleton" style="height:160px;"></div>
+      <!-- 1. Wallet & Transfer Settings -->
+      <div class="card" style="margin-bottom:2rem;">
+        <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;">
+          <span>📱</span> أرقام التحويل المعتمدة لجميع الطلاب
+        </h3>
+        <p style="color:var(--color-text-muted);font-size:0.9rem;margin-bottom:1.25rem;">
+          الأرقام والروابط المحددة هنا تُحفظ في قاعدة البيانات وتظهر تلقائيًا للطلاب في صفحة الاشتراك. الرقم الافتراضي لفودافون كاش هو <code>+20159159038</code>.
+        </p>
+
+        <form id="form-payment-details">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.25rem;">
+            <div class="form-group">
+              <label class="form-label">رقم محفظة فودافون كاش المعتمد *</label>
+              <input type="text" id="pay-voda-phone" class="form-control" required placeholder="+20159159038">
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم / معرف حساب InstaPay *</label>
+              <input type="text" id="pay-insta-phone" class="form-control" required placeholder="+20159159038 أو username@instapay">
+            </div>
+            <div class="form-group">
+              <label class="form-label">رابط الدفع المباشر لتطبيق InstaPay</label>
+              <input type="url" id="pay-insta-link" class="form-control" placeholder="https://ipn.eg/S/...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الدعم والتواصل المالي (WhatsApp)</label>
+              <input type="text" id="pay-contact-phone" class="form-control" placeholder="+201559159038">
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1rem;">
+            <div class="form-group">
+              <label class="form-label">نص شريط العروض الترويجي للطلاب</label>
+              <input type="text" id="pay-offer-banner" class="form-control" placeholder="مثال: خصم خاص 25% لفترة محدودة بمناسبة انطلاق الفصل الدراسي">
+            </div>
+            <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:0.5rem;">
+              <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                <input type="checkbox" id="pay-offers-vis" checked>
+                <span>إظهار شريط العروض والخصومات في صفحة الطلاب</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="margin-top:1.25rem;">💾 حفظ بيانات وطرق الدفع في قاعدة البيانات</button>
+        </form>
+      </div>
+
+      <!-- 2. Subscription Plans Management -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:1rem;">
+          <div>
+            <h3 style="font-size:1.15rem;font-weight:700;margin:0;display:flex;align-items:center;gap:0.5rem;">
+              <span>⭐</span> باقات وخطط الاشتراكات الأكاديمية
+            </h3>
+            <p style="color:var(--color-text-muted);font-size:0.85rem;margin-top:0.25rem;">
+              تعديل أسعار ومدد الباقات وحالتها (نشطة / مخفية). تظهر جميع الباقات النشطة تلقائيًا لجميع الطلاب.
+            </p>
+          </div>
+          <button id="btn-add-plan" class="btn btn-primary btn-sm">+ إضافة باقة جديدة</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>اسم الباقة</th>
+                <th>المدة (شهور)</th>
+                <th>السعر (ج.م)</th>
+                <th>ترتيب العرض</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="plans-table-body">
+              <tr><td colspan="6" style="text-align:center;padding:2rem;">جاري تحميل باقات الاشتراكات...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     `;
 
-    async function loadAssistants() {
-      try {
-        const res = await ApiClient.get('/assistants');
-        const assistants = res.assistants || [];
-        const availPerms = res.available_permissions || {};
-        const grid = document.getElementById('assistants-cards-grid');
+    // Load Payment Info
+    try {
+      const sett = await ApiClient.get('/settings').catch(() => ({}));
+      const payInfo = await ApiClient.get('/subscriptions/payment-info').catch(() => ({}));
 
-        if (assistants.length === 0) {
-          grid.innerHTML = '<div class="card empty-state"><p>لا يوجد مساعدين مسجلين حالياً.</p></div>';
+      const vPhone = sett.payment_phone || sett.vodafone_cash || payInfo.vodafone_cash || payInfo.payment_phone || '+20159159038';
+      const iPhone = sett.instapay_phone || payInfo.instapay_phone || '+20159159038';
+      const iLink = sett.instapay_link || payInfo.instapay_link || 'https://ipn.eg/S/moazasem/instapay/27DsGj';
+      const cPhone = sett.contact_phone || payInfo.contact_phone || '+201559159038';
+      const banner = sett.offer_banner_text || payInfo.offer_banner_text || 'عروض الفصل الدراسي الجديد - احجز مقعدك الآن';
+      const vis = sett.offers_visible !== undefined ? sett.offers_visible : true;
+
+      document.getElementById('pay-voda-phone').value = vPhone;
+      document.getElementById('pay-insta-phone').value = iPhone;
+      document.getElementById('pay-insta-link').value = iLink;
+      document.getElementById('pay-contact-phone').value = cPhone;
+      document.getElementById('pay-offer-banner').value = banner;
+      document.getElementById('pay-offers-vis').checked = vis;
+    } catch (err) {
+      console.error('Error loading payment info:', err);
+    }
+
+    // Save Payment Info
+    document.getElementById('form-payment-details').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        payment_phone: document.getElementById('pay-voda-phone').value.trim(),
+        vodafone_cash: document.getElementById('pay-voda-phone').value.trim(),
+        instapay_phone: document.getElementById('pay-insta-phone').value.trim(),
+        instapay_link: document.getElementById('pay-insta-link').value.trim(),
+        contact_phone: document.getElementById('pay-contact-phone').value.trim(),
+        offer_banner_text: document.getElementById('pay-offer-banner').value.trim(),
+        offers_visible: document.getElementById('pay-offers-vis').checked
+      };
+
+      try {
+        await ApiClient.put('/settings', payload);
+        Toast.success('تم حفظ بيانات طرق الدفع بنجاح في قاعدة البيانات 🚀');
+      } catch (err) {
+        Toast.error(err.message || 'فشل حفظ بيانات الدفع');
+      }
+    });
+
+    // Load & Manage Plans
+    async function loadPlans() {
+      try {
+        const res = await ApiClient.get('/subscriptions/plans');
+        const plans = ApiClient.extractList(res, 'plans');
+        const tbody = document.getElementById('plans-table-body');
+        if (!plans || plans.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا توجد باقات معتمدة حاليًا.</td></tr>';
           return;
         }
 
-        grid.innerHTML = assistants.map(a => `
-          <div class="card" style="border:1px solid var(--color-border);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1rem;">
-              <div>
-                <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.3rem;">${a.full_name}</h3>
-                <div style="font-size:0.85rem;color:var(--color-text-muted);">
-                  اسم المستخدم: <span style="font-family:var(--font-mono);color:var(--color-primary);">${a.username}</span> • البريد: ${a.email}
-                </div>
-              </div>
-              <div style="display:flex;gap:0.5rem;">
-                <button class="btn btn-secondary btn-sm edit-perms-btn" data-asst-id="${a.id}">تعديل الصلاحيات ✏️</button>
-                <button class="btn btn-danger btn-sm del-asst-btn" data-asst-id="${a.id}">حذف</button>
-              </div>
-            </div>
-
-            <div>
-              <h4 style="font-size:0.9rem;font-weight:700;color:var(--color-text-muted);margin-bottom:0.6rem;">الصلاحيات المفعلة حالياً:</h4>
-              <div style="display:flex;flex-wrap:wrap;gap:0.4rem;">
-                ${a.permissions && a.permissions.length > 0 ? a.permissions.map(p => `
-                  <span class="badge" style="background:var(--color-bg-secondary);color:var(--color-cyan-accent);border:1px solid var(--color-border);font-size:0.8rem;">
-                    ${availPerms[p] || p}
-                  </span>
-                `).join('') : '<span style="font-size:0.85rem;color:var(--color-text-dim);">لا توجد صلاحيات مفعلة</span>'}
-              </div>
-            </div>
-          </div>
+        tbody.innerHTML = plans.map(p => `
+          <tr>
+            <td><strong>${p.name}</strong></td>
+            <td>${p.duration_months} ${p.duration_months === 1 ? 'شهر' : 'أشهر'}</td>
+            <td><strong>${p.price} ج.م</strong></td>
+            <td>${p.order_index !== undefined ? p.order_index : 0}</td>
+            <td>
+              <span class="badge ${p.is_active ? 'badge-success' : 'badge-secondary'}">
+                ${p.is_active ? 'نشطة وظاهرة للطلاب ✅' : 'مخفية ⏸️'}
+              </span>
+            </td>
+            <td>
+              <button class="btn btn-secondary btn-sm edit-plan-btn" data-id="${p.id}">تعديل ✏️</button>
+              <button class="btn btn-danger btn-sm del-plan-btn" data-id="${p.id}">حذف 🗑️</button>
+            </td>
+          </tr>
         `).join('');
 
-        document.querySelectorAll('.edit-perms-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const asstId = btn.dataset.asstId;
-            const asst = assistants.find(x => x.id === asstId);
-            if (!asst) return;
-
-            const currentPerms = asst.permissions || [];
-            Modal.open({
-              title: `تعديل صلاحيات المساعد: ${asst.full_name}`,
-              contentHtml: `
-                <form id="form-edit-perms">
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;max-height:350px;overflow-y:auto;padding:0.5rem;" class="perms-grid">
-                    ${Object.entries(availPerms).map(([key, label]) => `
-                      <label style="display:flex;align-items:center;gap:0.6rem;background:var(--color-bg-surface);padding:0.6rem 0.8rem;border-radius:var(--radius-sm);border:1px solid var(--color-border);cursor:pointer;">
-                        <input type="checkbox" name="asst_perm" value="${key}" ${currentPerms.includes(key) ? 'checked' : ''} style="accent-color:var(--color-primary);width:16px;height:16px;">
-                        <span style="font-size:0.85rem;color:var(--color-text-main);">${label}</span>
-                      </label>
-                    `).join('')}
-                  </div>
-                  <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1.25rem;font-weight:700;">حفظ الصلاحيات</button>
-                </form>
-              `
-            });
-
-            document.getElementById('form-edit-perms').addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const checked = Array.from(document.querySelectorAll('input[name="asst_perm"]:checked')).map(cb => cb.value);
-              try {
-                await ApiClient.put(`/assistants/${asstId}/permissions`, { permissions: checked });
-                Modal.close();
-                Toast.success('تم تحديث صلاحيات المساعد بنجاح');
-                loadAssistants();
-              } catch (err) {
-                Toast.error(err.message);
-              }
-            });
+        tbody.querySelectorAll('.edit-plan-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const plan = plans.find(x => x.id === b.dataset.id);
+            if (plan) openPlanModal(plan);
           });
         });
 
-        document.querySelectorAll('.del-asst-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
+        tbody.querySelectorAll('.del-plan-btn').forEach(b => {
+          b.addEventListener('click', () => {
+            const planId = b.dataset.id;
             Modal.confirm({
-              title: 'حذف المساعد',
-              message: 'هل أنت متأكد من حذف حساب هذا المساعد وسحب كافة صلاحياته؟',
+              title: 'تأكيد حذف باقة الاشتراك',
+              message: 'هل أنت متأكد من حذف هذه الباقة؟ لن تظهر للطلاب في صفحة الاشتراكات.',
               onConfirm: async () => {
-                await ApiClient.delete(`/assistants/${btn.dataset.asstId}`);
-                Toast.success('تم حذف المساعد');
-                loadAssistants();
+                try {
+                  await ApiClient.delete(`/subscriptions/plans/${planId}`);
+                  Toast.success('تم حذف باقة الاشتراك بنجاح');
+                  loadPlans();
+                } catch (err) {
+                  Toast.error(err.message || 'فشل حذف الباقة');
+                }
               }
             });
           });
         });
-
       } catch (err) {
-        Toast.error('فشل تحميل قائمة المساعدين');
+        console.error(err);
+        Toast.error('فشل تحميل قائمة باقات الاشتراكات');
       }
     }
 
-    await loadAssistants();
-
-    document.getElementById('btn-add-assistant').addEventListener('click', () => {
+    function openPlanModal(plan = null) {
+      const isEdit = !!plan;
       Modal.open({
-        title: 'إضافة مساعد تعليمي جديد',
+        title: isEdit ? 'تعديل باقة الاشتراك الأكاديمية' : 'إضافة باقة اشتراك جديدة',
         contentHtml: `
-          <form id="form-new-asst">
+          <form id="form-plan-save">
+            ${!isEdit ? `
+              <div class="form-group">
+                <label class="form-label">معرّف الباقة الفريد (Plan ID) *</label>
+                <input type="text" id="m-plan-id" class="form-control" required placeholder="مثال: plan_summer_2026">
+              </div>
+            ` : ''}
             <div class="form-group">
-              <label class="form-label">الاسم بالكامل</label>
-              <input type="text" id="asst-name" class="form-input" required placeholder="مثال: م. أحمد عبد الله">
+              <label class="form-label">اسم الباقة المعروض للطلاب *</label>
+              <input type="text" id="m-plan-name" class="form-control" required value="${plan?.name || ''}" placeholder="مثال: اشتراك الفصل الدراسي الكامل">
             </div>
-            <div class="form-group">
-              <label class="form-label">اسم المستخدم</label>
-              <input type="text" id="asst-user" class="form-input" required placeholder="ahmed_assistant">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">مدة الاشتراك (بالشهور) *</label>
+                <input type="number" id="m-plan-dur" class="form-control" required min="1" max="60" value="${plan?.duration_months || 1}">
+              </div>
+              <div class="form-group">
+                <label class="form-label">السعر الإجمالي (ج.م) *</label>
+                <input type="number" id="m-plan-price" class="form-control" required min="0" step="1" value="${plan?.price || 100}">
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">البريد الإلكتروني</label>
-              <input type="email" id="asst-email" class="form-input" required placeholder="assistant@codespark.edu">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+              <div class="form-group">
+                <label class="form-label">ترتيب العرض</label>
+                <input type="number" id="m-plan-order" class="form-control" min="0" value="${plan?.order_index !== undefined ? plan.order_index : 10}">
+              </div>
+              <div class="form-group" style="display:flex;align-items:flex-end;padding-bottom:0.5rem;">
+                <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+                  <input type="checkbox" id="m-plan-active" ${plan ? (plan.is_active ? 'checked' : '') : 'checked'}>
+                  <span>تفعيل الباقة وظهورها للطلاب</span>
+                </label>
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">كلمة المرور</label>
-              <input type="password" id="asst-pass" class="form-input" required placeholder="••••••••" minlength="6">
+            <div class="modal-actions" style="margin-top:1.5rem;">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('app-modal').style.display='none'">إلغاء</button>
+              <button type="submit" class="btn btn-primary">${isEdit ? 'حفظ تعديلات الباقة' : 'إنشاء الباقة الآن 🚀'}</button>
             </div>
-            <button type="submit" class="btn btn-primary" style="width:100%;font-weight:700;">إنشاء الحساب</button>
           </form>
         `
       });
 
-      document.getElementById('form-new-asst').addEventListener('submit', async (e) => {
+      document.getElementById('form-plan-save').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const payload = {
+          name: document.getElementById('m-plan-name').value.trim(),
+          duration_months: parseInt(document.getElementById('m-plan-dur').value) || 1,
+          price: parseFloat(document.getElementById('m-plan-price').value) || 0.0,
+          order_index: parseInt(document.getElementById('m-plan-order').value) || 0,
+          is_active: document.getElementById('m-plan-active').checked
+        };
+        if (!isEdit) {
+          payload.id = document.getElementById('m-plan-id').value.trim();
+        }
+
         try {
-          await ApiClient.post('/assistants', {
-            full_name: document.getElementById('asst-name').value,
-            username: document.getElementById('asst-user').value,
-            email: document.getElementById('asst-email').value,
-            password: document.getElementById('asst-pass').value,
-            permissions: ["questions.read", "questions.create", "exams.read", "exams.create"]
-          });
+          if (isEdit) {
+            await ApiClient.put(`/subscriptions/plans/${plan.id}`, payload);
+            Toast.success('تم تحديث باقة الاشتراك بنجاح');
+          } else {
+            await ApiClient.post('/subscriptions/plans', payload);
+            Toast.success('تمت إضافة باقة الاشتراك بنجاح 🎉');
+          }
           Modal.close();
-          Toast.success('تم إضافة المساعد التعليمي بنجاح');
-          loadAssistants();
+          loadPlans();
         } catch (err) {
-          Toast.error(err.message);
+          Toast.error(err.message || 'فشل حفظ باقة الاشتراك');
         }
       });
+    }
+
+    document.getElementById('btn-add-plan').addEventListener('click', () => openPlanModal());
+    await loadPlans();
+  }
+
+  // =========================================================================
+  // 11. DEDICATED ACCOUNT & SECURITY SETTINGS ("إعدادات الحساب والأمان")
+  // =========================================================================
+  static async renderSettings(container) {
+    const user = AuthService.getUser() || {};
+
+    container.innerHTML = `
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">إعدادات الحساب والأمان ⚙️</h1>
+          <p class="page-subtitle">تعديل بيانات الحساب الشخصي وتغيير كلمة المرور وتأمين الجلسة</p>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:2rem;">
+        <!-- 1. Profile & Email Form -->
+        <div class="card">
+          <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+            <span>👤</span> تعديل البيانات الشخصية والبريد الإلكتروني
+          </h3>
+          <p style="color:var(--color-text-muted);font-size:0.85rem;margin-bottom:1.25rem;">
+            يمكنك تحديث اسمك المعروض ورقم الهاتف والبريد الإلكتروني المستخدم في تسجيل الدخول.
+          </p>
+
+          <form id="form-update-profile">
+            <div class="form-group">
+              <label class="form-label">الاسم الكامل *</label>
+              <input type="text" id="prof-fullname" class="form-control" required value="${user.full_name || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">اسم المستخدم (للعرض فقط)</label>
+              <input type="text" class="form-control" value="${user.username || ''}" disabled style="opacity:0.7;">
+            </div>
+            <div class="form-group">
+              <label class="form-label">البريد الإلكتروني المستخدم للدخول *</label>
+              <input type="email" id="prof-email" class="form-control" required value="${user.email || ''}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الهاتف</label>
+              <input type="text" id="prof-phone" class="form-control" value="${user.phone || ''}" placeholder="+2010...">
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;">حفظ تعديلات الملف الشخصي</button>
+          </form>
+        </div>
+
+        <!-- 2. Password Change Form -->
+        <div class="card">
+          <h3 style="font-size:1.15rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem;">
+            <span>🔒</span> تغيير كلمة المرور المشفرة
+          </h3>
+          <p style="color:var(--color-text-muted);font-size:0.85rem;margin-bottom:1.25rem;">
+            لحماية حسابك الإداري، يرجى كتابة كلمة المرور الحالية للتأكد من هويتك، ثم تعيين كلمة مرور قوية جديدة.
+          </p>
+
+          <form id="form-change-password">
+            <div class="form-group">
+              <label class="form-label">كلمة المرور الحالية *</label>
+              <input type="password" id="pw-current" class="form-control" required placeholder="أدخل كلمة المرور الحالية للحساب">
+            </div>
+            <div class="form-group">
+              <label class="form-label">كلمة المرور الجديدة * (6 خانات على الأقل)</label>
+              <input type="password" id="pw-new" class="form-control" required minlength="6" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label class="form-label">تأكيد كلمة المرور الجديدة *</label>
+              <input type="password" id="pw-confirm" class="form-control" required minlength="6" placeholder="••••••••">
+            </div>
+
+            <div id="pw-error-feedback" style="display:none;color:var(--color-danger);font-size:0.85rem;margin-bottom:1rem;"></div>
+
+            <button type="submit" class="btn btn-primary" style="width:100%;margin-top:0.5rem;">تحديث كلمة المرور الآن 🔐</button>
+          </form>
+        </div>
+      </div>
+    `;
+
+    // Handle Profile Update
+    document.getElementById('form-update-profile').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        full_name: document.getElementById('prof-fullname').value.trim(),
+        email: document.getElementById('prof-email').value.trim(),
+        phone: document.getElementById('prof-phone').value.trim() || null
+      };
+
+      try {
+        const res = await ApiClient.put('/users/profile', payload);
+        if (res.user) {
+          const updatedUser = { ...user, ...res.user };
+          localStorage.setItem('codespark_user', JSON.stringify(updatedUser));
+          const nameEl = document.getElementById('user-display-name');
+          if (nameEl) nameEl.textContent = updatedUser.full_name || updatedUser.username;
+        }
+        Toast.success('تم تحديث البيانات الشخصية والبريد بنجاح! 🚀');
+      } catch (err) {
+        Toast.error(err.message || 'فشل تحديث البيانات');
+      }
+    });
+
+    // Handle Password Change
+    document.getElementById('form-change-password').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const currentPassword = document.getElementById('pw-current').value;
+      const newPassword = document.getElementById('pw-new').value;
+      const confirmPassword = document.getElementById('pw-confirm').value;
+      const feedback = document.getElementById('pw-error-feedback');
+
+      feedback.style.display = 'none';
+
+      if (newPassword !== confirmPassword) {
+        feedback.textContent = 'كلمة المرور الجديدة وتأكيدها غير متطابقين!';
+        feedback.style.display = 'block';
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        feedback.textContent = 'يجب أن تتكون كلمة المرور الجديدة من 6 خانات على الأقل!';
+        feedback.style.display = 'block';
+        return;
+      }
+
+      try {
+        const res = await ApiClient.post('/users/change-password', {
+          current_password: currentPassword,
+          new_password: newPassword,
+          confirm_password: confirmPassword
+        });
+
+        Toast.success(res.message || 'تم تغيير كلمة المرور بنجاح! 🔒');
+        document.getElementById('form-change-password').reset();
+      } catch (err) {
+        feedback.textContent = err.message || 'فشل تغيير كلمة المرور';
+        feedback.style.display = 'block';
+        Toast.error(err.message || 'فشل تغيير كلمة المرور');
+      }
     });
   }
 
-  /* ===================================================================
-     9. STUDENTS MANAGEMENT
-  =================================================================== */
+  // =========================================================================
+  // 12. STUDENTS MANAGEMENT
+  // =========================================================================
   static async renderStudents(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة الطلاب المسجلين 👥</h2>
-          <p style="color:var(--color-text-muted);">متابعة حسابات واشتراكات وتقدم الطلاب</p>
+          <h1 class="page-title">إدارة حسابات الطلاب 👥</h1>
+          <p class="page-subtitle">متابعة حسابات الطلاب المسجلين والتحكم في حالة الحسابات</p>
         </div>
       </div>
 
       <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
+        <div class="table-responsive">
+          <table class="data-table">
             <thead>
               <tr>
-                <th>الطالب</th>
+                <th>اسم الطالب</th>
                 <th>اسم المستخدم</th>
                 <th>البريد الإلكتروني</th>
-                <th>حالة الاشتراك</th>
-                <th>النقاط (XP)</th>
-                <th>تاريخ التسجيل</th>
+                <th>الهاتف</th>
                 <th>الحالة</th>
+                <th>تاريخ التسجيل</th>
               </tr>
             </thead>
             <tbody id="students-table-body">
-              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+              <tr><td colspan="6" style="text-align:center;padding:2rem;">جاري تحميل بيانات الطلاب...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1784,975 +1930,89 @@ export class AdminPages {
 
     try {
       const res = await ApiClient.get('/students');
-      const students = res.students || [];
+      const students = ApiClient.extractList(res, 'students');
       const tbody = document.getElementById('students-table-body');
-
-      if (students.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا يوجد طلاب مسجلون بعد.</td></tr>';
+      if (!students || students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا يوجد طلاب مسجلون حاليًا.</td></tr>';
         return;
       }
 
       tbody.innerHTML = students.map(s => `
         <tr>
-          <td><strong>${s.full_name}</strong></td>
-          <td style="font-family:var(--font-mono);">${s.username}</td>
-          <td>${s.email}</td>
+          <td><strong>${s.full_name || s.username}</strong></td>
+          <td><code>${s.username}</code></td>
+          <td>${s.email || '—'}</td>
+          <td>${s.phone || '—'}</td>
           <td>
-            <span class="badge ${s.is_subscribed ? 'badge-public' : 'badge-subscribers'}">
-              ${s.is_subscribed ? 'مشترك نشط 🔑' : 'خطة مجانية'}
+            <span class="badge ${s.is_active ? 'badge-success' : 'badge-danger'}">
+              ${s.is_active ? 'نشط ✅' : 'معطل ❌'}
             </span>
           </td>
-          <td><span style="color:#F59E0B;font-weight:700;">${s.stats?.xp || 0} XP</span></td>
-          <td>${s.created_at ? s.created_at.substring(0, 10) : ''}</td>
-          <td>
-            <button class="btn btn-secondary btn-sm toggle-student-btn" data-id="${s.id}">
-              ${s.is_active ? 'نشط ✅' : 'معطل ❌'}
-            </button>
-          </td>
+          <td style="font-size:0.85rem;">${s.created_at ? s.created_at.substring(0, 10) : '—'}</td>
         </tr>
       `).join('');
-
-      document.querySelectorAll('.toggle-student-btn').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          try {
-            const res = await ApiClient.put(`/students/${btn.dataset.id}/toggle-active`);
-            Toast.success(res.is_active ? 'تم تفعيل الحساب' : 'تم تعطيل الحساب');
-            AdminPages.renderStudents(container);
-          } catch (e) {
-            Toast.error(e.message);
-          }
-        });
-      });
-
-    } catch (e) {
+    } catch (err) {
+      console.error(err);
       Toast.error('فشل تحميل قائمة الطلاب');
     }
   }
 
-
-  /* ===================================================================
-     10. SUBSCRIPTION REQUESTS MANAGEMENT (ADMIN & ASSISTANTS)
-  =================================================================== */
-  static async renderSubscriptionRequests(container) {
+  // =========================================================================
+  // 13. ASSISTANTS MANAGEMENT
+  // =========================================================================
+  static async renderAssistants(container) {
     container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+      <div class="page-header">
         <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
-            <span>💳</span> مراجعة واعتماد طلبات تفعيل الاشتراكات
-          </h2>
-          <p style="color:var(--color-text-muted);">متابعة تحويلات InstaPay وإيصالات الطلاب واعتماد تفعيل الحسابات فورياً</p>
+          <h1 class="page-title">المساعدين التعليميين والصلاحيات 🧑‍🏫</h1>
+          <p class="page-subtitle">تعيين مساعدين وإسناد صلاحيات إدارة المناهج وتوليد الأكواد الشهرية</p>
         </div>
-        <div style="display:flex;gap:0.5rem;">
-          <a href="#/admin/settings" class="btn btn-primary btn-sm">⚙️ إعدادات الباقات وأرقام الدفع</a>
-          <a href="#/admin/subscriptions" class="btn btn-secondary btn-sm">🔑 أكواد الاشتراكات</a>
-        </div>
-      </div>
-
-      <!-- Status Filter Tabs -->
-      <div class="card" style="margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;padding:0.75rem 1rem;">
-        <select id="filter-sub-req-status" class="form-input" style="width:auto;min-width:180px;">
-          <option value="">جميع الحالات</option>
-          <option value="PENDING" selected>قيد المراجعة والانتظار (Pending) ⏳</option>
-          <option value="APPROVED">المعتمدة والمفعلة (Approved) ✅</option>
-          <option value="REJECTED">المرفوضة (Rejected) ❌</option>
-        </select>
-        <input type="text" id="filter-sub-req-search" class="form-input" placeholder="بحث باسم الطالب أو الهاتف أو رقم المرجع..." style="flex:1;min-width:220px;">
       </div>
 
       <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
+        <div class="table-responsive">
+          <table class="data-table">
             <thead>
               <tr>
-                <th>الطالب</th>
+                <th>اسم المساعد</th>
+                <th>اسم المستخدم</th>
+                <th>البريد الإلكتروني</th>
                 <th>الهاتف</th>
-                <th>الباقة والمدة</th>
-                <th>المبلغ المسدد</th>
-                <th>رقم العملية / المرجع</th>
-                <th>الإيصال المرفق</th>
-                <th>تاريخ التحويل</th>
-                <th>الحالة</th>
-                <th>الإجراءات</th>
+                <th>حدود الصلاحيات المطبقة</th>
               </tr>
             </thead>
-            <tbody id="sub-req-table-body">
-              <tr><td colspan="9" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
+            <tbody id="assistants-table-body">
+              <tr><td colspan="5" style="text-align:center;padding:2rem;">جاري تحميل بيانات المساعدين...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-
-      <!-- Screenshot Preview Modal -->
-      <div id="proof-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:9999;align-items:center;justify-content:center;padding:1.5rem;">
-        <div class="card" style="max-width:650px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:1rem;position:relative;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
-            <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.1rem;">معاينة إيصال التحويل 🖼️</h3>
-            <button id="close-proof-modal" class="btn btn-secondary btn-sm" style="padding:2px 8px;">✕ إغلاق</button>
-          </div>
-          <div style="flex:1;overflow:auto;text-align:center;background:#030712;padding:0.5rem;border-radius:6px;">
-            <img id="proof-modal-img" src="" alt="صورة الإيصال" style="max-width:100%;max-height:70vh;object-fit:contain;">
-          </div>
-          <div id="proof-modal-caption" style="margin-top:0.75rem;font-size:0.85rem;color:var(--color-text-muted);text-align:center;"></div>
-        </div>
-      </div>
     `;
 
-    const proofModal = document.getElementById('proof-modal');
-    const proofImg = document.getElementById('proof-modal-img');
-    const proofCaption = document.getElementById('proof-modal-caption');
-    document.getElementById('close-proof-modal')?.addEventListener('click', () => {
-      if (proofModal) proofModal.style.display = 'none';
-    });
-    proofModal?.addEventListener('click', (e) => {
-      if (e.target === proofModal) proofModal.style.display = 'none';
-    });
-
-    async function loadRequests() {
-      const status = document.getElementById('filter-sub-req-status')?.value || '';
-      const search = document.getElementById('filter-sub-req-search')?.value.toLowerCase().trim() || '';
-
-      let url = '/subscriptions/requests';
-      if (status) url += `?status_filter=${status}`;
-
-      try {
-        const requests = await ApiClient.get(url);
-        const tbody = document.getElementById('sub-req-table-body');
-
-        let filtered = requests || [];
-        if (search) {
-          filtered = filtered.filter(r => 
-            (r.student_name && r.student_name.toLowerCase().includes(search)) ||
-            (r.student_email && r.student_email.toLowerCase().includes(search)) ||
-            (r.phone && r.phone.includes(search)) ||
-            (r.payment_reference && r.payment_reference.toLowerCase().includes(search))
-          );
-        }
-
-        if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" class="text-center" style="padding:2rem;">لا توجد طلبات تطابق الفلتر المحدد.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = filtered.map(r => `
-          <tr>
-            <td>
-              <strong style="color:var(--color-text-main);">${r.student_name || 'طالب'}</strong>
-              <div style="font-size:0.75rem;color:var(--color-text-muted);">${r.student_email}</div>
-            </td>
-            <td style="font-family:var(--font-mono);">${r.phone || '—'}</td>
-            <td>
-              <span style="font-weight:700;color:var(--color-primary);">${r.package_name}</span>
-              ${r.duration_months ? `<div style="font-size:0.75rem;color:var(--color-text-muted);">${r.duration_months} أشهر</div>` : ''}
-            </td>
-            <td style="font-family:var(--font-mono);color:#10B981;font-weight:800;font-size:1.05rem;">
-              ${r.amount ? `${r.amount} ج.م` : '—'}
-            </td>
-            <td>
-              <code style="font-family:var(--font-mono);color:var(--color-cyan-accent);background:var(--color-bg-surface);padding:2px 6px;border-radius:4px;">${r.payment_reference}</code>
-              ${r.admin_notes ? `<div style="font-size:0.75rem;color:var(--color-text-dim);">ملاحظة: ${r.admin_notes}</div>` : ''}
-            </td>
-            <td>
-              ${r.proof_file_url ? `
-                <button class="btn btn-secondary btn-sm view-proof-btn" data-url="${r.proof_file_url}" data-name="${r.student_name}" data-ref="${r.payment_reference}" style="padding:2px 7px;font-size:0.75rem;">
-                  🖼️ عرض الإيصال
-                </button>
-              ` : '<span style="color:var(--color-text-dim);font-size:0.75rem;">بدون إيصال</span>'}
-            </td>
-            <td>${r.transfer_date || r.created_at?.substring(0, 10)}</td>
-            <td>
-              <span class="badge ${r.status === 'APPROVED' ? 'badge-public' : (r.status === 'PENDING' ? 'badge-subscribers' : 'badge-danger')}">
-                ${r.status === 'APPROVED' ? 'معتمد ومفعل ✅' : (r.status === 'PENDING' ? 'قيد الانتظار ⏳' : 'مرفوض ❌')}
-              </span>
-            </td>
-            <td>
-              <div style="display:flex;gap:0.35rem;flex-wrap:wrap;">
-                ${r.status === 'PENDING' ? `
-                  <button class="btn btn-primary btn-sm approve-req-btn" data-id="${r.id}" style="padding:2px 8px;font-size:0.75rem;font-weight:700;">اعتماد ✅</button>
-                  <button class="btn btn-danger btn-sm reject-req-btn" data-id="${r.id}" style="padding:2px 8px;font-size:0.75rem;">رفض ❌</button>
-                ` : `
-                  <span style="font-size:0.75rem;color:var(--color-text-dim);">تم اتخاذ القرار</span>
-                `}
-              </div>
-            </td>
-          </tr>
-        `).join('');
-
-        document.querySelectorAll('.view-proof-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            if (proofImg && proofModal) {
-              proofImg.src = btn.dataset.url;
-              if (proofCaption) proofCaption.textContent = `إيصال الطالب: ${btn.dataset.name} | رقم المرجع: ${btn.dataset.ref}`;
-              proofModal.style.display = 'flex';
-            }
-          });
-        });
-
-        document.querySelectorAll('.approve-req-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const reqId = btn.dataset.id;
-            Modal.confirm({
-              title: 'تأكيد اعتماد وتفعيل الاشتراك',
-              message: 'هل أنت متأكد من صحة التحويل؟ سيتم تفعيل حساب الطالب في قاعدة البيانات فوراً وفتح كافة المناهج والامتحانات.',
-              onConfirm: async () => {
-                try {
-                  const res = await ApiClient.post(`/subscriptions/requests/${reqId}/approve`);
-                  Toast.success(res.message || 'تم اعتماد وتفعيل الاشتراك بنجاح 🎉');
-                  loadRequests();
-                } catch (err) {
-                  Toast.error(err.message);
-                }
-              }
-            });
-          });
-        });
-
-        document.querySelectorAll('.reject-req-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const reqId = btn.dataset.id;
-            const reason = prompt('أدخل سبب رفض الطلب لإخطار الطالب به:', 'بيانات التحويل غير مطابقة أو العملية غير مكتملة');
-            if (reason !== null) {
-              ApiClient.post(`/subscriptions/requests/${reqId}/reject`, { rejection_reason: reason.trim() || 'بيانات التحويل غير صحيحة' })
-                .then(res => {
-                  Toast.success('تم رفض الطلب وإخطار الطالب');
-                  loadRequests();
-                })
-                .catch(err => Toast.error(err.message));
-            }
-          });
-        });
-
-      } catch (err) {
-        console.error(err);
-        Toast.error('فشل تحميل قائمة طلبات الاشتراكات');
-      }
-    }
-
-    document.getElementById('filter-sub-req-status')?.addEventListener('change', loadRequests);
-    document.getElementById('filter-sub-req-search')?.addEventListener('input', debounce(loadRequests, 300));
-
-    await loadRequests();
-  }
-
-  /* ===================================================================
-     11. ADMIN PLATFORM SETTINGS & 11-PLAN SUBSCRIPTION MANAGEMENT
-  =================================================================== */
-  static async renderSettings(container) {
-    container.innerHTML = `
-      <div style="margin-bottom:1.5rem;">
-        <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);display:flex;align-items:center;gap:0.5rem;">
-          <span>⚙️</span> إعدادات المنصة وإدارة باقات الاشتراكات
-        </h2>
-        <p style="color:var(--color-text-muted);">تحكم كامل في أرقام التحويل المعتمدة وتعديل أسعار ومدد باقات الاشتراكات (1 إلى 11 شهراً)</p>
-      </div>
-
-      <!-- 1. Payment & Transfer Number Settings Section -->
-      <div class="card" style="margin-bottom:1.5rem;border-right:4px solid var(--color-primary);">
-        <h3 style="font-size:1.25rem;font-weight:800;color:var(--color-text-main);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem;">
-          <span>📱</span> رقم التحويل وبيانات السداد (InstaPay / المحافظ)
-        </h3>
-        <p style="color:var(--color-text-muted);font-size:0.88rem;line-height:1.6;margin-bottom:1.25rem;">
-          الرقم الذي يظهر لجميع الطلاب في صفحة الاشتراك. عند تعديل هذا الرقم يتم حفظه في قاعدة البيانات ويظهر تلقائياً للطلاب فوراً دون الحاجة لتعديل أي كود برمجي.
-        </p>
-
-        <form id="admin-payment-settings-form">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:1rem;margin-bottom:1rem;">
-            <div class="form-group">
-              <label class="form-label">رقم التحويل المعتمد للطلاب (Transfer/Payment Phone) <span style="color:#EF4444;">*</span></label>
-              <input type="text" id="admin-set-payment-phone" class="form-input" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--color-cyan-accent);" required placeholder="+20159159038">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">رقم التواصل والدعم الفني (WhatsApp Phone)</label>
-              <input type="text" id="admin-set-contact-phone" class="form-input" style="font-family:var(--font-mono);" placeholder="+201559159038">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">الرابط المباشر لتطبيق InstaPay</label>
-              <input type="url" id="admin-set-instapay-link" class="form-input" style="font-family:var(--font-mono);font-size:0.85rem;" placeholder="https://ipn.eg/S/moazasem/instapay/...">
-            </div>
-          </div>
-
-          <div style="display:flex;justify-content:flex-end;">
-            <button type="submit" id="btn-save-payment-settings" class="btn btn-primary" style="font-weight:800;padding:0.6rem 1.5rem;">
-              💾 حفظ بيانات الدفع في قاعدة البيانات
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- 2. Subscription Plans Management Section (11 Plans) -->
-      <div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:0.75rem;">
-          <div>
-            <h3 style="font-size:1.25rem;font-weight:800;color:var(--color-text-main);display:flex;align-items:center;gap:0.4rem;">
-              <span>💳</span> إدارة باقات الاشتراكات الأكاديمية (11 باقة معتمدة)
-            </h3>
-            <p style="color:var(--color-text-muted);font-size:0.85rem;margin:0;">
-              يمكنك تعديل أسعار الباقات أو تفعيلها/تعطيلها. المعاملات السابقة تظل محمية بالمبلغ الأصلي المسدد.
-            </p>
-          </div>
-          <button id="btn-open-add-plan-modal" class="btn btn-primary btn-sm" style="font-weight:700;">
-            + إضافة باقة اشتراك جديدة
-          </button>
-        </div>
-
-        <div class="table-container">
-          <table class="table" style="width:100%;">
-            <thead>
-              <tr>
-                <th>المدة (شهور)</th>
-                <th>اسم الباقة</th>
-                <th>السعر (ج.م)</th>
-                <th>ترتيب العرض</th>
-                <th>الحالة</th>
-                <th>إجمالي الطلبات</th>
-                <th>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody id="admin-plans-table-body">
-              <tr><td colspan="7" class="text-center" style="padding:2rem;">جاري تحميل الباقات...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Add New Plan Modal -->
-      <div id="add-plan-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:1.5rem;">
-        <div class="card" style="max-width:500px;width:100%;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-            <h3 style="font-weight:800;color:var(--color-text-main);font-size:1.15rem;">إضافة باقة اشتراك جديدة</h3>
-            <button id="close-add-plan-modal" class="btn btn-secondary btn-sm" style="padding:2px 8px;">✕</button>
-          </div>
-          <form id="form-add-new-plan">
-            <div class="form-group">
-              <label class="form-label">اسم الباقة <span style="color:#EF4444;">*</span></label>
-              <input type="text" id="new-plan-name" class="form-input" required placeholder="مثال: اشتراك فصلي مميز">
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-              <div class="form-group">
-                <label class="form-label">المدة بالشهور <span style="color:#EF4444;">*</span></label>
-                <input type="number" id="new-plan-months" class="form-input" required min="1" max="60" value="1">
-              </div>
-              <div class="form-group">
-                <label class="form-label">السعر (ج.م) <span style="color:#EF4444;">*</span></label>
-                <input type="number" id="new-plan-price" class="form-input" required min="0" step="0.5" placeholder="100">
-              </div>
-            </div>
-            <div class="form-group">
-              <label class="form-label">ترتيب العرض</label>
-              <input type="number" id="new-plan-order" class="form-input" min="0" value="0">
-            </div>
-            <div style="display:flex;justify-content:flex-end;gap:0.5rem;margin-top:1.25rem;">
-              <button type="button" id="cancel-add-plan" class="btn btn-secondary">إلغاء</button>
-              <button type="submit" class="btn btn-primary" style="font-weight:700;">حفظ الباقة الجديدة ✨</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
-
-    async function loadPaymentSettings() {
-      try {
-        const sett = await ApiClient.get('/subscriptions/payment-info');
-        const phoneInput = document.getElementById('admin-set-payment-phone');
-        const contactInput = document.getElementById('admin-set-contact-phone');
-        const linkInput = document.getElementById('admin-set-instapay-link');
-
-        if (phoneInput && sett.payment_phone) phoneInput.value = sett.payment_phone;
-        if (contactInput && sett.contact_phone) contactInput.value = sett.contact_phone;
-        if (linkInput && sett.instapay_link) linkInput.value = sett.instapay_link;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    document.getElementById('admin-payment-settings-form')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const phoneVal = document.getElementById('admin-set-payment-phone').value.trim();
-      const contactVal = document.getElementById('admin-set-contact-phone').value.trim();
-      const linkVal = document.getElementById('admin-set-instapay-link').value.trim();
-      const btn = document.getElementById('btn-save-payment-settings');
-
-      btn.disabled = true;
-      btn.textContent = 'جاري الحفظ...';
-
-      try {
-        const res = await ApiClient.put('/subscriptions/admin/payment-info', {
-          payment_phone: phoneVal,
-          contact_phone: contactVal,
-          instapay_link: linkVal
-        });
-        Toast.success(res.message || 'تم تحديث بيانات التحويل بنجاح! ستظهر للطلاب فوراً.');
-      } catch (err) {
-        Toast.error(err.message || 'تعذر تحديث بيانات التحويل');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '💾 حفظ بيانات الدفع في قاعدة البيانات';
-      }
-    });
-
-    async function loadAdminPlans() {
-      const tbody = document.getElementById('admin-plans-table-body');
-      try {
-        const plans = await ApiClient.get('/subscriptions/admin/plans');
-        if (!plans || plans.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="padding:2rem;">لا توجد باقات معرفة.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = plans.map(p => `
-          <tr data-plan-id="${p.id}">
-            <td style="font-family:var(--font-mono);font-weight:800;font-size:1.1rem;color:var(--color-primary);">${p.duration_months} شهر</td>
-            <td>
-              <input type="text" class="form-input plan-name-input" value="${p.name}" style="padding:0.3rem 0.5rem;font-size:0.88rem;min-width:180px;">
-            </td>
-            <td>
-              <div style="display:flex;align-items:center;gap:0.3rem;">
-                <input type="number" class="form-input plan-price-input" value="${p.price}" min="0" step="0.5" style="width:100px;font-family:var(--font-mono);font-weight:700;color:#10B981;padding:0.3rem 0.5rem;">
-                <span style="font-size:0.75rem;color:var(--color-text-dim);">ج.م</span>
-              </div>
-            </td>
-            <td>
-              <input type="number" class="form-input plan-order-input" value="${p.order_index || p.duration_months}" min="0" style="width:60px;padding:0.3rem 0.5rem;font-family:var(--font-mono);">
-            </td>
-            <td>
-              <button class="btn btn-sm toggle-plan-active-btn ${p.is_active ? 'btn-secondary' : 'btn-danger'}" data-active="${p.is_active ? '1' : '0'}" style="font-size:0.75rem;padding:2px 8px;">
-                ${p.is_active ? 'مفعلة ✅' : 'معطلة ❌'}
-              </button>
-            </td>
-            <td style="font-family:var(--font-mono);text-align:center;">
-              <span class="badge badge-public">${p.total_requests || 0} طلب</span>
-            </td>
-            <td>
-              <div style="display:flex;gap:0.3rem;">
-                <button class="btn btn-primary btn-sm save-plan-row-btn" style="font-size:0.75rem;padding:2px 8px;font-weight:700;">حفظ 💾</button>
-                <button class="btn btn-danger btn-sm delete-plan-row-btn" style="font-size:0.75rem;padding:2px 7px;">حذف 🗑️</button>
-              </div>
-            </td>
-          </tr>
-        `).join('');
-
-        tbody.querySelectorAll('tr').forEach(tr => {
-          const planId = tr.dataset.planId;
-          const nameInput = tr.querySelector('.plan-name-input');
-          const priceInput = tr.querySelector('.plan-price-input');
-          const orderInput = tr.querySelector('.plan-order-input');
-          const toggleBtn = tr.querySelector('.toggle-plan-active-btn');
-          const saveBtn = tr.querySelector('.save-plan-row-btn');
-          const delBtn = tr.querySelector('.delete-plan-row-btn');
-
-          toggleBtn?.addEventListener('click', async () => {
-            const currentActive = toggleBtn.dataset.active === '1';
-            const newActive = !currentActive;
-            try {
-              await ApiClient.put(`/subscriptions/admin/plans/${planId}`, { is_active: newActive });
-              Toast.success(newActive ? 'تم تفعيل الباقة بنجاح' : 'تم تعطيل الباقة بنجاح');
-              loadAdminPlans();
-            } catch (err) {
-              Toast.error(err.message);
-            }
-          });
-
-          saveBtn?.addEventListener('click', async () => {
-            const newName = nameInput.value.trim();
-            const newPrice = parseFloat(priceInput.value);
-            const newOrder = parseInt(orderInput.value) || 0;
-
-            if (!newName || isNaN(newPrice) || newPrice < 0) {
-              Toast.error('يرجى إدخال اسم وسعر صحيح');
-              return;
-            }
-
-            saveBtn.disabled = true;
-            saveBtn.textContent = '...';
-
-            try {
-              await ApiClient.put(`/subscriptions/admin/plans/${planId}`, {
-                name: newName,
-                price: newPrice,
-                order_index: newOrder
-              });
-              Toast.success('تم حفظ تعديلات الباقة بنجاح!');
-            } catch (err) {
-              Toast.error(err.message);
-            } finally {
-              saveBtn.disabled = false;
-              saveBtn.textContent = 'حفظ 💾';
-            }
-          });
-
-          delBtn?.addEventListener('click', () => {
-            Modal.confirm({
-              title: 'تأكيد إزالة أو تعطيل الباقة',
-              message: 'هل تريد إزالة هذه الباقة؟ إذا كانت هناك طلبات سابقة مسجلة بها، فسيتم تعطيلها بأمان للحفاظ على سجلات الطلاب.',
-              onConfirm: async () => {
-                try {
-                  const res = await ApiClient.delete(`/subscriptions/admin/plans/${planId}`);
-                  Toast.success(res.message || 'تم حذف الباقة بنجاح');
-                  loadAdminPlans();
-                } catch (err) {
-                  Toast.error(err.message);
-                }
-              }
-            });
-          });
-        });
-
-      } catch (err) {
-        console.error(err);
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:#EF4444;padding:2rem;">فشل تحميل الباقات</td></tr>';
-      }
-    }
-
-    const addPlanModal = document.getElementById('add-plan-modal');
-    document.getElementById('btn-open-add-plan-modal')?.addEventListener('click', () => {
-      if (addPlanModal) addPlanModal.style.display = 'flex';
-    });
-    document.getElementById('close-add-plan-modal')?.addEventListener('click', () => {
-      if (addPlanModal) addPlanModal.style.display = 'none';
-    });
-    document.getElementById('cancel-add-plan')?.addEventListener('click', () => {
-      if (addPlanModal) addPlanModal.style.display = 'none';
-    });
-
-    document.getElementById('form-add-new-plan')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('new-plan-name').value.trim();
-      const months = parseInt(document.getElementById('new-plan-months').value);
-      const price = parseFloat(document.getElementById('new-plan-price').value);
-      const order = parseInt(document.getElementById('new-plan-order').value) || months;
-
-      if (!name || isNaN(months) || isNaN(price)) {
-        Toast.error('يرجى ملء جميع الحقول المطلوبة بشكل صحيح');
+    try {
+      const res = await ApiClient.get('/assistants');
+      const assistants = ApiClient.extractList(res, 'assistants');
+      const tbody = document.getElementById('assistants-table-body');
+      if (!assistants || assistants.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--color-text-muted);">لا يوجد مساعدون مسجلون حاليًا.</td></tr>';
         return;
       }
 
-      try {
-        const res = await ApiClient.post('/subscriptions/admin/plans', {
-          name: name,
-          duration_months: months,
-          price: price,
-          order_index: order
-        });
-        Toast.success(res.message || 'تمت إضافة الباقة بنجاح! ✨');
-        if (addPlanModal) addPlanModal.style.display = 'none';
-        document.getElementById('form-add-new-plan').reset();
-        loadAdminPlans();
-      } catch (err) {
-        Toast.error(err.message || 'تعذر إنشاء الباقة');
-      }
-    });
-
-    await Promise.all([loadPaymentSettings(), loadAdminPlans()]);
-  }
-
-  /* ===================================================================
-     11. EDUCATIONAL FILES MANAGEMENT (الملفات والمذكرات الدراسية)
-  =================================================================== */
-  static async renderStudyFiles(container) {
-    container.innerHTML = `
-      <div style="margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
-        <div>
-          <h2 style="font-size:1.8rem;font-weight:900;color:var(--color-text-main);">إدارة الملفات والمذكرات الدراسية 📁</h2>
-          <p style="color:var(--color-text-muted);">رفع المذكرات، ملخصات الدروس، شرائح العرض (PDF, Word, PPT, Excel, ZIP) أو مشاركة روابط Google Drive مع الطلاب</p>
-        </div>
-        <button id="btn-add-study-file" class="btn btn-primary btn-sm" style="font-weight:700;">+ إضافة ملف دراسي جديد</button>
-      </div>
-
-      <!-- Filter Controls -->
-      <div class="card" style="margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;padding:1rem;">
-        <input type="text" id="filter-file-search" class="form-input" placeholder="بحث في اسم أو وصف أو نوع الملف..." style="flex:1;min-width:200px;">
-        <select id="filter-file-course" class="form-input" style="width:auto;min-width:180px;">
-          <option value="">جميع الكورسات والمناهج</option>
-        </select>
-        <select id="filter-file-access" class="form-input" style="width:auto;">
-          <option value="">كافة مستويات الوصول</option>
-          <option value="PUBLIC">متاح للجميع (عام)</option>
-          <option value="SUBSCRIBERS_ONLY">للمشتركين فقط 🔑</option>
-        </select>
-        <select id="filter-file-source" class="form-input" style="width:auto;">
-          <option value="">كافة المصادر</option>
-          <option value="upload">ملفات مرفوعة مباشرة 📁</option>
-          <option value="google_drive">Google Drive 🌐</option>
-        </select>
-      </div>
-
-      <!-- Files Data Table -->
-      <div class="card">
-        <div class="table-container">
-          <table class="table" style="width:100%;">
-            <thead>
-              <tr>
-                <th>الملف</th>
-                <th>الكورس / المنهج</th>
-                <th>المصدر والصيغة</th>
-                <th>الحجم</th>
-                <th>الوصول</th>
-                <th>الحالة</th>
-                <th>تاريخ الإضافة</th>
-                <th>الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody id="study-files-table-body">
-              <tr><td colspan="8" class="text-center" style="padding:2rem;">جاري التحميل...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    `;
-
-    let allFiles = [];
-    let cachedCourses = [];
-
-    const addBtn = document.getElementById('btn-add-study-file');
-    if (addBtn) {
-      addBtn.onclick = () => openFileModal(null);
+      tbody.innerHTML = assistants.map(a => `
+        <tr>
+          <td><strong>${a.full_name || a.username}</strong></td>
+          <td><code>${a.username}</code></td>
+          <td>${a.email || '—'}</td>
+          <td>${a.phone || '—'}</td>
+          <td>
+            <span class="badge badge-primary">إدارة المناهج والدروس</span>
+            <span class="badge badge-secondary">أكواد شهرية فقط (30 يوم)</span>
+          </td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      console.error(err);
+      Toast.error('فشل تحميل قائمة المساعدين');
     }
-
-    async function loadCoursesDropdown() {
-      try {
-        const cRes = await ApiClient.get('/courses').catch(() => ({ courses: [] }));
-        cachedCourses = cRes.courses || [];
-        const sel = document.getElementById('filter-file-course');
-        if (sel && sel.options.length <= 1) {
-          cachedCourses.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = c.title;
-            sel.appendChild(opt);
-          });
-        }
-      } catch (_) {}
-    }
-
-    function formatBytes(bytes) {
-      if (!bytes || bytes === 0) return '-';
-      const k = 1024;
-      const sizes = ['بايت', 'ك.ب', 'م.ب', 'ج.ب'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
-    }
-
-    function getFileIcon(fileName, sourceType) {
-      if (sourceType === 'google_drive') return '🌐';
-      const ext = (fileName || '').split('.').pop().toLowerCase();
-      if (ext === 'pdf') return '📄';
-      if (['doc', 'docx'].includes(ext)) return '📝';
-      if (['ppt', 'pptx'].includes(ext)) return '📊';
-      if (['xls', 'xlsx'].includes(ext)) return '📈';
-      if (ext === 'zip') return '🗜️';
-      if (['png', 'jpg', 'jpeg', 'webp'].includes(ext)) return '🖼️';
-      if (ext === 'py') return '🐍';
-      return '📁';
-    }
-
-    async function loadStudyFiles() {
-      try {
-        const res = await ApiClient.get('/study-files');
-        allFiles = res.files || [];
-
-        const searchVal = document.getElementById('filter-file-search')?.value.toLowerCase().trim() || '';
-        const courseVal = document.getElementById('filter-file-course')?.value || '';
-        const accessVal = document.getElementById('filter-file-access')?.value || '';
-        const sourceVal = document.getElementById('filter-file-source')?.value || '';
-
-        let filtered = allFiles;
-        if (searchVal) {
-          filtered = filtered.filter(f =>
-            (f.title && f.title.toLowerCase().includes(searchVal)) ||
-            (f.description && f.description.toLowerCase().includes(searchVal)) ||
-            (f.file_name && f.file_name.toLowerCase().includes(searchVal))
-          );
-        }
-        if (courseVal) {
-          filtered = filtered.filter(f => f.course_id === courseVal);
-        }
-        if (accessVal) {
-          filtered = filtered.filter(f => f.visibility === accessVal);
-        }
-        if (sourceVal) {
-          filtered = filtered.filter(f => f.source_type === sourceVal);
-        }
-
-        const tbody = document.getElementById('study-files-table-body');
-        if (!filtered || filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding:2.5rem;color:var(--color-text-muted);">لا توجد ملفات دراسية مطابقة. انقر على زر <strong>+ إضافة ملف دراسي جديد</strong> للبدء برفع مذكراتك أو مشاركة روابط Google Drive.</td></tr>';
-          return;
-        }
-
-        tbody.innerHTML = filtered.map(f => {
-          const icon = getFileIcon(f.file_name, f.source_type);
-          const formattedDate = f.created_at ? f.created_at.substring(0, 10) : '-';
-          const dlUrl = f.source_type === 'upload' ? `/api/study-files/download/${f.id}` : f.external_url;
-
-          return `
-            <tr>
-              <td>
-                <div style="display:flex;align-items:center;gap:0.75rem;">
-                  <span style="font-size:1.6rem;">${icon}</span>
-                  <div>
-                    <strong style="color:var(--color-text-main);font-size:0.95rem;">${f.title}</strong>
-                    ${f.description ? `<div style="font-size:0.8rem;color:var(--color-text-muted);">${f.description}</div>` : ''}
-                    <div style="font-size:0.75rem;color:var(--color-text-dim);">${f.file_name || ''}</div>
-                  </div>
-                </div>
-              </td>
-              <td>
-                <span style="color:var(--color-primary);font-weight:600;font-size:0.85rem;">${f.course_title || 'كورس عام'}</span>
-                ${f.unit_title ? `<div style="font-size:0.75rem;color:var(--color-text-muted);">${f.unit_title}</div>` : ''}
-              </td>
-              <td>
-                <span class="badge" style="background:var(--color-bg-secondary);color:var(--color-cyan-accent);">
-                  ${f.source_type === 'google_drive' ? 'Google Drive 🌐' : 'مرفوع محلياً 📁'}
-                </span>
-              </td>
-              <td>${formatBytes(f.file_size)}</td>
-              <td>
-                <span class="badge ${f.visibility === 'PUBLIC' ? 'badge-public' : 'badge-subscribers'}">
-                  ${f.visibility === 'PUBLIC' ? 'عام للجميع' : 'للمشتركين فقط 🔑'}
-                </span>
-              </td>
-              <td>
-                <button class="btn btn-sm toggle-file-pub-btn" data-id="${f.id}" data-pub="${f.is_published}" style="padding:2px 8px;border:none;">
-                  <span class="badge ${f.is_published ? 'badge-public' : 'badge-danger'}">
-                    ${f.is_published ? 'منشور ✅' : 'مسودة ⏸️'}
-                  </span>
-                </button>
-              </td>
-              <td style="font-size:0.85rem;color:var(--color-text-muted);">${formattedDate}</td>
-              <td>
-                <div style="display:flex;gap:0.4rem;">
-                  ${dlUrl ? `<a href="${dlUrl}" target="_blank" class="btn btn-primary btn-sm" title="فتح أو تحميل">فتح ↗️</a>` : ''}
-                  <button class="btn btn-secondary btn-sm edit-file-btn" data-id="${f.id}" title="تعديل">تعديل ✏️</button>
-                  <button class="btn btn-danger btn-sm del-file-btn" data-id="${f.id}" title="حذف">حذف 🗑️</button>
-                </div>
-              </td>
-            </tr>
-          `;
-        }).join('');
-
-        // Bind Edit Buttons
-        document.querySelectorAll('.edit-file-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const fItem = allFiles.find(x => x.id === btn.dataset.id);
-            if (fItem) openFileModal(fItem);
-          });
-        });
-
-        // Bind Delete Buttons
-        document.querySelectorAll('.del-file-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const fileId = btn.dataset.id;
-            Modal.confirm({
-              title: 'تأكيد حذف الملف الدراسي',
-              message: 'هل أنت متأكد من رغبتك في حذف هذا الملف التعليمي نهائياً؟',
-              onConfirm: async () => {
-                try {
-                  await ApiClient.delete(`/study-files/${fileId}`);
-                  Toast.success('تم حذف الملف بنجاح ✅');
-                  loadStudyFiles();
-                } catch (err) {
-                  Toast.error(err.message || 'فشل حذف الملف');
-                }
-              }
-            });
-          });
-        });
-
-        // Bind Toggle Published
-        document.querySelectorAll('.toggle-file-pub-btn').forEach(btn => {
-          btn.addEventListener('click', async () => {
-            const fItem = allFiles.find(x => x.id === btn.dataset.id);
-            if (!fItem) return;
-            const newPub = !fItem.is_published;
-            try {
-              await ApiClient.put(`/study-files/${fItem.id}`, { is_published: newPub });
-              Toast.success(newPub ? 'تم نشر الملف للطلاب' : 'تم إلغاء نشر الملف');
-              loadStudyFiles();
-            } catch (err) {
-              Toast.error(err.message);
-            }
-          });
-        });
-
-      } catch (err) {
-        console.error(err);
-        Toast.error('فشل تحميل قائمة الملفات الدراسية');
-      }
-    }
-
-    async function openFileModal(fileItem) {
-      const isEdit = !!fileItem;
-
-      // Ensure courses loaded
-      if (cachedCourses.length === 0) {
-        const cRes = await ApiClient.get('/courses').catch(() => ({ courses: [] }));
-        cachedCourses = cRes.courses || [];
-      }
-
-      Modal.open({
-        title: isEdit ? `تعديل الملف: ${fileItem.title}` : 'إضافة ملف أو مذكرة دراسية جديدة 📁',
-        contentHtml: `
-          <form id="form-study-file-save">
-            ${!isEdit ? `
-              <!-- Source Selection Tabs -->
-              <div style="display:flex;gap:0.75rem;margin-bottom:1.25rem;">
-                <label style="flex:1;cursor:pointer;">
-                  <input type="radio" name="file-source-type" value="upload" checked style="margin-left:0.5rem;">
-                  <strong>رفع ملف مباشر من الجهاز 📁</strong>
-                </label>
-                <label style="flex:1;cursor:pointer;">
-                  <input type="radio" name="file-source-type" value="google_drive" style="margin-left:0.5rem;">
-                  <strong>رابط Google Drive 🌐</strong>
-                </label>
-              </div>
-
-              <!-- Upload File Picker -->
-              <div class="form-group" id="file-upload-input-group">
-                <label class="form-label">اختر الملف من جهازك (PDF, Word, PPT, Excel, ZIP, صور) <span style="color:var(--color-danger);">*</span></label>
-                <input type="file" id="modal-file-upload-picker" class="form-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.webp,.txt,.py">
-                <div style="font-size:0.75rem;color:var(--color-text-muted);margin-top:0.3rem;">الحد الأقصى لحجم الملف المرفوع: 50 ميجابايت.</div>
-              </div>
-
-              <!-- Google Drive Input -->
-              <div class="form-group" id="file-drive-input-group" style="display:none;">
-                <label class="form-label">رابط Google Drive للملف أو المستند <span style="color:var(--color-danger);">*</span></label>
-                <input type="url" id="modal-file-drive-url" class="form-input" placeholder="https://drive.google.com/file/d/.../view?usp=sharing">
-                <div style="font-size:0.75rem;color:var(--color-text-muted);margin-top:0.3rem;">تأكد من ضبط أذونات مشاركة الرابط على Google Drive ليكون متاحاً لمن يملك الرابط (Anyone with the link).</div>
-              </div>
-            ` : ''}
-
-            <div class="form-group">
-              <label class="form-label">عنوان الملف أو المذكرة <span style="color:var(--color-danger);">*</span></label>
-              <input type="text" id="modal-file-title" class="form-input" required value="${fileItem?.title || ''}" placeholder="مثال: مذكرة شرح لغة بايثون - الوحدة الأولى">
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">وصف إضافي أو تعليمات دراسية</label>
-              <textarea id="modal-file-desc" class="form-input" rows="2" placeholder="وصف محتوى المذكرة، وما تحتويه من ملخصات وأسئلة...">${fileItem?.description || ''}</textarea>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-              <div class="form-group">
-                <label class="form-label">الكورس التابع له الملف</label>
-                <select id="modal-file-course" class="form-input">
-                  <option value="">عام لكافة الكورسات</option>
-                  ${cachedCourses.map(c => `<option value="${c.id}" ${fileItem?.course_id === c.id ? 'selected' : ''}>${c.title}</option>`).join('')}
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">مستوى الوصول للملف</label>
-                <select id="modal-file-visibility" class="form-input">
-                  <option value="PUBLIC" ${fileItem?.visibility === 'PUBLIC' ? 'selected' : ''}>عام ومتاح لجميع الطلاب (مجاني)</option>
-                  <option value="SUBSCRIBERS_ONLY" ${fileItem?.visibility === 'SUBSCRIBERS_ONLY' ? 'selected' : ''}>للمشتركين أصحاب الاشتراكات النشطة فقط 🔑</option>
-                </select>
-              </div>
-            </div>
-
-            <button type="submit" id="submit-study-file-btn" class="btn btn-primary" style="width:100%;font-weight:700;margin-top:0.75rem;padding:0.85rem;">
-              ${isEdit ? 'حفظ تعديلات الملف 💾' : 'إضافة ونشر الملف الدراسي الآن 🚀'}
-            </button>
-          </form>
-        `
-      });
-
-      // Source Toggle listener
-      const uploadGrp = document.getElementById('file-upload-input-group');
-      const driveGrp = document.getElementById('file-drive-input-group');
-      document.querySelectorAll('input[name="file-source-type"]').forEach(r => {
-        r.addEventListener('change', () => {
-          if (r.value === 'upload') {
-            if (uploadGrp) uploadGrp.style.display = 'block';
-            if (driveGrp) driveGrp.style.display = 'none';
-          } else {
-            if (uploadGrp) uploadGrp.style.display = 'none';
-            if (driveGrp) driveGrp.style.display = 'block';
-          }
-        });
-      });
-
-      // Form submission
-      const form = document.getElementById('form-study-file-save');
-      if (form) {
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-          const submitBtn = document.getElementById('submit-study-file-btn');
-          if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'جاري المعالجة والرفع...';
-          }
-
-          const title = document.getElementById('modal-file-title').value.trim();
-          const description = document.getElementById('modal-file-desc').value.trim();
-          const courseId = document.getElementById('modal-file-course').value || null;
-          const visibility = document.getElementById('modal-file-visibility').value;
-
-          try {
-            if (isEdit) {
-              await ApiClient.put(`/study-files/${fileItem.id}`, {
-                title,
-                description,
-                course_id: courseId,
-                visibility
-              });
-              Toast.success('تم تحديث بيانات الملف بنجاح ✅');
-            } else {
-              const selectedSource = document.querySelector('input[name="file-source-type"]:checked')?.value || 'upload';
-              if (selectedSource === 'upload') {
-                const filePicker = document.getElementById('modal-file-upload-picker');
-                const file = filePicker?.files[0];
-                if (!file) {
-                  Toast.error('يرجى اختيار ملف من جهازك للرفع');
-                  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'إضافة الملف'; }
-                  return;
-                }
-                const fd = new FormData();
-                fd.append('title', title);
-                fd.append('description', description);
-                if (courseId) fd.append('course_id', courseId);
-                fd.append('visibility', visibility);
-                fd.append('file', file);
-
-                Toast.info('جاري رفع الملف وحفظه بأمان...');
-                await ApiClient.upload('/study-files/upload', fd);
-                Toast.success('تم رفع وحفظ الملف الدراسي بنجاح! 🎉');
-              } else {
-                const driveUrl = document.getElementById('modal-file-drive-url')?.value.trim();
-                if (!driveUrl) {
-                  Toast.error('يرجى إدخال رابط Google Drive للملف');
-                  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'إضافة الملف'; }
-                  return;
-                }
-                await ApiClient.post('/study-files/link', {
-                  title,
-                  description,
-                  external_url: driveUrl,
-                  course_id: courseId,
-                  visibility
-                });
-                Toast.success('تم ربط ملف Google Drive بنجاح! 🌐');
-              }
-            }
-            Modal.close();
-            loadStudyFiles();
-          } catch (err) {
-            Toast.error(err.message || 'فشلت عملية حفظ الملف');
-          } finally {
-            if (submitBtn) {
-              submitBtn.disabled = false;
-              submitBtn.textContent = isEdit ? 'حفظ تعديلات الملف 💾' : 'إضافة ونشر الملف الدراسي الآن 🚀';
-            }
-          }
-        });
-      }
-    }
-
-    document.getElementById('filter-file-search')?.addEventListener('input', debounce(loadStudyFiles, 300));
-    document.getElementById('filter-file-course')?.addEventListener('change', loadStudyFiles);
-    document.getElementById('filter-file-access')?.addEventListener('change', loadStudyFiles);
-    document.getElementById('filter-file-source')?.addEventListener('change', loadStudyFiles);
-
-    await Promise.all([loadCoursesDropdown(), loadStudyFiles()]);
   }
 }

@@ -24,8 +24,16 @@ def update_settings(req: PlatformSettingsUpdate):
     for k, v in req.dict().items():
         if v is not None:
             curr[k] = v
-    db_engine.update("platform_settings", "general", {
-        "value_json": json.dumps(curr, ensure_ascii=False),
-        "updated_at": now_iso()
-    })
+    new_json = json.dumps(curr, ensure_ascii=False)
+    updated_at = now_iso()
+    if row:
+        db_engine.execute(
+            "UPDATE platform_settings SET value_json = ?, updated_at = ? WHERE key = 'general'",
+            (new_json, updated_at)
+        )
+    else:
+        db_engine.execute(
+            "INSERT INTO platform_settings (key, value_json, description, updated_at) VALUES ('general', ?, 'الإعدادات العامة للمنصة', ?)",
+            (new_json, updated_at)
+        )
     return {"success": True, "settings": curr}

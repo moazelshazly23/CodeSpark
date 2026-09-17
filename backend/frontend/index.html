@@ -1,1 +1,164 @@
-Code Spark منصة تعليم البرمجة التأسيسية • كود سبارك تسجيل الدخول للمنصة اسم المستخدم أو البريد الإلكتروني كلمة المرور تسجيل الدخول طالب جديد بدون حساب؟ إنشاء حساب طالب مجاناً إنشاء حساب طالب جديد لا يلزم إدخال كود الاشتراك الآن، يمكنك تفعيله لاحقاً من لوحة التحكم الاسم الكامل اسم المستخدم (Username) البريد الإلكتروني رقم الهاتف (اختياري) كلمة المرور (6 أحرف على الأقل) إنشاء الحساب الآن لديك حساب بالفعل؟ تسجيل الدخول Code Spark كود سبارك • مادة البرمجة <#/student/dashboard> ط طالب طالب ðª ☰ لوحة التحكم ð تفعيل كود الاشتراك ⚡ 0 XP ð¥ 1 يوم ð 0 <#/student/notifications> ð تفعيل اشتراك Code Spark ✕ أدخل كود الاشتراك الخاص بك (مثال: CS-XXXX-XXXX) لفتح كافة الدروس المتقدمة، التمارين، الامتحانات، والمذكرات فوراً. كود الاشتراك إلغاء تفعيل الاشتراك الآن
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Spark - منصة تعليم البرمجة التأسيسية</title>
+  <link rel="icon" type="image/svg+xml" href="assets/branding/app_icon.svg">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+
+  <!-- 1. Authentication Shell (Login / Register) -->
+  <div id="auth-shell" class="auth-wrapper" style="display: none;">
+    <div class="auth-container">
+      <div class="auth-brand">
+        <div class="brand-logo">⚡</div>
+        <h1>Code Spark</h1>
+        <p>منصة تعليم البرمجة التأسيسية لطلاب المرحلة الثانوية</p>
+      </div>
+
+      <!-- Login Form Card -->
+      <div id="login-card" class="card auth-card">
+        <h2 class="auth-title">تسجيل الدخول للمنصة</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label class="form-label" for="login-username">اسم المستخدم أو البريد الإلكتروني</label>
+            <input type="text" id="login-username" class="form-input" placeholder="اسم المستخدم أو الإيميل" required autofocus>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="login-password">كلمة المرور</label>
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">تسجيل الدخول</button>
+          <div class="auth-footer">
+            <span>طالب جديد بدون حساب؟</span>
+            <a href="#" id="show-register-link">إنشاء حساب طالب مجاناً</a>
+          </div>
+        </form>
+      </div>
+
+      <!-- Register Form Card -->
+      <div id="register-card" class="card auth-card" style="display: none;">
+        <h2 class="auth-title">إنشاء حساب طالب جديد</h2>
+        <p class="auth-subtitle">لا يلزم كود اشتراك للتسجيل، يمكنك التجربة مجاناً وتفعيل الاشتراك لاحقاً.</p>
+        <form id="register-form">
+          <div class="form-group">
+            <label class="form-label" for="reg-fullname">الاسم بالكامل</label>
+            <input type="text" id="reg-fullname" class="form-input" placeholder="الاسم الثلاثي أو الرباعي" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-username">اسم المستخدم (Username)</label>
+            <input type="text" id="reg-username" class="form-input" placeholder="example_student" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-email">البريد الإلكتروني</label>
+            <input type="email" id="reg-email" class="form-input" placeholder="student@example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-phone">رقم الهاتف (اختياري)</label>
+            <input type="tel" id="reg-phone" class="form-input" placeholder="010XXXXXXXX">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="reg-password">كلمة المرور</label>
+            <input type="password" id="reg-password" class="form-input" placeholder="6 أحرف على الأقل" minlength="6" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">إنشاء الحساب الآن</button>
+          <div class="auth-footer">
+            <span>لديك حساب بالفعل؟</span>
+            <a href="#" id="show-login-link">تسجيل الدخول</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Application Shell (Protected Platform Views) -->
+  <div id="app-shell" class="app-layout" style="display: none;">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <a href="#/dashboard" class="sidebar-brand">
+          <span class="brand-spark">⚡</span>
+          <span class="brand-title">Code Spark</span>
+        </a>
+      </div>
+      <nav id="sidebar-nav" class="sidebar-nav"></nav>
+      <div class="sidebar-footer">
+        <button id="logout-btn" class="btn btn-secondary btn-block">
+          <span>🚪</span>
+          <span>تسجيل الخروج</span>
+        </button>
+      </div>
+    </aside>
+
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <header id="app-header" class="app-header">
+        <div class="header-left">
+          <button id="mobile-menu-btn" class="btn-icon" aria-label="القائمة">☰</button>
+          <div id="subscription-quick-banner" style="display: none;">
+            <button id="activate-sub-btn" class="btn btn-sm btn-primary">
+              <span>🔑</span>
+              <span>تفعيل كود الاشتراك</span>
+            </button>
+          </div>
+        </div>
+        <div class="header-right">
+          <div id="student-gamification-pill" class="gamification-pill" style="display: none;">
+            <span class="stat-badge">⚡ <span id="stat-xp">50</span> XP</span>
+            <span class="stat-badge">🔥 <span id="stat-streak">1</span> يوم</span>
+          </div>
+          <div class="user-profile-menu">
+            <div id="user-avatar-badge" class="user-avatar">U</div>
+            <div class="user-meta">
+              <span id="user-display-name" class="user-name">المستخدم</span>
+              <span id="user-role-badge" class="user-role">طالب</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main id="content-container" class="content-container">
+        <!-- Dynamic Views Injected Here by SPA Router -->
+      </main>
+    </div>
+  </div>
+
+  <!-- 3. Subscription Code Redemption Modal -->
+  <div id="sub-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">تفعيل اشتراك Code Spark 🔑</h3>
+        <button id="close-sub-modal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">أدخل كود الاشتراك الخاص بك (مثال: CS-XXXX-XXXX) لفتح كافة الدروس المتقدمة، التمارين، الامتحانات، والمذكرات فوراً.</p>
+        <form id="activate-code-form">
+          <div class="form-group">
+            <label class="form-label" for="input-sub-code">كود الاشتراك</label>
+            <input type="text" id="input-sub-code" class="form-input font-mono" placeholder="CS-XXXX-XXXX" required>
+            <div id="code-validate-feedback" class="form-feedback" style="display: none;"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="cancel-sub-btn" class="btn btn-secondary">إلغاء</button>
+            <button type="submit" id="submit-activate-btn" class="btn btn-primary">تفعيل الاشتراك الآن</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Main JavaScript Module -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

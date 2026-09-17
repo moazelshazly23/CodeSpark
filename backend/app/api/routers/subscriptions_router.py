@@ -18,6 +18,7 @@ router = APIRouter(prefix="/subscriptions", tags=["Subscriptions & Plans"])
 
 # Plans Endpoints
 @router.get("/plans")
+@router.get("/admin/plans")
 def list_subscription_plans(active_only: bool = False):
     """Dynamic listing of all plans configured in the database"""
     plans, count = SubscriptionRepository.list_plans(active_only=active_only)
@@ -184,17 +185,30 @@ def my_subscription_status(user: Dict[str, Any] = Depends(get_current_user)):
 @router.get("/payment-info")
 def get_payment_info():
     row = db_engine.fetch_one("SELECT value_json FROM platform_settings WHERE key = 'general'")
-    if row:
-        val = json.loads(row["value_json"])
-        return {
-            "vodafone_cash": val.get("payment_phone", "+20159159038"),
-            "instapay_phone": val.get("instapay_phone", "+20159159038"),
-            "instapay_link": val.get("instapay_link", "https://ipn.eg/S/moazasem/instapay/27DsGj"),
-            "contact_phone": val.get("contact_phone", "+201559159038")
-        }
+    val = json.loads(row["value_json"]) if row else {}
+    vodafone = val.get("vodafone_cash") or val.get("payment_phone") or "+20159159038"
     return {
-        "vodafone_cash": "+20159159038",
-        "instapay_phone": "+20159159038",
-        "instapay_link": "https://ipn.eg/S/moazasem/instapay/27DsGj",
-        "contact_phone": "+201559159038"
+        "vodafone_cash": vodafone,
+        "payment_phone": vodafone,
+        "instapay_phone": val.get("instapay_phone", "+20159159038"),
+        "instapay_link": val.get("instapay_link", "https://ipn.eg/S/moazasem/instapay/27DsGj"),
+        "contact_phone": val.get("contact_phone", "+201559159038"),
+        "special_offers": val.get("special_offers", "خصم إضافي للمشتركين الجدد 🌟"),
+        "offers_visible": val.get("offers_visible", True),
+        "offer_banner_text": val.get("offer_banner_text", "عروض الاشتراك للفصل الدراسي الجديد - احجز مقعدك الآن")
     }
+
+@router.post("/requests/{req_id}/approve", dependencies=[Depends(require_role("admin", "assistant"))])
+def approve_subscription_request_alias(req_id: str, admin: Dict[str, Any] = Depends(get_current_user)):
+    res = SubscriptionRepository.approve_request(req_id, admin["id"], "تم اعتماد الطلب وتفعيل الحساب")
+    if not res:
+        raise HTTPException(status_code=404, detail="الطلب غير موجود")
+    return {"success": True, "message": "تم اعتماد وتفعيل الاشتراك بنجاح 🚀", "subscription": res}
+
+@router.post("/requests/{req_id}/reject", dependencies=[Depends(require_role("admin", "assistant"))])
+def reject_subscription_request_alias(req_id: str, payload: Optional[Dict[str, Any]] = None, admin: Dict[str, Any] = Depends(get_current_user)):
+    reason = (payload or {}).get("rejection_reason", "بيانات التحويل غير مطابقة")
+    res = SubscriptionRepository.reject_request(req_id, admin["id"], reason)
+    if not res:
+        raise HTTPException(status_code=404, detail="الطلب غير موجود")
+    return {"success": True, "message": "تم رفض طلب الاشتراك وإخطار الطالب"}

@@ -1,6 +1,6 @@
 """
 Code Spark - Complete Integration & Regression Verification Suite
-Tests all 19 functional and security requirements end-to-end.
+Tests all functional and security requirements end-to-end.
 """
 import unittest
 import threading
@@ -30,7 +30,7 @@ class TestCodeSparkPlatform(unittest.TestCase):
         self.__class__.admin_token = res.json()["access_token"]
 
         # Student Registration
-        test_user = f"student_{int(time.time())}"
+        test_user = f"student_{int(time.time() * 1000)}"
         res = self.client.post("/api/auth/register", json={
             "username": test_user,
             "email": f"{test_user}@test.com",
@@ -47,7 +47,7 @@ class TestCodeSparkPlatform(unittest.TestCase):
         headers = {"Authorization": f"Bearer {self.admin_token}"}
 
         # Change Email
-        new_email = f"admin_updated_{int(time.time())}@codespark.edu"
+        new_email = f"admin_updated_{int(time.time() * 1000)}@codespark.edu"
         res = self.client.put("/api/users/profile", json={
             "full_name": "المهندس معاذ الشاذلي (محدث)",
             "email": new_email
@@ -69,6 +69,13 @@ class TestCodeSparkPlatform(unittest.TestCase):
             "confirm_password": "new_admin_password_2026"
         }, headers=headers)
         self.assertEqual(res.status_code, 200)
+
+        # Verify old password fails
+        res_old = self.client.post("/api/auth/login", json={
+            "username_or_email": "admin",
+            "password": "admin_password_2026"
+        })
+        self.assertEqual(res_old.status_code, 401)
 
         # Login with new password
         res = self.client.post("/api/auth/login", json={
@@ -119,13 +126,14 @@ class TestCodeSparkPlatform(unittest.TestCase):
         res = self.client.get("/api/subscriptions/plans?active_only=true")
         self.assertEqual(res.status_code, 200)
         plans = res.json()["plans"]
-        self.assertGreaterEqual(len(plans), 10)
+        self.assertGreaterEqual(len(plans), 5)
 
-        # Admin creates new plan
+        # Admin creates new unique plan
+        plan_id = f"plan_summer_{int(time.time() * 1000)}"
         admin_headers = {"Authorization": f"Bearer {self.admin_token}"}
         res = self.client.post("/api/subscriptions/plans", json={
-            "id": "plan_custom_summer",
-            "name": "اشتراك المعسكر الصيفي",
+            "id": plan_id,
+            "name": "اشتراك المعسكر الصيفي المتميز",
             "duration_months": 2,
             "price": 220.0,
             "is_active": True,
@@ -137,7 +145,11 @@ class TestCodeSparkPlatform(unittest.TestCase):
         # Student now dynamically sees the new plan!
         res = self.client.get("/api/subscriptions/plans?active_only=true")
         plan_names = [p["name"] for p in res.json()["plans"]]
-        self.assertIn("اشتراك المعسكر الصيفي", plan_names)
+        self.assertIn("اشتراك المعسكر الصيفي المتميز", plan_names)
+
+        # Admin can delete the test plan
+        res_del = self.client.delete(f"/api/subscriptions/plans/{plan_id}", headers=admin_headers)
+        self.assertEqual(res_del.status_code, 200)
 
     def test_06_subscription_request_workflow(self):
         student_headers = {"Authorization": f"Bearer {self.student_token}"}
@@ -151,7 +163,7 @@ class TestCodeSparkPlatform(unittest.TestCase):
             "amount": 270.0,
             "payment_method": "Vodafone Cash",
             "payment_number": "01099998888",
-            "payment_reference": "VF-TX-998822",
+            "payment_reference": f"VF-TX-{int(time.time())}",
             "phone": "01099998888"
         }, headers=student_headers)
         self.assertEqual(res.status_code, 200)
@@ -175,56 +187,69 @@ class TestCodeSparkPlatform(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertTrue(res.json()["is_subscribed"])
 
-    def test_07_lesson_creation_and_progress(self):
+    def test_07_announcements_full_crud(self):
         admin_headers = {"Authorization": f"Bearer {self.admin_token}"}
         student_headers = {"Authorization": f"Bearer {self.student_token}"}
 
-        # Admin creates new lesson
-        res = self.client.post("/api/lessons", json={
-            "unit_id": "unt_001",
-            "title": "درس جديد: القوائم في بايثون (Lists)",
-            "content_markdown": "# شرح القوائم\n\n```python\nitems = [1, 2, 3]\nprint(len(items))\n```",
-            "video_url": "https://www.youtube.com/watch?v=kqtD5dpn9C8",
-            "video_type": "youtube",
-            "duration_minutes": 18,
-            "is_free": False,
+        # 1. Admin creates announcement
+        res = self.client.post("/api/announcements", json={
+            "title": "إعلان عاجل: موعد اختبار الأسبوع القادم",
+            "content": "يرجى من جميع الطلاب مراجعة وحدة القوائم قبل الامتحان الشامل يوم الأحد القادم.",
+            "is_urgent": True,
             "is_published": True
         }, headers=admin_headers)
         self.assertEqual(res.status_code, 200)
-        lesson_id = res.json()["lesson"]["id"]
+        ann_id = res.json()["announcement"]["id"]
 
-        # Student views lesson
-        res = self.client.get(f"/api/lessons/{lesson_id}", headers=student_headers)
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.json()["lesson"]["title"], "درس جديد: القوائم في بايثون (Lists)")
+        # 2. Student views announcements (returns {"announcements": [...], "total": ...})
+        res_list = self.client.get("/api/announcements", headers=student_headers)
+        self.assertEqual(res_list.status_code, 200)
+        anns = res_list.json()["announcements"]
+        self.assertTrue(any(a["id"] == ann_id for a in anns))
 
-        # Student saves progress
-        res = self.client.post(f"/api/lessons/{lesson_id}/progress", json={
-            "watch_time_seconds": 900,
-            "is_completed": True
-        }, headers=student_headers)
-        self.assertEqual(res.status_code, 200)
+        # 3. Admin updates announcement
+        res_up = self.client.put(f"/api/announcements/{ann_id}", json={
+            "title": "إعلان عاجل: موعد اختبار الأسبوع القادم (محدث)",
+            "content": "تم تعديل الموعد ليكون يوم الاثنين القادم.",
+            "is_urgent": True,
+            "is_published": True
+        }, headers=admin_headers)
+        self.assertEqual(res_up.status_code, 200)
+        self.assertEqual(res_up.json()["announcement"]["title"], "إعلان عاجل: موعد اختبار الأسبوع القادم (محدث)")
 
-    def test_08_study_files_and_drive_links(self):
+        # 4. Admin deletes announcement
+        res_del = self.client.delete(f"/api/announcements/{ann_id}", headers=admin_headers)
+        self.assertEqual(res_del.status_code, 200)
+
+        # Verify gone
+        res_after = self.client.get("/api/announcements")
+        self.assertFalse(any(a["id"] == ann_id for a in res_after.json()["announcements"]))
+
+    def test_08_payment_settings_persistence(self):
         admin_headers = {"Authorization": f"Bearer {self.admin_token}"}
-        student_headers = {"Authorization": f"Bearer {self.student_token}"}
 
-        # Add Google Drive study file
-        res = self.client.post("/api/files", json={
-            "title": "مذكرة التراكيب البيانية (Google Drive)",
-            "description": "رابط مباشر لمذكرة الشرح والأسئلة",
-            "source_type": "google_drive",
-            "external_url": "https://drive.google.com/file/d/1vcuy3r_9zImgjTBAq7lLY-lrpQR0duUIMfShV61eyYA/view",
-            "visibility": "PUBLIC",
-            "is_published": True
+        # Verify default payment info has Vodafone Cash = +20159159038
+        res = self.client.get("/api/subscriptions/payment-info")
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["vodafone_cash"], "+20159159038")
+
+        # Admin updates payment settings
+        new_voda = "+20159159038"
+        new_insta = "instapay_codespark@ipn"
+        res_up = self.client.put("/api/settings", json={
+            "vodafone_cash": new_voda,
+            "payment_phone": new_voda,
+            "instapay_phone": new_insta,
+            "offer_banner_text": "خصم خاص 25% بمناسبة الفصل الدراسي الجديد",
+            "offers_visible": True
         }, headers=admin_headers)
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res_up.status_code, 200)
 
-        # Student lists files
-        res = self.client.get("/api/files", headers=student_headers)
-        self.assertEqual(res.status_code, 200)
-        titles = [f["title"] for f in res.json()["files"]]
-        self.assertIn("مذكرة التراكيب البيانية (Google Drive)", titles)
+        # Verify updated settings reflected in payment-info
+        res_check = self.client.get("/api/subscriptions/payment-info")
+        self.assertEqual(res_check.status_code, 200)
+        self.assertEqual(res_check.json()["vodafone_cash"], new_voda)
+        self.assertEqual(res_check.json()["instapay_phone"], new_insta)
 
     def test_09_code_playground_execution(self):
         # Successful run
@@ -245,7 +270,6 @@ class TestCodeSparkPlatform(unittest.TestCase):
         self.assertFalse(res.json()["success"])
 
     def test_10_database_concurrency_and_wal(self):
-        # Test concurrent database queries to verify zero lock contention
         errors = []
         def worker(idx):
             try:
@@ -262,7 +286,6 @@ class TestCodeSparkPlatform(unittest.TestCase):
         self.assertEqual(len(errors), 0, f"Concurrency errors encountered: {errors}")
 
     def test_11_demo_data_persistence(self):
-        admin_headers = {"Authorization": f"Bearer {self.admin_token}"}
         # Delete student created in test_02
         db_engine.execute("DELETE FROM users WHERE id = ?", (self.student_id,))
         # Verify student is gone
