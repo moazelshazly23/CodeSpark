@@ -1,1 +1,1 @@
-"""Code Spark API Routers Package"""
+"""Code Spark module"""

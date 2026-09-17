@@ -12,27 +12,11 @@ import json
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List, Tuple
 from contextlib import contextmanager
-from app.core.config import settings
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
-_this_file = globals().get("__file__")
-if not _this_file and "__spec__" in globals() and getattr(__spec__, "origin", None):
-    _this_file = __spec__.origin
-
-if _this_file:
-    CURRENT_DIR = os.path.dirname(os.path.abspath(_this_file))
-    BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
-else:
-    for cand in ["/mnt/agentdata/gcs/CodeSpark/backend", "/app/backend", os.path.abspath("backend"), os.path.abspath(".")]:
-        if os.path.exists(os.path.join(cand, "app")):
-            BASE_BACKEND_DIR = os.path.abspath(cand)
-            CURRENT_DIR = os.path.join(BASE_BACKEND_DIR, "app", "db")
-            break
-    else:
-        CURRENT_DIR = os.path.abspath("app/db")
-        BASE_BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
+DB_FILE = os.getenv("DB_PATH", "/tmp/codespark.db")
 
 SCHEMA_DDL = """
 PRAGMA foreign_keys = ON;
@@ -320,7 +304,7 @@ CREATE TABLE IF NOT EXISTS announcements (
     content TEXT NOT NULL,
     is_urgent INTEGER NOT NULL DEFAULT 0,
     is_published INTEGER NOT NULL DEFAULT 1,
-    author_id VARCHAR(64) NOT NULL,
+    author_id VARCHAR(64),
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
@@ -386,7 +370,6 @@ CREATE TABLE IF NOT EXISTS web_projects (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-
 CREATE TABLE IF NOT EXISTS study_files (
     id VARCHAR(64) PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
@@ -411,10 +394,6 @@ CREATE TABLE IF NOT EXISTS study_files (
     FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE SET NULL,
     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL
 );
-CREATE INDEX IF NOT EXISTS idx_study_files_course ON study_files(course_id);
-CREATE INDEX IF NOT EXISTS idx_study_files_unit ON study_files(unit_id);
-CREATE INDEX IF NOT EXISTS idx_study_files_lesson ON study_files(lesson_id);
-CREATE INDEX IF NOT EXISTS idx_study_files_visibility ON study_files(visibility);
 
 CREATE TABLE IF NOT EXISTS subscription_requests (
     id VARCHAR(64) PRIMARY KEY,
@@ -454,96 +433,52 @@ CREATE INDEX IF NOT EXISTS idx_units_course ON units(course_id);
 CREATE INDEX IF NOT EXISTS idx_progress_user ON lesson_progress(user_id);
 CREATE INDEX IF NOT EXISTS idx_questions_lesson ON question_bank(lesson_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_study_files_course ON study_files(course_id);
+CREATE INDEX IF NOT EXISTS idx_study_files_unit ON study_files(unit_id);
 """
 
 class RelationalDatabaseEngine:
     def __init__(self, db_path: Optional[str] = None):
-        raw_p = db_path or getattr(settings, "DB_PATH", "codespark.db")
-        if raw_p.startswith("sqlite:///"):
-            raw_p = raw_p.replace("sqlite:///", "")
-        elif raw_p.startswith("sqlite://"):
-            raw_p = raw_p.replace("sqlite://", "")
-        
-        if not os.path.isabs(raw_p):
-            persistent_p = os.path.abspath(os.path.join(BASE_BACKEND_DIR, raw_p))
-        else:
-            persistent_p = os.path.abspath(raw_p)
-
-        self.persistent_path = persistent_p
-        
-        # High-Performance Local Cache Path for zero lock contention and 9p FS bypass
-        local_fast_path = "/tmp/codespark.db"
-        if not os.path.exists(local_fast_path) and os.path.exists(self.persistent_path):
-            try:
-                import shutil
-                shutil.copy2(self.persistent_path, local_fast_path)
-            except Exception as e:
-                pass
-        
-        self.db_path = local_fast_path
+        self.db_path = db_path or DB_FILE
         self._write_lock = threading.RLock()
         self._local = threading.local()
-        self._last_sync = time.time()
         self._init_db()
-
-    def sync_to_disk(self, force: bool = False):
-        """Asynchronously copy local database back to persistent storage."""
-        now = time.time()
-        if not force and (now - self._last_sync < 5.0):
-            return
-        self._last_sync = now
-        def _bg_sync():
-            try:
-                if os.path.exists(self.db_path) and os.path.exists(self.persistent_path):
-                    with open(self.db_path, "rb") as f_src:
-                        data = f_src.read()
-                    with open(self.persistent_path, "wb") as f_dst:
-                        f_dst.write(data)
-            except Exception:
-                pass
-        threading.Thread(target=_bg_sync, daemon=True).start()
 
     def _get_connection(self) -> sqlite3.Connection:
         if not hasattr(self._local, "conn") or self._local.conn is None:
             conn = sqlite3.connect(
                 self.db_path,
                 timeout=60.0,
-                check_same_thread=False,
-                isolation_level=None
+                check_same_thread=False
             )
             conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode = WAL;")
             conn.execute("PRAGMA busy_timeout = 60000;")
             conn.execute("PRAGMA foreign_keys = ON;")
             conn.execute("PRAGMA synchronous = NORMAL;")
-            conn.execute("PRAGMA temp_store = MEMORY;")
             conn.execute("PRAGMA cache_size = -64000;")
             self._local.conn = conn
         return self._local.conn
 
     def _init_db(self):
-        conn = sqlite3.connect(
-            self.db_path,
-            timeout=60.0,
-            isolation_level=None
-        )
+        conn = sqlite3.connect(self.db_path, timeout=60.0)
         try:
+            conn.execute("PRAGMA journal_mode = WAL;")
             conn.execute("PRAGMA busy_timeout = 60000;")
             conn.execute("PRAGMA foreign_keys = ON;")
             conn.execute("PRAGMA synchronous = NORMAL;")
-
             cur = conn.cursor()
             try:
-                has_users = cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users';").fetchone()
-                if not has_users:
-                    cur.executescript(SCHEMA_DDL)
+                cur.executescript(SCHEMA_DDL)
+                conn.commit()
                 self._bootstrap_defaults(conn)
             finally:
                 cur.close()
         finally:
             conn.close()
+
     def _bootstrap_defaults(self, init_conn: sqlite3.Connection):
-        # 1. Ensure columns in subscription_requests exist
+        # 1. Ensure columns exist in subscription_requests
         try:
             cols = [r[1] for r in init_conn.execute("PRAGMA table_info(subscription_requests);").fetchall()]
             if "plan_id" not in cols:
@@ -552,10 +487,11 @@ class RelationalDatabaseEngine:
                 init_conn.execute("ALTER TABLE subscription_requests ADD COLUMN duration_months INTEGER DEFAULT 1;")
             if "payment_number" not in cols:
                 init_conn.execute("ALTER TABLE subscription_requests ADD COLUMN payment_number VARCHAR(32);")
-        except Exception as e:
+            init_conn.commit()
+        except Exception:
             pass
 
-        # 2. Seed all 11 default subscription plans if table is empty
+        # 2. Seed default subscription plans if empty
         try:
             cur = init_conn.execute("SELECT COUNT(*) FROM subscription_plans")
             cnt = cur.fetchone()[0] or 0
@@ -572,6 +508,7 @@ class RelationalDatabaseEngine:
                     ("plan_9m", "اشتراك 9 أشهر", 9, 700.0, 9),
                     ("plan_10m", "اشتراك 10 أشهر", 10, 760.0, 10),
                     ("plan_11m", "اشتراك 11 شهر", 11, 820.0, 11),
+                    ("plan_12m", "اشتراك سنوي (12 شهر)", 12, 880.0, 12),
                 ]
                 now = now_iso()
                 for pid, pname, pmonths, pprice, porder in default_plans:
@@ -579,10 +516,11 @@ class RelationalDatabaseEngine:
                         "INSERT OR IGNORE INTO subscription_plans (id, name, duration_months, price, is_active, order_index, features_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         (pid, pname, pmonths, pprice, 1, porder, json.dumps(["فتح كافة الدروس والامتحانات", "محرر الأكواد مع المساعد الذكي", "شهادة إتمام المسار"]), now, now)
                     )
-        except Exception as e:
+                init_conn.commit()
+        except Exception:
             pass
 
-        # 3. Platform Settings (default payment phone number +20159159038)
+        # 3. Platform Settings
         try:
             row = init_conn.execute("SELECT key, value_json FROM platform_settings WHERE key = 'general'").fetchone()
             if not row:
@@ -605,6 +543,7 @@ class RelationalDatabaseEngine:
                     "INSERT INTO platform_settings (key, value_json, description, updated_at) VALUES (?, ?, ?, ?)",
                     ("general", json.dumps(settings_data, ensure_ascii=False), "الإعدادات العامة للمنصة", now_iso())
                 )
+                init_conn.commit()
             else:
                 curr = json.loads(row[1])
                 if "payment_phone" not in curr or curr.get("payment_phone") == "+201552696208":
@@ -614,33 +553,7 @@ class RelationalDatabaseEngine:
                         "UPDATE platform_settings SET value_json = ?, updated_at = ? WHERE key = 'general'",
                         (json.dumps(curr, ensure_ascii=False), now_iso())
                     )
-        except Exception:
-            pass
-
-        # 4. Ensure study_files table exists
-        try:
-            init_conn.execute("""
-            CREATE TABLE IF NOT EXISTS study_files (
-                id VARCHAR(64) PRIMARY KEY,
-                title VARCHAR(255) NOT NULL,
-                description TEXT,
-                source_type VARCHAR(32) NOT NULL DEFAULT 'upload',
-                file_path TEXT,
-                external_url TEXT,
-                file_name VARCHAR(255),
-                mime_type VARCHAR(128),
-                file_size BIGINT DEFAULT 0,
-                course_id VARCHAR(64),
-                unit_id VARCHAR(64),
-                lesson_id VARCHAR(64),
-                visibility VARCHAR(32) NOT NULL DEFAULT 'PUBLIC',
-                status VARCHAR(32) NOT NULL DEFAULT 'active',
-                is_published INTEGER NOT NULL DEFAULT 1,
-                uploaded_by VARCHAR(64),
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL
-            );
-            """)
+                    init_conn.commit()
         except Exception:
             pass
 
@@ -651,14 +564,13 @@ class RelationalDatabaseEngine:
             try:
                 with self._write_lock:
                     conn = self._get_connection()
-                    conn.execute("BEGIN IMMEDIATE;")
                     try:
                         yield conn
-                        conn.execute("COMMIT;")
+                        conn.commit()
                         return
                     except Exception:
                         try:
-                            conn.execute("ROLLBACK;")
+                            conn.rollback()
                         except Exception:
                             pass
                         raise
@@ -676,14 +588,12 @@ class RelationalDatabaseEngine:
                     conn = self._get_connection()
                     cur = conn.cursor()
                     try:
-                        conn.execute("BEGIN IMMEDIATE;")
                         cur.execute(sql, params)
-                        conn.execute("COMMIT;")
-                        self.sync_to_disk()
+                        conn.commit()
                         return cur.rowcount
                     except Exception:
                         try:
-                            conn.execute("ROLLBACK;")
+                            conn.rollback()
                         except Exception:
                             pass
                         raise
@@ -772,21 +682,17 @@ class RelationalDatabaseEngine:
                 cur.close()
             except Exception:
                 pass
-
         if "id" in cols and ("id" not in rec or not rec["id"]):
             rec["id"] = uuid.uuid4().hex
-        
         now = now_iso()
         if "created_at" in cols and "created_at" not in rec:
             rec["created_at"] = now
         if "updated_at" in cols and "updated_at" not in rec:
             rec["updated_at"] = now
-
         keys = [k for k in rec.keys() if k in cols]
         placeholders = ", ".join(["?"] * len(keys))
         columns = ", ".join(keys)
         values = tuple(rec[k] for k in keys)
-
         sql = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
         self.execute(sql, values)
         return rec
@@ -794,12 +700,10 @@ class RelationalDatabaseEngine:
     def update(self, table: str, rec_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         if not updates:
             return self.fetch_one(f"SELECT * FROM {table} WHERE id = ?", (rec_id,))
-        
         up = updates.copy()
         up.pop("id", None)
         if table in ["users", "courses", "units", "lessons", "exercises", "question_bank", "quizzes", "exams", "support_tickets", "platform_settings", "subscription_plans", "subscription_requests"]:
             up["updated_at"] = now_iso()
-
         set_clauses = [f"{k} = ?" for k in up.keys()]
         values = list(up.values()) + [rec_id]
         sql = f"UPDATE {table} SET {', '.join(set_clauses)} WHERE id = ?"
@@ -824,32 +728,25 @@ class RelationalDatabaseEngine:
     ) -> Tuple[List[Dict[str, Any]], int]:
         where_clauses = []
         params: List[Any] = []
-
         if filters:
             for k, v in filters.items():
                 if v is None:
                     where_clauses.append(f"{k} IS NULL")
                 else:
                     where_clauses.append(f"{k} = ?")
-                    params.append(v)
-
+                params.append(v)
         if search_query and search_field:
             where_clauses.append(f"{search_field} LIKE ?")
             params.append(f"%{search_query.strip()}%")
-
         where_str = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-
         count_sql = f"SELECT COUNT(*) FROM {table} {where_str}"
         total_count = self.fetch_val(count_sql, tuple(params)) or 0
-
         sort_dir = "DESC" if descending else "ASC"
         order_str = f"ORDER BY {order_by} {sort_dir}" if order_by else ""
         limit_str = f"LIMIT {limit}" if limit is not None else ""
         offset_str = f"OFFSET {offset}" if offset > 0 else ""
-
         sql = f"SELECT * FROM {table} {where_str} {order_str} {limit_str} {offset_str}".strip()
         items = self.fetch_all(sql, tuple(params))
         return items, total_count
 
-# Singleton global instance
 db_engine = RelationalDatabaseEngine()

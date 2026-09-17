@@ -48,7 +48,6 @@ def create_access_token(payload: Dict[str, Any], expires_delta_seconds: Optional
     data["iat"] = int(now)
     data["exp"] = int(now + expires_delta_seconds)
     data["type"] = "access"
-    
     header = {"alg": settings.JWT_ALGORITHM, "typ": "JWT"}
     header_b64 = base64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
     payload_b64 = base64url_encode(json.dumps(data, separators=(",", ":")).encode("utf-8"))
@@ -65,7 +64,6 @@ def create_refresh_token(payload: Dict[str, Any], expires_delta_days: Optional[i
     data["iat"] = int(now)
     data["exp"] = int(now + (expires_delta_days * 86400))
     data["type"] = "refresh"
-    
     header = {"alg": settings.JWT_ALGORITHM, "typ": "JWT"}
     header_b64 = base64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
     payload_b64 = base64url_encode(json.dumps(data, separators=(",", ":")).encode("utf-8"))

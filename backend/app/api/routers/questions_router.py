@@ -1,97 +1,70 @@
+"""
+Code Spark - Questions Bank Router
+"""
+import json
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, Optional
-import uuid, json
-from app.schemas.all_schemas import QuestionCreateRequest
+from typing import Optional, Dict, Any
+from app.api.deps import require_role
 from app.repositories.all_repositories import AssessmentRepository
-from app.api.deps import get_current_user
-from app.db.engine import db_engine, now_iso
+from app.schemas.all_schemas import QuestionCreate, QuestionUpdate
 
 router = APIRouter(prefix="/questions", tags=["Question Bank"])
 
 @router.get("")
-def list_questions(topic: Optional[str] = None, difficulty: Optional[str] = None, qtype: Optional[str] = None, search: Optional[str] = None, user: Dict[str, Any] = Depends(get_current_user)):
-    if user["role"] == "assistant":
-        perms = user.get("permissions", [])
-        if "questions.read" not in perms:
-            raise HTTPException(status_code=403, detail="ليس لديك صلاحية تصفح بنك الأسئلة")
-    elif user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="مخصص للإدارة والمساعدين فقط")
+def list_questions(lesson_id: Optional[str] = None, qtype: Optional[str] = None, difficulty: Optional[str] = None, search: Optional[str] = None, offset: int = 0, limit: int = 50):
+    qs, total = AssessmentRepository.list_questions(lesson_id=lesson_id, qtype=qtype, difficulty=difficulty, search=search, offset=offset, limit=limit)
+    for q in qs:
+        try:
+            q["options"] = json.loads(q.get("options_json") or "[]")
+        except Exception:
+            q["options"] = []
+    return {"questions": qs, "total": total}
 
-    questions, total = AssessmentRepository.list_questions(topic=topic, difficulty=difficulty, qtype=qtype, search=search)
-    return {"questions": questions, "total": total}
-
-@router.get("/{question_id}")
-def get_question(question_id: str, user: Dict[str, Any] = Depends(get_current_user)):
-    q = AssessmentRepository.get_question(question_id)
+@router.get("/{qid}")
+def get_question(qid: str):
+    q = AssessmentRepository.get_question(qid)
     if not q:
         raise HTTPException(status_code=404, detail="السؤال غير موجود")
+    try:
+        q["options"] = json.loads(q.get("options_json") or "[]")
+    except Exception:
+        q["options"] = []
     return q
 
-@router.post("")
-def create_question(req: QuestionCreateRequest, user: Dict[str, Any] = Depends(get_current_user)):
-    if user["role"] == "assistant":
-        perms = user.get("permissions", [])
-        if "questions.create" not in perms:
-            raise HTTPException(status_code=403, detail="ليس لديك صلاحية إضافة أسئلة جديدة")
-    elif user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="مخصص للإدارة والمساعدين فقط")
-
-    rec = {
-        "id": uuid.uuid4().hex,
-        "question_text": req.question_text,
+@router.post("", dependencies=[Depends(require_role("admin", "assistant"))])
+def create_question(req: QuestionCreate):
+    opts = [o.dict() for o in req.options] if req.options else []
+    data = {
+        "lesson_id": req.lesson_id,
         "question_type": req.question_type,
-        "options_json": req.options_json or "[]",
+        "question_text": req.question_text,
+        "options_json": json.dumps(opts, ensure_ascii=False),
         "correct_answer": req.correct_answer,
         "explanation": req.explanation,
+        "points": req.points,
         "difficulty": req.difficulty,
-        "topic": req.topic,
-        "unit_id": req.unit_id,
-        "lesson_id": req.lesson_id,
-        "tags_json": req.tags_json or "[]",
-        "status": "active",
-        "created_by": user["id"],
-        "created_at": now_iso(),
-        "updated_at": now_iso()
+        "is_active": 1 if req.is_active else 0
     }
-    return db_engine.insert("question_bank", rec)
+    rec = AssessmentRepository.create_question(data)
+    return {"success": True, "question": rec}
 
-@router.put("/{question_id}")
-def update_question(question_id: str, req: QuestionCreateRequest, user: Dict[str, Any] = Depends(get_current_user)):
-    if user["role"] == "assistant":
-        perms = user.get("permissions", [])
-        if "questions.edit" not in perms:
-            raise HTTPException(status_code=403, detail="ليس لديك صلاحية تعديل الأسئلة")
-    elif user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="مخصص للإدارة والمساعدين فقط")
-
-    up = {
-        "question_text": req.question_text,
-        "question_type": req.question_type,
-        "options_json": req.options_json,
-        "correct_answer": req.correct_answer,
-        "explanation": req.explanation,
-        "difficulty": req.difficulty,
-        "topic": req.topic,
-        "unit_id": req.unit_id,
-        "lesson_id": req.lesson_id,
-        "tags_json": req.tags_json,
-        "updated_at": now_iso()
-    }
-    res = db_engine.update("question_bank", question_id, up)
-    if not res:
+@router.put("/{qid}", dependencies=[Depends(require_role("admin", "assistant"))])
+def update_question(qid: str, req: QuestionUpdate):
+    updates = {}
+    for k, v in req.dict().items():
+        if v is not None:
+            if k == "options":
+                updates["options_json"] = json.dumps([o.dict() for o in v], ensure_ascii=False)
+            elif k == "is_active":
+                updates[k] = 1 if v else 0
+            else:
+                updates[k] = v
+    q = AssessmentRepository.update_question(qid, updates)
+    if not q:
         raise HTTPException(status_code=404, detail="السؤال غير موجود")
-    return res
+    return {"success": True, "question": q}
 
-@router.delete("/{question_id}")
-def delete_question(question_id: str, user: Dict[str, Any] = Depends(get_current_user)):
-    if user["role"] == "assistant":
-        perms = user.get("permissions", [])
-        if "questions.delete" not in perms:
-            raise HTTPException(status_code=403, detail="ليس لديك صلاحية حذف الأسئلة")
-    elif user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="مخصص للإدارة والمساعدين فقط")
-
-    res = db_engine.delete("question_bank", question_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="السؤال غير موجود")
-    return {"success": True, "message": "تم حذف السؤال"}
+@router.delete("/{qid}", dependencies=[Depends(require_role("admin", "assistant"))])
+def delete_question(qid: str):
+    AssessmentRepository.delete_question(qid)
+    return {"success": True, "message": "تم حذف السؤال بنجاح"}

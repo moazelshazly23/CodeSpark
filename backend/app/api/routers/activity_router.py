@@ -1,7 +1,10 @@
+"""
+Code Spark - Audit Activity Logs Router
+"""
 from fastapi import APIRouter, Depends
-from typing import Dict, Any, Optional
-from app.repositories.all_repositories import AuditRepository
+from typing import Optional
 from app.api.deps import require_role
+from app.repositories.all_repositories import AuditRepository
 
 router = APIRouter(prefix="/activity", tags=["Activity Logs"], dependencies=[Depends(require_role("admin"))])
 

@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any, Optional
-import uuid
-from app.schemas.all_schemas import CourseCreateRequest
-from app.services.core_services import CurriculumService
+"""
+Code Spark - Courses & Curriculum Router
+"""
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional, Dict, Any
+from app.api.deps import require_role, get_optional_user
 from app.repositories.all_repositories import CurriculumRepository
-from app.api.deps import get_optional_user, get_current_user, require_role
-from app.db.engine import db_engine, now_iso
+from app.schemas.all_schemas import CourseCreate, CourseUpdate
 
 router = APIRouter(prefix="/courses", tags=["Courses"])
 
@@ -16,48 +16,26 @@ def list_courses(user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     return {"courses": courses, "total": total}
 
 @router.get("/{course_id}")
-def get_course(course_id: str, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
-    course = CurriculumService.get_course_details(course_id, user=user)
-    if not course:
+def get_course(course_id: str):
+    c = CurriculumRepository.get_course(course_id)
+    if not c:
         raise HTTPException(status_code=404, detail="الكورس غير موجود")
-    return course
+    return c
 
 @router.post("", dependencies=[Depends(require_role("admin", "assistant"))])
-def create_course(req: CourseCreateRequest):
-    rec = {
-        "id": uuid.uuid4().hex,
-        "title": req.title,
-        "slug": req.slug,
-        "description": req.description,
-        "thumbnail_url": req.thumbnail_url,
-        "order_index": req.order_index,
-        "is_published": 1 if req.is_published else 0,
-        "access_type": req.access_type,
-        "created_at": now_iso(),
-        "updated_at": now_iso()
-    }
-    return db_engine.insert("courses", rec)
+def create_course(req: CourseCreate):
+    rec = CurriculumRepository.create_course(req.dict())
+    return {"success": True, "course": rec}
 
 @router.put("/{course_id}", dependencies=[Depends(require_role("admin", "assistant"))])
-def update_course(course_id: str, req: CourseCreateRequest):
-    up = {
-        "title": req.title,
-        "slug": req.slug,
-        "description": req.description,
-        "thumbnail_url": req.thumbnail_url,
-        "order_index": req.order_index,
-        "is_published": 1 if req.is_published else 0,
-        "access_type": req.access_type,
-        "updated_at": now_iso()
-    }
-    res = db_engine.update("courses", course_id, up)
-    if not res:
+def update_course(course_id: str, req: CourseUpdate):
+    updates = {k: v for k, v in req.dict().items() if v is not None}
+    c = CurriculumRepository.update_course(course_id, updates)
+    if not c:
         raise HTTPException(status_code=404, detail="الكورس غير موجود")
-    return res
+    return {"success": True, "course": c}
 
-@router.delete("/{course_id}", dependencies=[Depends(require_role("admin", "assistant"))])
+@router.delete("/{course_id}", dependencies=[Depends(require_role("admin"))])
 def delete_course(course_id: str):
-    res = db_engine.delete("courses", course_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="الكورس غير موجود")
-    return {"success": True, "message": "تم حذف الكورس"}
+    CurriculumRepository.delete_course(course_id)
+    return {"success": True, "message": "تم حذف الكورس بنجاح"}

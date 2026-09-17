@@ -103,7 +103,6 @@ def require_permission(perm_code: str) -> Callable:
 def require_subscription(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     if current_user.get("role") in ("admin", "assistant"):
         return current_user
-    
     sub = SubscriptionRepository.get_active_subscription(current_user["id"])
     if not sub:
         raise HTTPException(

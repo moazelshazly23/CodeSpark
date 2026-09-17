@@ -1,59 +1,41 @@
+"""
+Code Spark - Curriculum Units Router
+"""
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, Optional
-import uuid
-from app.schemas.all_schemas import UnitCreateRequest
+from typing import Optional, Dict, Any
+from app.api.deps import require_role, get_optional_user
 from app.repositories.all_repositories import CurriculumRepository
-from app.api.deps import get_optional_user, require_role
-from app.db.engine import db_engine, now_iso
+from app.schemas.all_schemas import UnitCreate, UnitUpdate
 
 router = APIRouter(prefix="/units", tags=["Units"])
 
 @router.get("")
-def list_units(course_id: str, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
+def list_units(course_id: Optional[str] = None, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     is_admin = bool(user and user.get("role") in ("admin", "assistant"))
-    units = CurriculumRepository.list_units(course_id, is_admin=is_admin)
-    return {"units": units}
+    units, total = CurriculumRepository.list_units(course_id=course_id, is_admin=is_admin)
+    return {"units": units, "total": total}
 
 @router.get("/{unit_id}")
 def get_unit(unit_id: str):
-    unit = CurriculumRepository.get_unit(unit_id)
-    if not unit:
+    u = CurriculumRepository.get_unit(unit_id)
+    if not u:
         raise HTTPException(status_code=404, detail="الوحدة غير موجودة")
-    return unit
+    return u
 
 @router.post("", dependencies=[Depends(require_role("admin", "assistant"))])
-def create_unit(req: UnitCreateRequest):
-    rec = {
-        "id": uuid.uuid4().hex,
-        "course_id": req.course_id,
-        "title": req.title,
-        "description": req.description,
-        "order_index": req.order_index,
-        "is_published": 1 if req.is_published else 0,
-        "access_type": req.access_type,
-        "created_at": now_iso(),
-        "updated_at": now_iso()
-    }
-    return db_engine.insert("units", rec)
+def create_unit(req: UnitCreate):
+    rec = CurriculumRepository.create_unit(req.dict())
+    return {"success": True, "unit": rec}
 
 @router.put("/{unit_id}", dependencies=[Depends(require_role("admin", "assistant"))])
-def update_unit(unit_id: str, req: UnitCreateRequest):
-    up = {
-        "title": req.title,
-        "description": req.description,
-        "order_index": req.order_index,
-        "is_published": 1 if req.is_published else 0,
-        "access_type": req.access_type,
-        "updated_at": now_iso()
-    }
-    res = db_engine.update("units", unit_id, up)
-    if not res:
+def update_unit(unit_id: str, req: UnitUpdate):
+    updates = {k: v for k, v in req.dict().items() if v is not None}
+    u = CurriculumRepository.update_unit(unit_id, updates)
+    if not u:
         raise HTTPException(status_code=404, detail="الوحدة غير موجودة")
-    return res
+    return {"success": True, "unit": u}
 
-@router.delete("/{unit_id}", dependencies=[Depends(require_role("admin", "assistant"))])
+@router.delete("/{unit_id}", dependencies=[Depends(require_role("admin"))])
 def delete_unit(unit_id: str):
-    res = db_engine.delete("units", unit_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="الوحدة غير موجودة")
-    return {"success": True, "message": "تم حذف الوحدة"}
+    CurriculumRepository.delete_unit(unit_id)
+    return {"success": True, "message": "تم حذف الوحدة بنجاح"}

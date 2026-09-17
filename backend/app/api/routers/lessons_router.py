@@ -1,91 +1,75 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import Dict, Any, Optional
-import uuid
-from app.schemas.all_schemas import LessonCreateRequest, LessonProgressRequest
-from app.services.core_services import CurriculumService, AccessControlService
-from app.repositories.all_repositories import CurriculumRepository
-from app.api.deps import get_optional_user, get_current_user, require_role
-from app.db.engine import db_engine, now_iso
+"""
+Code Spark - Lessons Router
+"""
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional, Dict, Any
+from app.api.deps import require_role, get_optional_user, get_current_user
+from app.repositories.all_repositories import CurriculumRepository, SubscriptionRepository
+from app.schemas.all_schemas import LessonCreate, LessonUpdate, LessonProgressUpdate
 
 router = APIRouter(prefix="/lessons", tags=["Lessons"])
 
 @router.get("")
-def list_lessons(unit_id: Optional[str] = None, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
+def list_lessons(unit_id: Optional[str] = None, course_id: Optional[str] = None, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     is_admin = bool(user and user.get("role") in ("admin", "assistant"))
-    lessons, total = CurriculumRepository.list_lessons(unit_id=unit_id, is_admin=is_admin)
-    # Check access for each lesson
-    for l in lessons:
-        has_acc, _ = AccessControlService.has_access(user, l["access_type"])
-        l["is_unlocked"] = has_acc
-    return lessons
+    lessons, total = CurriculumRepository.list_lessons(unit_id=unit_id, course_id=course_id, is_admin=is_admin)
+    return {"lessons": lessons, "total": total}
 
 @router.get("/{lesson_id}")
 def get_lesson(lesson_id: str, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
-    lesson = CurriculumService.get_lesson_view(lesson_id, user=user)
-    if not lesson:
+    les = CurriculumRepository.get_lesson(lesson_id)
+    if not les:
         raise HTTPException(status_code=404, detail="الدرس غير موجود")
-    return lesson
+    
+    # Check access permission
+    is_free = bool(les.get("is_free", 0))
+    if not is_free:
+        if not user:
+            raise HTTPException(status_code=403, detail="هذا الدرس متاح للمشتركين فقط. يرجى تسجيل الدخول أو الاشتراك للمتابعة.")
+        if user.get("role") not in ("admin", "assistant"):
+            sub = SubscriptionRepository.get_active_subscription(user["id"])
+            if not sub:
+                raise HTTPException(status_code=403, detail="هذا الدرس مخصص للمشتركين فقط. يرجى تفعيل كود الاشتراك.")
+    
+    # Progress
+    progress = None
+    if user:
+        progress = CurriculumRepository.get_lesson_progress(user["id"], lesson_id)
+    return {"lesson": les, "progress": progress}
 
 @router.post("", dependencies=[Depends(require_role("admin", "assistant"))])
-def create_lesson(req: LessonCreateRequest):
-    rec = {
-        "id": uuid.uuid4().hex,
-        "unit_id": req.unit_id,
-        "title": req.title,
-        "slug": req.slug,
-        "description": req.description,
-        "content_markdown": req.content_markdown,
-        "video_type": req.video_type,
-        "video_url": req.video_url,
-        "video_id": req.video_id,
-        "duration_seconds": req.duration_seconds,
-        "order_index": req.order_index,
-        "is_published": 1 if req.is_published else 0,
-        "access_type": req.access_type,
-        "created_at": now_iso(),
-        "updated_at": now_iso()
-    }
-    return db_engine.insert("lessons", rec)
+def create_lesson(req: LessonCreate):
+    data = req.dict()
+    data["is_free"] = 1 if req.is_free else 0
+    data["is_published"] = 1 if req.is_published else 0
+    rec = CurriculumRepository.create_lesson(data)
+    return {"success": True, "lesson": rec}
 
 @router.put("/{lesson_id}", dependencies=[Depends(require_role("admin", "assistant"))])
-def update_lesson(lesson_id: str, req: LessonCreateRequest):
-    up = {
-        "unit_id": req.unit_id,
-        "title": req.title,
-        "slug": req.slug,
-        "description": req.description,
-        "content_markdown": req.content_markdown,
-        "video_type": req.video_type,
-        "video_url": req.video_url,
-        "video_id": req.video_id,
-        "duration_seconds": req.duration_seconds,
-        "order_index": req.order_index,
-        "is_published": 1 if req.is_published else 0,
-        "access_type": req.access_type,
-        "updated_at": now_iso()
-    }
-    res = db_engine.update("lessons", lesson_id, up)
-    if not res:
+def update_lesson(lesson_id: str, req: LessonUpdate):
+    updates = {}
+    for k, v in req.dict().items():
+        if v is not None:
+            if k in ("is_free", "is_published"):
+                updates[k] = 1 if v else 0
+            else:
+                updates[k] = v
+    les = CurriculumRepository.update_lesson(lesson_id, updates)
+    if not les:
         raise HTTPException(status_code=404, detail="الدرس غير موجود")
-    return res
+    return {"success": True, "lesson": les}
 
-@router.delete("/{lesson_id}", dependencies=[Depends(require_role("admin", "assistant"))])
+@router.delete("/{lesson_id}", dependencies=[Depends(require_role("admin"))])
 def delete_lesson(lesson_id: str):
-    res = db_engine.delete("lessons", lesson_id)
-    if not res:
-        raise HTTPException(status_code=404, detail="الدرس غير موجود")
-    return {"success": True, "message": "تم حذف الدرس"}
+    CurriculumRepository.delete_lesson(lesson_id)
+    return {"success": True, "message": "تم حذف الدرس بنجاح"}
 
-@router.put("/{lesson_id}/progress")
-def update_progress(lesson_id: str, req: LessonProgressRequest, user: Dict[str, Any] = Depends(get_current_user)):
+@router.post("/{lesson_id}/progress")
+def save_progress(lesson_id: str, req: LessonProgressUpdate, user: Dict[str, Any] = Depends(get_current_user)):
     res = CurriculumRepository.save_lesson_progress(
         user_id=user["id"],
         lesson_id=lesson_id,
-        pos_sec=req.last_video_position_seconds,
-        watch_pct=req.watch_percentage,
+        watch_time_seconds=req.watch_time_seconds,
         is_completed=req.is_completed
     )
-    if req.is_completed:
-        # Award completion XP if first time
-        db_engine.execute("UPDATE student_stats SET xp = xp + 20 WHERE user_id = ?", (user["id"],))
-    return res
+    return {"success": True, "progress": res}

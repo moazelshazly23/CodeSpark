@@ -1,37 +1,24 @@
-import sys
-import shutil
-import time
-import shutil
 """
 Code Spark - Business Logic Services
 Core educational domain logic, calculations, access control, and relational operations.
 """
 import uuid
 import json
-import subprocess
-import tempfile
-import os
 import random
 import string
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Any, Optional, Tuple
-
 from app.db.engine import db_engine, now_iso
-from app.core.security import get_password_hash, verify_password, create_access_token, create_refresh_token, hash_code
+from app.core.security import (
+    get_password_hash, verify_password,
+    create_access_token, create_refresh_token, hash_code
+)
 from app.core.permissions import ALL_PERMISSION_KEYS
 from app.repositories.all_repositories import (
-    UserRepository,
-    SubscriptionRepository,
-    CurriculumRepository,
-    AssessmentRepository,
-    ExerciseRepository,
-    SupportRepository,
-    AuditRepository
+    UserRepository, SubscriptionRepository, CurriculumRepository,
+    AssessmentRepository, ExerciseRepository, SupportRepository, AuditRepository
 )
 
-# -----------------------------------------------------------------------------
-# 1. Authentication Service
-# -----------------------------------------------------------------------------
 class AuthService:
     @staticmethod
     def register(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -49,7 +36,6 @@ class AuthService:
             raise ValueError("كلمة المرور يجب أن تكون 6 أحرف على الأقل")
         if not full_name:
             raise ValueError("الاسم بالكامل مطلوب")
-
         if UserRepository.get_by_username(username):
             raise ValueError("اسم المستخدم مسجل بالفعل")
         if UserRepository.get_by_email(email):
@@ -70,19 +56,14 @@ class AuthService:
             "updated_at": now_iso()
         }
         user = UserRepository.create(user_data)
-        
-        # Welcome notification
         db_engine.insert("notifications", {
-            "id": uuid.uuid4().hex,
             "user_id": user["id"],
-            "title": "مرحباً بك في منصة Code Spark! 🚀",
+            "title": "مرحباً بك في منصة Code Spark! 🎉",
             "message": "يسعدنا انضمامك إلى رحلة تعلم البرمجة التأسيسية. يمكنك تصفح الدروس المجانية أو إدخال كود الاشتراك لفتح المحتوى الكامل.",
-            "notification_type": "system",
-            "link_url": "/student/dashboard",
+            "type": "info",
             "is_read": 0,
-            "created_at": now_iso()
+            "action_url": "/student/dashboard"
         })
-
         AuditRepository.log(user["id"], "register", "user", user["id"], {"username": username, "email": email})
         return user
 
@@ -92,10 +73,8 @@ class AuthService:
         user = UserRepository.get_by_username(ident) or UserRepository.get_by_email(ident)
         if not user:
             return None
-
         if not user.get("is_active", 1):
             raise ValueError("الحساب معطل حالياً، يرجى مراجعة إدارة المنصة")
-
         if not verify_password(plain_password, user["hashed_password"]):
             return None
 
@@ -115,7 +94,7 @@ class AuthService:
         access_token = create_access_token(token_payload)
         refresh_token = create_refresh_token(token_payload)
 
-        # Update streak and last active date
+        # Update streak and last active date if student
         if user["role"] == "student":
             today = now_iso()[:10]
             stats = db_engine.fetch_one("SELECT * FROM student_stats WHERE user_id = ?", (user["id"],))
@@ -123,7 +102,6 @@ class AuthService:
                 last_act = stats.get("last_active_date")
                 streak = stats.get("streak_days", 1)
                 if last_act != today:
-                    # check if yesterday
                     try:
                         last_d = datetime.strptime(last_act, "%Y-%m-%d").date()
                         curr_d = datetime.strptime(today, "%Y-%m-%d").date()
@@ -134,7 +112,6 @@ class AuthService:
                     except Exception:
                         streak = 1
                     db_engine.execute("UPDATE student_stats SET streak_days = ?, last_active_date = ? WHERE user_id = ?", (streak, today, user["id"]))
-
         AuditRepository.log(user["id"], "login", "user", user["id"], {"login_time": now_iso()})
         return user, access_token, refresh_token
 
@@ -143,7 +120,6 @@ class AuthService:
         user = UserRepository.get_by_id(user_id)
         if not user:
             raise ValueError("المستخدم غير موجود")
-
         result = {
             "id": user["id"],
             "username": user["username"],
@@ -156,63 +132,59 @@ class AuthService:
             "is_active": bool(user.get("is_active", 1)),
             "is_verified": bool(user.get("is_verified", 1))
         }
-
         if user["role"] == "assistant":
             result["permissions"] = UserRepository.get_assistant_permissions(user_id)
         elif user["role"] == "admin":
             result["permissions"] = ["all"]
         else:
             result["permissions"] = []
-
         if user["role"] == "student":
             sub = SubscriptionRepository.get_active_subscription(user_id)
             result["has_active_subscription"] = sub is not None
             result["subscription"] = sub
             stats = db_engine.fetch_one("SELECT * FROM student_stats WHERE user_id = ?", (user_id,))
             result["stats"] = stats or {"xp": 0, "streak_days": 1, "study_time_minutes": 0.0}
-
         return result
 
-# -----------------------------------------------------------------------------
-# 2. Access Control Service (PUBLIC vs SUBSCRIBERS_ONLY)
-# -----------------------------------------------------------------------------
+
 class AccessControlService:
     @staticmethod
-    def has_access(user: Optional[Dict[str, Any]], access_type: str) -> Tuple[bool, str]:
-        if access_type == "PUBLIC":
-            return True, "محتوى عام ومتاح للجميع"
-        
-        # SUBSCRIBERS_ONLY
+    def has_access(user: Optional[Dict[str, Any]], is_free: bool = False) -> Tuple[bool, str]:
+        if is_free:
+            return True, "محتوى مجاني ومتاح للجميع"
         if not user:
             return False, "يجب تسجيل الدخول للوصول إلى هذا المحتوى المخصص للمشتركين"
-        
         if user.get("role") in ("admin", "assistant"):
             return True, "صلاحية إدارة"
-
         if user.get("role") == "student":
             sub = SubscriptionRepository.get_active_subscription(user["id"])
             if sub:
                 return True, "اشتراك نشط"
             return False, "هذا المحتوى متاح للمشتركين فقط. يرجى تفعيل كود الاشتراك للمتابعة"
-
         return False, "غير مصرح"
 
-# -----------------------------------------------------------------------------
-# 3. Subscription & Code System
-# -----------------------------------------------------------------------------
+
 class SubscriptionService:
     DURATIONS_MAP = {
         "1_MONTH": 30,
+        "2_MONTHS": 60,
         "3_MONTHS": 90,
+        "4_MONTHS": 120,
+        "5_MONTHS": 150,
         "6_MONTHS": 180,
+        "7_MONTHS": 210,
+        "8_MONTHS": 240,
+        "9_MONTHS": 270,
+        "10_MONTHS": 300,
+        "11_MONTHS": 330,
         "12_MONTHS": 365,
-        "LIFETIME": 36500, # 100 years
+        "LIFETIME": 36500,
         "CUSTOM": 30
     }
 
     @staticmethod
     def generate_random_code() -> str:
-        chars = string.ascii_uppercase + "23456789" # avoid confusing 0/O, 1/I
+        chars = string.ascii_uppercase + "23456789"
         p1 = "".join(random.choices(chars, k=4))
         p2 = "".join(random.choices(chars, k=4))
         return f"CS-{p1}-{p2}"
@@ -223,18 +195,12 @@ class SubscriptionService:
         duration_days: Optional[int] = None,
         created_by: Optional[str] = None,
         custom_code: Optional[str] = None,
-        metadata: Optional[Dict] = None
+        batch_name: Optional[str] = None
     ) -> Dict[str, Any]:
-        if duration_type not in SubscriptionService.DURATIONS_MAP:
-            raise ValueError(f"نوع المدة غير صالح: {duration_type}")
-
-        days = duration_days if duration_days and duration_days > 0 else SubscriptionService.DURATIONS_MAP[duration_type]
+        days = duration_days if duration_days and duration_days > 0 else SubscriptionService.DURATIONS_MAP.get(duration_type, 30)
         code_str = (custom_code.strip().upper() if custom_code else SubscriptionService.generate_random_code())
-
-        # Ensure uniqueness
         if SubscriptionRepository.get_code_by_string(code_str):
             raise ValueError(f"كود الاشتراك '{code_str}' موجود بالفعل")
-
         rec = {
             "id": uuid.uuid4().hex,
             "code": code_str,
@@ -242,12 +208,11 @@ class SubscriptionService:
             "duration_type": duration_type,
             "duration_days": days,
             "status": "ACTIVE",
+            "batch_name": batch_name or f"كود {duration_type}",
             "created_by": created_by,
             "used_by": None,
-            "disabled": 0,
-            "metadata_json": json.dumps(metadata or {}, ensure_ascii=False),
+            "used_at": None,
             "created_at": now_iso(),
-            "activated_at": None,
             "expires_at": None
         }
         return SubscriptionRepository.create_code(rec)
@@ -258,16 +223,10 @@ class SubscriptionService:
         code_rec = SubscriptionRepository.get_code_by_string(clean)
         if not code_rec:
             raise ValueError("كود الاشتراك غير صحيح أو غير موجود")
-
-        if code_rec.get("disabled") == 1 or code_rec.get("status") == "DISABLED":
+        if code_rec.get("status") == "DISABLED":
             raise ValueError("هذا الكود تم تعطيله من قبل الإدارة")
-
         if code_rec.get("status") == "USED":
             raise ValueError("هذا الكود تم استخدامه مسبقاً")
-
-        if code_rec.get("status") == "EXPIRED":
-            raise ValueError("هذا الكود منتهي الصلاحية")
-
         return {
             "valid": True,
             "code": code_rec["code"],
@@ -283,529 +242,48 @@ class SubscriptionService:
             code_rec = SubscriptionRepository.get_code_by_string(clean)
             if not code_rec:
                 raise ValueError("كود الاشتراك غير صحيح أو غير موجود")
-
-            if code_rec.get("disabled") == 1 or code_rec.get("status") == "DISABLED":
+            if code_rec.get("status") == "DISABLED":
                 raise ValueError("هذا الكود تم تعطيله من قبل الإدارة")
-
             if code_rec.get("status") == "USED":
                 raise ValueError("هذا الكود تم استخدامه مسبقاً")
 
-            if code_rec.get("status") == "EXPIRED":
-                raise ValueError("هذا الكود منتهي الصلاحية")
-
-            # Calculate subscription duration
             now = datetime.now(timezone.utc)
-            duration_days = code_rec.get("duration_days", 30)
-            is_lifetime = 1 if code_rec.get("duration_type") == "LIFETIME" else 0
+            duration_days = code_rec.get("duration_days") or 30
+            expires_at = (now + timedelta(days=duration_days)).isoformat()
+            now_str = now.isoformat()
 
-            # Check if user already has active subscription to extend it
-            existing_sub = SubscriptionRepository.get_active_subscription(user_id)
-            if existing_sub and not existing_sub.get("is_lifetime"):
-                curr_exp = datetime.fromisoformat(existing_sub["expires_at"].replace("Z", "+00:00"))
-                base_start = max(now, curr_exp)
-            else:
-                base_start = now
-
-            if is_lifetime:
-                expires_at_iso = None
-            else:
-                expires_at_iso = (base_start + timedelta(days=duration_days)).isoformat()
-
-            # Mark code as USED
-            SubscriptionRepository.update_code(code_rec["id"], {
+            db_engine.update("subscription_codes", code_rec["id"], {
                 "status": "USED",
                 "used_by": user_id,
-                "activated_at": now.isoformat(),
-                "expires_at": expires_at_iso
+                "used_at": now_str
             })
 
-            # Create subscription
             sub_rec = {
-                "id": uuid.uuid4().hex,
                 "user_id": user_id,
-                "code_id": code_rec["id"],
-                "status": "ACTIVE",
-                "started_at": now.isoformat(),
-                "expires_at": expires_at_iso,
-                "is_lifetime": is_lifetime,
-                "created_at": now.isoformat()
+                "code": clean,
+                "plan_id": None,
+                "plan_name": f"كود تفعيل: {code_rec.get('duration_type')}",
+                "starts_at": now_str,
+                "expires_at": expires_at,
+                "is_active": 1,
+                "created_at": now_str,
+                "updated_at": now_str
             }
-            SubscriptionRepository.create_subscription(sub_rec)
+            created_sub = SubscriptionRepository.create_subscription(sub_rec)
 
-            # Award XP for activating subscription
-            db_engine.execute("UPDATE student_stats SET xp = xp + 150 WHERE user_id = ?", (user_id,))
-
-            # Notification
             db_engine.insert("notifications", {
-                "id": uuid.uuid4().hex,
                 "user_id": user_id,
-                "title": "تم تفعيل الاشتراك بنجاح! 🎉",
-                "message": f"تم تفعيل اشتراكك بنجاح عبر الكود ({code_rec['code']}). أصبحت جميع الدروس والتمارين والامتحانات متاحة لك بالكامل!",
-                "notification_type": "subscription",
-                "link_url": "/student/courses",
+                "title": "تم تفعيل الاشتراك بنجاح! 🚀",
+                "message": f"تم تفعيل الكود {clean} بنجاح. اشتراكك نشط حتى {expires_at[:10]}.",
+                "type": "success",
                 "is_read": 0,
-                "created_at": now.isoformat()
+                "action_url": "/student/courses"
             })
+            AuditRepository.log(user_id, "subscription_activated", "subscription", created_sub["id"], {"code": clean, "days": duration_days})
 
-            AuditRepository.log(user_id, "subscription_activate", "subscription", sub_rec["id"], {
-                "code": code_rec["code"],
-                "duration_days": duration_days,
-                "is_lifetime": bool(is_lifetime)
-            })
-
-            return sub_rec
-
-# -----------------------------------------------------------------------------
-# 4. Curriculum Service (Courses, Units, Lessons, Progress)
-# -----------------------------------------------------------------------------
-class CurriculumService:
-    @staticmethod
-    def get_course_details(course_id: str, user: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-        course = CurriculumRepository.get_course(course_id)
-        if not course:
-            return None
-
-        is_admin = user and user.get("role") in ("admin", "assistant")
-        units = CurriculumRepository.list_units(course_id, is_admin=is_admin)
-        for u in units:
-            lessons, _ = CurriculumRepository.list_lessons(unit_id=u["id"], is_admin=is_admin)
-            for les in lessons:
-                # check access
-                has_acc, _ = AccessControlService.has_access(user, les["access_type"])
-                les["is_unlocked"] = has_acc
-                if user and user.get("role") == "student":
-                    prog = CurriculumRepository.get_lesson_progress(user["id"], les["id"])
-                    les["progress"] = prog or {"watch_percentage": 0, "is_completed": 0, "last_video_position_seconds": 0}
-            u["lessons"] = lessons
-        course["units"] = units
-        return course
-
-    @staticmethod
-    def get_lesson_view(lesson_id: str, user: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
-        les = CurriculumRepository.get_lesson(lesson_id)
-        if not les:
-            return None
-
-        has_acc, reason = AccessControlService.has_access(user, les["access_type"])
-        les["is_unlocked"] = has_acc
-        les["access_reason"] = reason
-
-        # Security scrub: Redact proprietary video and content for unauthorized callers
-        if not has_acc:
-            les["video_url"] = None
-            les["video_id"] = None
-            les["content_markdown"] = "🔒 هذا المحتوى مخصص للمشتركين فقط. يرجى تفعيل كود الاشتراك للوصول إلى الفيديو والشرح والملاحظات الكاملة." 
-
-        # Attach resources
-        resources, _ = CurriculumRepository.list_resources(lesson_id=lesson_id, is_admin=bool(user and user.get("role") in ("admin", "assistant")))
-        # filter or annotate resources access
-        for r in resources:
-            r_acc, _ = AccessControlService.has_access(user, r["access_type"])
-            r["is_unlocked"] = r_acc
-        les["resources"] = resources
-
-        # Attach exercises
-        exercises, _ = ExerciseRepository.list_exercises(lesson_id=lesson_id, is_admin=bool(user and user.get("role") in ("admin", "assistant")))
-        for ex in exercises:
-            e_acc, _ = AccessControlService.has_access(user, ex["access_type"])
-            ex["is_unlocked"] = e_acc
-        les["exercises"] = exercises
-
-        # Attach quiz
-        quizzes, _ = AssessmentRepository.list_quizzes(lesson_id=lesson_id, is_admin=bool(user and user.get("role") in ("admin", "assistant")))
-        les["quiz"] = quizzes[0] if quizzes else None
-
-        # User progress & bookmark
-        if user and user.get("role") == "student":
-            prog = CurriculumRepository.get_lesson_progress(user["id"], lesson_id)
-            les["progress"] = prog or {"watch_percentage": 0, "is_completed": 0, "last_video_position_seconds": 0}
-            bm = db_engine.fetch_one("SELECT id FROM bookmarks WHERE user_id = ? AND item_type = 'lesson' AND item_id = ?", (user["id"], lesson_id))
-            les["is_bookmarked"] = bm is not None
-
-        # Previous and Next lessons
-        all_unit_lessons, _ = CurriculumRepository.list_lessons(unit_id=les["unit_id"], is_admin=False)
-        curr_idx = -1
-        for i, l in enumerate(all_unit_lessons):
-            if l["id"] == lesson_id:
-                curr_idx = i
-                break
-        les["prev_lesson_id"] = all_unit_lessons[curr_idx - 1]["id"] if curr_idx > 0 else None
-        les["next_lesson_id"] = all_unit_lessons[curr_idx + 1]["id"] if curr_idx >= 0 and curr_idx + 1 < len(all_unit_lessons) else None
-
-        return les
-
-# -----------------------------------------------------------------------------
-# 5. Assessment Service (Question Bank, Quizzes, Exams)
-# -----------------------------------------------------------------------------
-class AssessmentService:
-    @staticmethod
-    def start_exam(user_id: str, exam_id: str) -> Dict[str, Any]:
-        exam = AssessmentRepository.get_exam(exam_id)
-        if not exam:
-            raise ValueError("الامتحان غير موجود")
-
-        if not exam.get("is_published", 1):
-            raise ValueError("هذا الامتحان غير منشور حالياً")
-
-        # Check access
-        user = UserRepository.get_by_id(user_id)
-        has_acc, reason = AccessControlService.has_access(user, exam["access_type"])
-        if not has_acc:
-            raise ValueError(reason)
-
-        # Check existing attempts
-        attempts = db_engine.fetch_all("SELECT * FROM exam_attempts WHERE user_id = ? AND exam_id = ?", (user_id, exam_id))
-        max_att = exam.get("max_attempts", 1)
-        if len(attempts) >= max_att:
-            # check if last attempt is in progress
-            if attempts[-1]["status"] == "IN_PROGRESS":
-                return attempts[-1]
-            raise ValueError(f"لقد استنفدت الحد الأقصى للمحاولات المسموح بها ({max_att})")
-
-        now = datetime.now(timezone.utc)
-        duration_mins = exam.get("duration_minutes", 45)
-        expires_at = now + timedelta(minutes=duration_mins)
-
-        attempt_rec = {
-            "id": uuid.uuid4().hex,
-            "user_id": user_id,
-            "exam_id": exam_id,
-            "attempt_number": len(attempts) + 1,
-            "answers_json": json.dumps({}, ensure_ascii=False),
-            "score": 0.0,
-            "total_possible": 0.0,
-            "percentage": 0.0,
-            "is_passed": 0,
-            "status": "IN_PROGRESS",
-            "started_at": now.isoformat(),
-            "expires_at": expires_at.isoformat(),
-            "completed_at": None,
-            "feedback": None
-        }
-        return db_engine.insert("exam_attempts", attempt_rec)
-
-    @staticmethod
-    def autosave_exam(attempt_id: str, user_id: str, answers: Dict[str, Any]) -> Dict[str, Any]:
-        att = db_engine.fetch_one("SELECT * FROM exam_attempts WHERE id = ? AND user_id = ?", (attempt_id, user_id))
-        if not att:
-            raise ValueError("محاولة الامتحان غير موجودة")
-        if att["status"] != "IN_PROGRESS":
-            raise ValueError("لا يمكن تعديل إجابات امتحان تم تسليمه")
-
-        now = datetime.now(timezone.utc)
-        exp = datetime.fromisoformat(att["expires_at"].replace("Z", "+00:00"))
-        if now > exp:
-            raise ValueError("انتهى الوقت المخصص للامتحان")
-
-        # Merge answers
-        current_answers = json.loads(att.get("answers_json") or "{}")
-        current_answers.update(answers)
-        db_engine.execute("UPDATE exam_attempts SET answers_json = ? WHERE id = ?", (json.dumps(current_answers, ensure_ascii=False), attempt_id))
-        return {"saved": True, "answers_count": len(current_answers)}
-
-    @staticmethod
-    def submit_exam(attempt_id: str, user_id: str, final_answers: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        with db_engine.transaction():
-            att = db_engine.fetch_one("SELECT * FROM exam_attempts WHERE id = ? AND user_id = ?", (attempt_id, user_id))
-            if not att:
-                raise ValueError("محاولة الامتحان غير موجودة")
-            if att["status"] != "IN_PROGRESS":
-                return att
-
-            exam = AssessmentRepository.get_exam(att["exam_id"])
-            questions = AssessmentRepository.get_exam_questions(att["exam_id"])
-
-            answers = json.loads(att.get("answers_json") or "{}")
-            if final_answers:
-                answers.update(final_answers)
-
-            total_possible = 0.0
-            total_earned = 0.0
-
-            for q in questions:
-                q_id = q["id"]
-                points = float(q.get("points", 1.0))
-                total_possible += points
-                user_ans = str(answers.get(q_id, "")).strip().lower()
-                correct_ans = str(q.get("correct_answer", "")).strip().lower()
-
-                if q.get("question_type") in ("multiple_choice", "true_false", "code"):
-                    if user_ans and user_ans == correct_ans:
-                        total_earned += points
-
-            pct = round((total_earned / total_possible * 100.0), 1) if total_possible > 0 else 0.0
-            passing_score = float(exam.get("passing_score", 75.0))
-            is_passed = 1 if pct >= passing_score else 0
-
-            updates = {
-                "answers_json": json.dumps(answers, ensure_ascii=False),
-                "score": total_earned,
-                "total_possible": total_possible,
-                "percentage": pct,
-                "is_passed": is_passed,
-                "status": "SUBMITTED",
-                "completed_at": now_iso()
-            }
-            updated_att = db_engine.update("exam_attempts", attempt_id, updates)
-
-            # Award XP on passing exam
-            if is_passed:
-                db_engine.execute("UPDATE student_stats SET xp = xp + 100 WHERE user_id = ?", (user_id,))
-
-            AuditRepository.log(user_id, "exam_submit", "exam_attempt", attempt_id, {
-                "score": total_earned,
-                "total": total_possible,
-                "percentage": pct,
-                "passed": bool(is_passed)
-            })
-
-            return updated_att
-
-# -----------------------------------------------------------------------------
-# 6. Sandboxed Code Runner & Exercise Service
-# -----------------------------------------------------------------------------
-class CodeRunnerService:
-    @staticmethod
-    def execute_code(language: str, code: str, user_input: str = "") -> Dict[str, Any]:
-        lang = (language or "").strip().lower()
-        if lang not in ("python", "javascript", "html", "css", "web"):
-            raise ValueError(f"لغة التشغيل غير مدعومة: {language}")
-
-        if lang in ("html", "css", "web"):
             return {
                 "success": True,
-                "output": code or "Renderable in Browser DOM Sandbox",
-                "error": None,
-                "stdout": code,
-                "stderr": "",
-                "exit_code": 0
+                "message": "تم تفعيل الاشتراك بنجاح! تم فتح كافة الدروس والامتحانات المتقدمة.",
+                "expires_at": expires_at,
+                "duration_days": duration_days
             }
-
-        if not code.strip():
-            return {
-                "success": True,
-                "output": "",
-                "error": None,
-                "stdout": "",
-                "stderr": "",
-                "exit_code": 0
-            }
-
-        if lang == "python":
-            py_bin = None
-            custom_py = os.environ.get("PYTHON_EXECUTABLE", "")
-            if custom_py:
-                p = shutil.which(custom_py) or (custom_py if os.path.exists(custom_py) and os.access(custom_py, os.X_OK) else None)
-                if p:
-                    py_bin = p
-            if not py_bin and sys.executable and os.path.exists(sys.executable):
-                py_bin = sys.executable
-            if not py_bin:
-                for candidate in ["python3.11", "python3", "python", "py"]:
-                    p = shutil.which(candidate)
-                    if p:
-                        py_bin = p
-                        break
-            if not py_bin:
-                for candidate in ["/usr/local/bin/python3.11", "/usr/local/bin/python3", "/usr/bin/python3.11", "/usr/bin/python3", "/usr/bin/python"]:
-                    if os.path.exists(candidate) and os.access(candidate, os.X_OK):
-                        py_bin = candidate
-                        break
-            if not py_bin:
-                py_bin = sys.executable or "python3"
-
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as tf:
-                tf.write(code)
-                temp_path = tf.name
-
-            try:
-                env = os.environ.copy()
-                env["PYTHONUNBUFFERED"] = "1"
-                env["PYTHONDONTWRITEBYTECODE"] = "1"
-                bin_dir = os.path.dirname(py_bin)
-                curr_path = env.get("PATH", "")
-                if bin_dir and bin_dir not in curr_path:
-                    env["PATH"] = f"{bin_dir}:{curr_path}" if curr_path else bin_dir
-
-                start_time = time.perf_counter()
-                proc = subprocess.run(
-                    [py_bin, "-I", temp_path],
-                    input=user_input,
-                    capture_output=True,
-                    text=True,
-                    timeout=5,
-                    env=env
-                )
-                elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-                output = proc.stdout
-                error = proc.stderr
-                success = (proc.returncode == 0)
-                if len(output) > 15000:
-                    output = output[:15000] + "\n... [تم اقتطاع المخرجات]"
-                py_ver = sys.version.split()[0] if sys.version else "3.11"
-                return {
-                    "success": success,
-                    "output": output if success else (output + "\n" + error).strip() if output else error,
-                    "error": error if not success else None,
-                    "stdout": output,
-                    "stderr": error,
-                    "exit_code": proc.returncode,
-                    "execution_time_ms": elapsed_ms,
-                    "runtime": f"Python {py_ver}"
-                }
-            except subprocess.TimeoutExpired:
-                return {
-                    "success": False,
-                    "output": "",
-                    "error": "تجاوز الكود المهلة الزمنية المحددة للتشغيل (5 ثوانٍ)",
-                    "stdout": "",
-                    "stderr": "TimeoutExpired after 5s",
-                    "exit_code": 124,
-                    "execution_time_ms": 5000
-                }
-            except Exception as e:
-                return {
-                    "success": False,
-                    "output": "",
-                    "error": str(e),
-                    "stdout": "",
-                    "stderr": str(e),
-                    "exit_code": -1,
-                    "execution_time_ms": 0
-                }
-            finally:
-                if os.path.exists(temp_path):
-                    try:
-                        os.remove(temp_path)
-                    except OSError:
-                        pass
-
-        elif lang == "javascript":
-            node_bin = None
-            custom_node = os.environ.get("NODE_EXECUTABLE", "")
-            if custom_node:
-                node_bin = shutil.which(custom_node) or (custom_node if os.path.exists(custom_node) else None)
-            if not node_bin:
-                for candidate in ["node", "nodejs", "/usr/bin/node", "/usr/local/bin/node"]:
-                    p = shutil.which(candidate) or (candidate if os.path.exists(candidate) else None)
-                    if p:
-                        node_bin = p
-                        break
-
-            if not node_bin:
-                return {
-                    "success": True,
-                    "output": "JavaScript code validated. (Client-side execution supported)",
-                    "error": None,
-                    "stdout": "JavaScript validated",
-                    "stderr": "",
-                    "exit_code": 0,
-                    "runtime": "Browser JavaScript"
-                }
-
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False, encoding="utf-8") as tf:
-                tf.write(code)
-                temp_path = tf.name
-
-            try:
-                start_time = time.perf_counter()
-                proc = subprocess.run(
-                    [node_bin, temp_path],
-                    input=user_input,
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-                output = proc.stdout
-                error = proc.stderr
-                success = (proc.returncode == 0)
-                return {
-                    "success": success,
-                    "output": output if success else (output + "\n" + error).strip() if output else error,
-                    "error": error if not success else None,
-                    "stdout": output,
-                    "stderr": error,
-                    "exit_code": proc.returncode,
-                    "execution_time_ms": elapsed_ms,
-                    "runtime": "Node.js"
-                }
-            except subprocess.TimeoutExpired:
-                return {
-                    "success": False,
-                    "output": "",
-                    "error": "تجاوز الكود المهلة المحددة (5 ثوانٍ)",
-                    "stdout": "",
-                    "stderr": "TimeoutExpired after 5s",
-                    "exit_code": 124,
-                    "execution_time_ms": 5000
-                }
-            except Exception as e:
-                return {
-                    "success": False,
-                    "output": "",
-                    "error": str(e),
-                    "stdout": "",
-                    "stderr": str(e),
-                    "exit_code": -1,
-                    "execution_time_ms": 0
-                }
-            finally:
-                if os.path.exists(temp_path):
-                    try:
-                        os.remove(temp_path)
-                    except OSError:
-                        pass
-
-    @staticmethod
-    def check_exercise(exercise_id: str, user_id: str, code: str) -> Dict[str, Any]:
-        ex = ExerciseRepository.get_exercise(exercise_id)
-        if not ex:
-            raise ValueError("التمرين غير موجود")
-
-        test_cases = json.loads(ex.get("test_cases_json") or "[]")
-        passed_count = 0
-        total_count = len(test_cases) if test_cases else 1
-        run_output = ""
-
-        if not test_cases:
-            # check expected output
-            res = CodeRunnerService.execute_code(ex["language"], code)
-            run_output = res.get("output", "")
-            expected = (ex.get("expected_output") or "").strip()
-            passed = (res.get("success") and expected in run_output.strip())
-            passed_count = 1 if passed else 0
-        else:
-            for tc in test_cases:
-                inp = tc.get("input", "")
-                exp = str(tc.get("expected", "")).strip()
-                res = CodeRunnerService.execute_code(ex["language"], code, user_input=inp)
-                out = res.get("output", "").strip()
-                run_output += f"المدخل: {inp} => المخرج: {out}\n"
-                if exp in out:
-                    passed_count += 1
-
-        all_passed = (passed_count == total_count)
-        submission = {
-            "id": uuid.uuid4().hex,
-            "user_id": user_id,
-            "exercise_id": exercise_id,
-            "submitted_code": code,
-            "status": "PASSED" if all_passed else "FAILED",
-            "output": run_output,
-            "tests_passed": passed_count,
-            "tests_total": total_count,
-            "created_at": now_iso()
-        }
-        db_engine.insert("exercise_submissions", submission)
-
-        if all_passed:
-            db_engine.execute("UPDATE student_stats SET xp = xp + 30 WHERE user_id = ?", (user_id,))
-
-        return {
-            "status": "PASSED" if all_passed else "FAILED",
-            "passed": all_passed,
-            "tests_passed": passed_count,
-            "tests_total": total_count,
-            "output": run_output
-        }

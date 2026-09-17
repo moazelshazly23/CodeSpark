@@ -19,39 +19,25 @@ def _validate_python(path: str) -> bool:
         return False
 
 def find_python_executable() -> str:
-    """
-    Dynamically and reliably discovers the real, usable Python executable.
-    Checks:
-    1. Configured PYTHON_EXECUTABLE environment variable or setting
-    2. sys.executable (the currently running Python interpreter)
-    3. Common binary names on PATH (python3.11, python3, python, py)
-    4. Well-known system paths (/usr/local/bin, /usr/bin, /opt/..., etc.)
-    Validates that the executable actually exists, is executable, and can execute Python.
-    """
-    # 1. Configured executable
     try:
         from app.core.config import settings
         custom = getattr(settings, "PYTHON_EXECUTABLE", "") or os.environ.get("PYTHON_EXECUTABLE", "")
     except Exception:
         custom = os.environ.get("PYTHON_EXECUTABLE", "")
-
     if custom:
         found = shutil.which(custom) or (custom if os.path.isabs(custom) and os.path.exists(custom) and os.access(custom, os.X_OK) else None)
         if found and _validate_python(found):
             return found
 
-    # 2. sys.executable (The exact interpreter running the backend process!)
     if sys.executable and os.path.exists(sys.executable) and os.access(sys.executable, os.X_OK):
         if _validate_python(sys.executable):
             return sys.executable
 
-    # 3. Common names on PATH
     for name in ["python3.11", "python3", "python", "py"]:
         p = shutil.which(name)
         if p and _validate_python(p):
             return p
 
-    # 4. Standard Linux / Docker / Windows paths
     candidates = [
         "/usr/local/bin/python3.11",
         "/usr/local/bin/python3",
@@ -62,30 +48,13 @@ def find_python_executable() -> str:
         "/bin/python3",
         "/bin/python",
         "/opt/spark/bin/python3",
-        "/opt/spark/bin/python",
-        "C:\\Python311\\python.exe",
-        "C:\\Python310\\python.exe",
     ]
     for c in candidates:
         if os.path.exists(c) and os.access(c, os.X_OK) and _validate_python(c):
             return c
-
     return sys.executable or "python3"
 
 def find_node_executable() -> Optional[str]:
-    try:
-        from app.core.config import settings
-        custom = getattr(settings, "NODE_EXECUTABLE", "") or os.environ.get("NODE_EXECUTABLE", "")
-    except Exception:
-        custom = os.environ.get("NODE_EXECUTABLE", "")
-
-    if custom:
-        w = shutil.which(custom)
-        if w:
-            return w
-        if os.path.exists(custom) and os.access(custom, os.X_OK):
-            return custom
-
     for cand in ["node", "nodejs", "/usr/bin/node", "/usr/local/bin/node", "/usr/bin/nodejs"]:
         w = shutil.which(cand)
         if w:
@@ -104,27 +73,6 @@ class CodeExecutionService:
     @classmethod
     def execute_code(cls, language: str, code: str, user_input: str = "") -> Dict[str, Any]:
         lang = (language or "").strip().lower()
-        if lang not in ["python", "javascript", "html", "css", "web"]:
-            if lang in ["html", "css", "web"]:
-                return {
-                    "success": True,
-                    "output": code or "Renderable in Browser DOM Sandbox",
-                    "error": None,
-                    "stdout": code,
-                    "stderr": "",
-                    "exit_code": 0,
-                    "execution_time_ms": 1
-                }
-            return {
-                "success": False,
-                "output": "",
-                "error": f"لغة التشغيل غير مدعومة: {language}",
-                "stdout": "",
-                "stderr": f"Unsupported language: {language}",
-                "exit_code": -1,
-                "execution_time_ms": 0
-            }
-
         if lang in ["html", "css", "web"]:
             return {
                 "success": True,
@@ -135,7 +83,16 @@ class CodeExecutionService:
                 "exit_code": 0,
                 "execution_time_ms": 1
             }
-
+        if lang not in ["python", "javascript"]:
+            return {
+                "success": False,
+                "output": "",
+                "error": f"لغة التشغيل غير مدعومة: {language}",
+                "stdout": "",
+                "stderr": f"Unsupported language: {language}",
+                "exit_code": -1,
+                "execution_time_ms": 0
+            }
         if not (code or "").strip():
             return {
                 "success": True,
@@ -146,7 +103,6 @@ class CodeExecutionService:
                 "exit_code": 0,
                 "execution_time_ms": 0
             }
-
         if lang == "python":
             return cls._run_python(code, user_input)
         elif lang == "javascript":
@@ -156,11 +112,9 @@ class CodeExecutionService:
     def _run_python(cls, code: str, user_input: str) -> Dict[str, Any]:
         py_bin = find_python_executable()
         start = time.perf_counter()
-
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as tf:
             tf.write(code)
             temp_path = tf.name
-
         try:
             env = os.environ.copy()
             env["PYTHONUNBUFFERED"] = "1"
@@ -169,7 +123,6 @@ class CodeExecutionService:
             curr_path = env.get("PATH", "")
             if bin_dir and bin_dir not in curr_path:
                 env["PATH"] = f"{bin_dir}:{curr_path}" if curr_path else bin_dir
-
             proc = subprocess.run(
                 [py_bin, "-I", temp_path],
                 input=user_input,
@@ -182,10 +135,8 @@ class CodeExecutionService:
             output = proc.stdout
             error = proc.stderr
             success = (proc.returncode == 0)
-
             if len(output) > 15000:
                 output = output[:15000] + "\n... [تم اقتطاع المخرجات لتجاوز الحد الأقصى]"
-
             py_ver = sys.version.split()[0] if sys.version else "3.11"
             return {
                 "success": success,
@@ -230,7 +181,6 @@ class CodeExecutionService:
     def _run_javascript(cls, code: str, user_input: str) -> Dict[str, Any]:
         node_bin = find_node_executable()
         start = time.perf_counter()
-
         if not node_bin:
             return {
                 "success": True,
@@ -242,11 +192,9 @@ class CodeExecutionService:
                 "execution_time_ms": 1,
                 "runtime": "Browser JavaScript"
             }
-
         with tempfile.NamedTemporaryFile(mode="w", suffix=".js", delete=False, encoding="utf-8") as tf:
             tf.write(code)
             temp_path = tf.name
-
         try:
             proc = subprocess.run(
                 [node_bin, temp_path],
@@ -259,7 +207,6 @@ class CodeExecutionService:
             output = proc.stdout
             error = proc.stderr
             success = (proc.returncode == 0)
-
             return {
                 "success": success,
                 "output": output if success else (output + "\n" + error).strip() if output else error,

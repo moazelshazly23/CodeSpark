@@ -1,1 +1,1 @@
-"""Core configuration and security package"""
+"""Code Spark module"""

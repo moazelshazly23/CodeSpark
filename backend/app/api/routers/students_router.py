@@ -1,62 +1,34 @@
+"""
+Code Spark - Students Management Router
+"""
 from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any, Optional
-from app.repositories.all_repositories import UserRepository, SubscriptionRepository
-from app.api.deps import get_current_user
+from typing import Optional, Dict, Any
+from app.api.deps import require_role
 from app.db.engine import db_engine
+from app.repositories.all_repositories import UserRepository, SubscriptionRepository
 
-router = APIRouter(prefix="/students", tags=["Students"])
+router = APIRouter(prefix="/students", tags=["Students Management"], dependencies=[Depends(require_role("admin", "assistant"))])
 
 @router.get("")
-def list_students(search: Optional[str] = None, user: Dict[str, Any] = Depends(get_current_user)):
-    if user["role"] == "assistant":
-        perms = user.get("permissions", [])
-        if "students.read" not in perms:
-            raise HTTPException(status_code=403, detail="ليس لديك صلاحية عرض بيانات الطلاب")
-    elif user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="مخصص للإدارة والمساعدين فقط")
-
-    students, total = UserRepository.list_users(role="student", search=search)
-    for s in students:
-        s.pop("hashed_password", None)
-        sub = SubscriptionRepository.get_active_subscription(s["id"])
-        s["is_subscribed"] = sub is not None
-        s["subscription"] = sub
-        stats = db_engine.fetch_one("SELECT xp, streak_days, study_time_minutes FROM student_stats WHERE user_id = ?", (s["id"],))
-        s["stats"] = stats or {"xp": 0, "streak_days": 1, "study_time_minutes": 0}
-    return {"students": students, "total": total}
+def list_students(search: Optional[str] = None, offset: int = 0, limit: int = 50):
+    users, total = UserRepository.list_users(role="student", search=search, offset=offset, limit=limit)
+    for u in users:
+        sub = SubscriptionRepository.get_active_subscription(u["id"])
+        u["is_subscribed"] = sub is not None
+        u["subscription"] = sub
+    return {"students": users, "total": total}
 
 @router.get("/{student_id}")
-def get_student(student_id: str, user: Dict[str, Any] = Depends(get_current_user)):
-    if user["role"] == "assistant":
-        perms = user.get("permissions", [])
-        if "students.read" not in perms:
-            raise HTTPException(status_code=403, detail="ليس لديك صلاحية عرض بيانات الطلاب")
-    elif user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="مخصص للإدارة والمساعدين فقط")
-
-    s = UserRepository.get_by_id(student_id)
-    if not s or s["role"] != "student":
+def get_student_details(student_id: str):
+    u = UserRepository.get_by_id(student_id)
+    if not u or u.get("role") != "student":
         raise HTTPException(status_code=404, detail="الطالب غير موجود")
-    s.pop("hashed_password", None)
-    sub = SubscriptionRepository.get_active_subscription(s["id"])
-    s["is_subscribed"] = sub is not None
-    s["subscription"] = sub
-    stats = db_engine.fetch_one("SELECT * FROM student_stats WHERE user_id = ?", (s["id"],))
-    s["stats"] = stats
-    return s
-
-@router.put("/{student_id}/toggle-active")
-def toggle_student_active(student_id: str, user: Dict[str, Any] = Depends(get_current_user)):
-    if user["role"] == "assistant":
-        perms = user.get("permissions", [])
-        if "students.manage" not in perms:
-            raise HTTPException(status_code=403, detail="ليس لديك صلاحية إدارة حسابات الطلاب")
-    elif user["role"] != "admin":
-        raise HTTPException(status_code=403, detail="مخصص للإدارة فقط")
-
-    s = UserRepository.get_by_id(student_id)
-    if not s:
-        raise HTTPException(status_code=404, detail="الطالب غير موجود")
-    new_state = 0 if s.get("is_active", 1) == 1 else 1
-    db_engine.execute("UPDATE users SET is_active = ? WHERE id = ?", (new_state, student_id))
-    return {"success": True, "is_active": bool(new_state)}
+    sub = SubscriptionRepository.get_active_subscription(student_id)
+    stats = db_engine.fetch_one("SELECT * FROM student_stats WHERE user_id = ?", (student_id,))
+    progress = db_engine.fetch_all("SELECT lp.*, l.title as lesson_title FROM lesson_progress lp JOIN lessons l ON lp.lesson_id = l.id WHERE lp.user_id = ?", (student_id,))
+    return {
+        "student": u,
+        "subscription": sub,
+        "stats": stats or {},
+        "progress": progress
+    }

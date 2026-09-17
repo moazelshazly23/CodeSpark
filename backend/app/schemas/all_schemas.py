@@ -1,191 +1,224 @@
 """
 Code Spark - Pydantic Request & Response Schemas
-Validation and serialization models
+Compatible with Pydantic v1 and v2
 """
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-# Auth
-class UserRegisterRequest(BaseModel):
+# Auth Schemas
+class LoginRequest(BaseModel):
+    username_or_email: str
+    password: str
+
+class RegisterRequest(BaseModel):
     username: str
     email: str
     password: str
     full_name: str
     phone: Optional[str] = None
 
-class UserLoginRequest(BaseModel):
-    username_or_email: str
-    password: str
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_id: str
+    username: str
+    full_name: str
+    role: str
+    permissions: List[str] = []
 
-class UserUpdateRequest(BaseModel):
+# User Schemas
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+    confirm_password: str
+
+class UpdateProfileRequest(BaseModel):
     full_name: Optional[str] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
-    avatar_url: Optional[str] = None
+
+class AdminResetPasswordRequest(BaseModel):
+    new_password: str
+
+class AdminUpdateUserRequest(BaseModel):
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    role: Optional[str] = None
     is_active: Optional[bool] = None
 
-# Subscription
-class CodeGenerateRequest(BaseModel):
-    duration_type: str = "1_MONTH" # 1_MONTH, 3_MONTHS, 6_MONTHS, 12_MONTHS, LIFETIME, CUSTOM
+# Subscription Schemas
+class SubscriptionCodeCreateRequest(BaseModel):
+    duration_type: str  # 1_MONTH, 3_MONTHS, 6_MONTHS, 12_MONTHS, LIFETIME
     duration_days: Optional[int] = None
+    batch_name: Optional[str] = None
     custom_code: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
 
-class CodeValidateRequest(BaseModel):
+class SubscriptionActivateRequest(BaseModel):
     code: str
 
-class CodeActivateRequest(BaseModel):
-    code: str
+class SubscriptionPlanCreate(BaseModel):
+    id: Optional[str] = None
+    name: str
+    duration_months: int
+    price: float
+    is_active: bool = True
+    order_index: int = 0
+    features: List[str] = []
 
-# Curriculum
-class CourseCreateRequest(BaseModel):
+class SubscriptionPlanUpdate(BaseModel):
+    name: Optional[str] = None
+    duration_months: Optional[int] = None
+    price: Optional[float] = None
+    is_active: Optional[bool] = None
+    order_index: Optional[int] = None
+    features: Optional[List[str]] = None
+
+class SubscriptionRequestCreate(BaseModel):
+    plan_id: Optional[str] = None
+    package_name: Optional[str] = None
+    duration_months: Optional[int] = 1
+    amount: Optional[float] = 0.0
+    payment_method: str = "InstaPay"
+    payment_number: Optional[str] = None
+    payment_reference: str
+    phone: str
+    transfer_date: Optional[str] = None
+    proof_file_url: Optional[str] = None
+
+class SubscriptionRequestReview(BaseModel):
+    action: str  # approve or reject
+    admin_notes: Optional[str] = None
+
+# Curriculum Schemas
+class CourseCreate(BaseModel):
     title: str
-    slug: str
-    description: Optional[str] = None
+    description: Optional[str] = ""
     thumbnail_url: Optional[str] = None
     order_index: int = 0
+    academic_term: Optional[str] = "الفصل الأول"
     is_published: bool = True
-    access_type: str = "PUBLIC" # PUBLIC or SUBSCRIBERS_ONLY
 
-class UnitCreateRequest(BaseModel):
+class CourseUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    order_index: Optional[int] = None
+    academic_term: Optional[str] = None
+    is_published: Optional[bool] = None
+
+class UnitCreate(BaseModel):
     course_id: str
     title: str
-    description: Optional[str] = None
+    description: Optional[str] = ""
     order_index: int = 0
     is_published: bool = True
-    access_type: str = "PUBLIC"
 
-class LessonCreateRequest(BaseModel):
+class UnitUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    order_index: Optional[int] = None
+    is_published: Optional[bool] = None
+
+class LessonCreate(BaseModel):
     unit_id: str
     title: str
-    slug: str
-    description: Optional[str] = None
-    content_markdown: Optional[str] = None
-    video_type: str = "youtube" # youtube, uploaded, none
+    content_markdown: Optional[str] = ""
     video_url: Optional[str] = None
-    video_id: Optional[str] = None
-    duration_seconds: float = 0.0
-    order_index: int = 0
+    video_type: Optional[str] = "embed"
+    duration_minutes: Optional[int] = 0
+    order_index: Optional[int] = 0
+    is_free: bool = False
     is_published: bool = True
-    access_type: str = "PUBLIC"
 
-class LessonProgressRequest(BaseModel):
-    last_video_position_seconds: float = 0.0
-    watch_percentage: float = 0.0
+class LessonUpdate(BaseModel):
+    unit_id: Optional[str] = None
+    title: Optional[str] = None
+    content_markdown: Optional[str] = None
+    video_url: Optional[str] = None
+    video_type: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    order_index: Optional[int] = None
+    is_free: Optional[bool] = None
+    is_published: Optional[bool] = None
+
+class LessonProgressUpdate(BaseModel):
+    watch_time_seconds: int = 0
     is_completed: bool = False
 
-# Resources
-class ResourceCreateRequest(BaseModel):
+# Study Files Schemas
+class StudyFileCreate(BaseModel):
     title: str
-    description: Optional[str] = None
-    resource_type: str = "drive_link" # drive_link, uploaded_file
-    file_url: str
-    file_size_bytes: Optional[int] = 0
-    file_format: Optional[str] = "pdf"
-    access_type: str = "PUBLIC"
+    description: Optional[str] = ""
+    source_type: str = "upload"  # upload or google_drive
+    external_url: Optional[str] = None
+    course_id: Optional[str] = None
     unit_id: Optional[str] = None
     lesson_id: Optional[str] = None
+    visibility: str = "PUBLIC"  # PUBLIC or SUBSCRIBERS_ONLY
     is_published: bool = True
 
-# Exercises & Playground
-class ExerciseCreateRequest(BaseModel):
-    title: str
+class StudyFileUpdate(BaseModel):
+    title: Optional[str] = None
     description: Optional[str] = None
-    instructions: Optional[str] = None
-    starter_code: Optional[str] = None
-    expected_output: Optional[str] = None
-    test_cases_json: Optional[str] = None
-    language: str = "python"
-    difficulty: str = "easy"
-    solution_code: Optional[str] = None
-    access_type: str = "PUBLIC"
+    external_url: Optional[str] = None
+    course_id: Optional[str] = None
     unit_id: Optional[str] = None
     lesson_id: Optional[str] = None
-    is_published: bool = True
+    visibility: Optional[str] = None
+    is_published: Optional[bool] = None
 
-class ExerciseSubmitRequest(BaseModel):
-    code: str
+# Assessment Schemas
+class QuestionOption(BaseModel):
+    id: str
+    text: str
+
+class QuestionCreate(BaseModel):
+    lesson_id: Optional[str] = None
+    question_type: str = "multiple_choice"  # multiple_choice, true_false, essay, code
+    question_text: str
+    options: Optional[List[QuestionOption]] = []
+    correct_answer: str
+    explanation: Optional[str] = None
+    points: int = 1
+    difficulty: str = "medium"
+    is_active: bool = True
+
+class QuestionUpdate(BaseModel):
+    lesson_id: Optional[str] = None
+    question_type: Optional[str] = None
+    question_text: Optional[str] = None
+    options: Optional[List[QuestionOption]] = None
+    correct_answer: Optional[str] = None
+    explanation: Optional[str] = None
+    points: Optional[int] = None
+    difficulty: Optional[str] = None
+    is_active: Optional[bool] = None
 
 class CodeRunRequest(BaseModel):
     language: str = "python"
     code: str
-    user_input: Optional[str] = ""
+    test_input: Optional[str] = ""
 
-# Assessments
-class QuestionCreateRequest(BaseModel):
-    question_text: str
-    question_type: str = "multiple_choice" # multiple_choice, true_false, code, essay
-    options_json: Optional[str] = "[]"
-    correct_answer: str
-    explanation: Optional[str] = None
-    difficulty: str = "easy"
-    topic: Optional[str] = None
-    unit_id: Optional[str] = None
-    lesson_id: Optional[str] = None
-    tags_json: Optional[str] = "[]"
-
-class ExamCreateRequest(BaseModel):
-    title: str
-    description: Optional[str] = None
-    duration_minutes: int = 45
-    passing_score: float = 75.0
-    max_attempts: int = 1
-    is_randomized: bool = False
-    access_type: str = "SUBSCRIBERS_ONLY"
-    is_published: bool = True
-    questions: Optional[List[Dict[str, Any]]] = None # [{"question_id": "...", "points": 1.0}]
-
-class ExamAutosaveRequest(BaseModel):
-    answers: Dict[str, Any]
-
-class ExamSubmitRequest(BaseModel):
-    answers: Optional[Dict[str, Any]] = None
-
-class QuizCreateRequest(BaseModel):
-    title: str
-    description: Optional[str] = None
-    passing_score: float = 70.0
-    time_limit_minutes: int = 15
-    access_type: str = "PUBLIC"
-    lesson_id: Optional[str] = None
-    unit_id: Optional[str] = None
-    is_published: bool = True
-    questions: Optional[List[Dict[str, Any]]] = None
-
-class QuizSubmitRequest(BaseModel):
-    answers: Dict[str, Any]
-
-# Support
-class TicketCreateRequest(BaseModel):
+# Support & Announcements
+class SupportTicketCreate(BaseModel):
     subject: str
-    category: str = "general"
-    priority: str = "MEDIUM" # LOW, MEDIUM, HIGH, URGENT
+    message: str
+    priority: str = "normal"
+
+class SupportMessageCreate(BaseModel):
     message: str
 
-class TicketMessageRequest(BaseModel):
-    message: str
-
-class TicketStatusRequest(BaseModel):
-    status: str # OPEN, IN_PROGRESS, WAITING, RESOLVED, CLOSED
-
-# Announcements
-class AnnouncementCreateRequest(BaseModel):
+class AnnouncementCreate(BaseModel):
     title: str
     content: str
-    target_audience: str = "ALL" # ALL, STUDENTS, SUBSCRIBERS, ASSISTANTS
-    expiration_date: Optional[str] = None
+    is_urgent: bool = False
+    is_published: bool = True
 
-# Assistants
-class AssistantCreateRequest(BaseModel):
-    username: str
-    email: str
-    password: str
-    full_name: str
-    permissions: List[str]
-
-class PermissionsUpdateRequest(BaseModel):
-    permissions: List[str]
-
-# Bookmarks
-class BookmarkRequest(BaseModel):
-    item_type: str # lesson, resource, exercise
-    item_id: str
+class PlatformSettingsUpdate(BaseModel):
+    platform_name: Optional[str] = None
+    payment_phone: Optional[str] = None
+    instapay_phone: Optional[str] = None
+    contact_phone: Optional[str] = None
+    instapay_link: Optional[str] = None
+    allow_registration: Optional[bool] = None
